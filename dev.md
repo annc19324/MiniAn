@@ -9,3 +9,19 @@
 7. npx tsc --init
 8. npx prisma init
 
+9. cd frontend --> npm install
+npm run dev
+
+10. cd backend --> npm install
+npm run dev
+
+11. error backend, miss src/server.ts
+npm install express dotenv
+npm install -D typescript ts-node-dev @types/express @types/node
+
+12. backend
+npm install prisma @prisma/client
+npm install -D prisma
+
+npx prisma migrate dev --name init
+npx prisma generate
