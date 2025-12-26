@@ -1,14 +1,166 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  // url đã chuyển sang prisma.config.ts
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  email         String    @unique
+  password      String
+  fullName      String?
+  avatar        String?   @default("default-avatar.png")
+  bio           String?   @default("")
+  coins         Int       @default(0)
+  isVip         Boolean   @default(false)
+  vipExpiresAt  DateTime?
+  role          Role      @default(USER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  posts             Post[]
+  comments          Comment[]
+  likes             Like[]
+  notifications     Notification[]     // Thông báo nhận được
+  sentMessages      Message[] @relation("SentMessages")
+  receivedMessages  Message[] @relation("ReceivedMessages")
+  rooms             UserRoom[]
+  followers         Follow[]  @relation("Following")
+  following         Follow[]  @relation("Followers")
+  coinTransactions  CoinTransaction[] // Lịch sử giao dịch coin
+
+  @@map("users")
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  content   String
+  image     String?
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  comments      Comment[]
+  likes         Like[]
+  notifications Notification[] @relation("PostNotifications")
+
+  @@map("posts")
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id])
+  authorId  Int
+  author    User      @relation(fields: [authorId], references: [id])
+  createdAt DateTime  @default(now())
+
+  notifications Notification[] @relation("CommentNotifications")
+
+  @@map("comments")
+}
+
+model Like {
+  id        Int       @id @default(autoincrement())
+  postId    Int
+  post      Post      @relation(fields: [postId], references: [id])
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
+
+  @@unique([postId, userId])
+  @@map("likes")
+}
+
+model Notification {
+  id         Int       @id @default(autoincrement())
+  type       String
+  content    String
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id])
+  senderId   Int?
+  postId     Int?      
+  post       Post?     @relation("PostNotifications", fields: [postId], references: [id])
+  commentId  Int?
+  comment    Comment?  @relation("CommentNotifications", fields: [commentId], references: [id])
+  read       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@map("notifications")
+}
+
+model Room {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  isGroup   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  users     UserRoom[]
+  messages  Message[]
+
+  @@map("rooms")
+}
+
+model UserRoom {
+  userId    Int
+  roomId    Int
+  joinedAt  DateTime  @default(now())
+
+  user      User @relation(fields: [userId], references: [id])
+  room      Room @relation(fields: [roomId], references: [id])
+
+  @@unique([userId, roomId])
+  @@map("user_rooms")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  roomId     Int
+  room       Room     @relation(fields: [roomId], references: [id])
+  senderId   Int
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId Int?
+  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@map("messages")
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+
+  follower  User @relation("Following", fields: [followerId], references: [id])
+  following User @relation("Followers", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model CoinTransaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@map("coin_transactions")
+}
+
+enum Role {
+  USER
+  VIP
+  ADMIN
 }
