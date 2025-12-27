@@ -27,7 +27,8 @@ npx prisma migrate dev --name init
 npx prisma generate
 
 lệnh chạy file:
-npx ts-node prisma/seed.ts
+<!-- npx ts-node prisma/seed.ts -->
+npx prisma db seed
 
 13. fix prisma 7+
 npm install @prisma/adapter-pg
