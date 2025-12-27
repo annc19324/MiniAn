@@ -25,3 +25,14 @@ npm install -D prisma
 
 npx prisma migrate dev --name init
 npx prisma generate
+
+lệnh chạy file:
+npx ts-node prisma/seed.ts
+
+13. fix prisma 7+
+npm install @prisma/adapter-pg
+npm install pg
+<!-- driver PostgreSQL cần thiết -->
+
+
+
