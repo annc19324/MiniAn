@@ -80,43 +80,43 @@ export default function Layout() {
             </aside>
 
             {/* Desktop Sidebar (Right Side) */}
-            <aside className="hidden md:flex w-72 flex-col bg-white/80 backdrop-blur-xl border-l border-white/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)]">
-                <div className="p-8">
-                    <h1 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tighter">
+            <aside className="hidden md:flex w-72 flex-col bg-white/80 backdrop-blur-xl border-l border-white/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] overflow-y-auto">
+                <div className="p-6">
+                    <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tighter">
                         MiniAn
                     </h1>
-                    <p className="text-sm text-slate-400 mt-1 font-medium">Social Network</p>
+                    <p className="text-xs text-slate-400 mt-0.5 font-medium">Social Network</p>
                 </div>
 
-                <nav className="flex-1 px-6 space-y-3">
-                    <NavItem to="/" icon={<Home size={22} />} label="Trang chủ" />
-                    <NavItem to="/search" icon={<Search size={22} />} label="Tìm kiếm" />
-                    <NavItem to="/chat" icon={<MessageCircle size={22} />} label="Tin nhắn" />
-                    <NavItem to="/notifications" icon={<Bell size={22} />} label="Thông báo" />
-                    <NavItem to={`/profile/${user?.id}`} icon={<User size={22} />} label="Hồ sơ" />
-                    <NavItem to="/settings" icon={<Settings size={22} />} label="Cài đặt" />
-
-                    <div className="pt-6 pb-2">
-                        <NavLink to="/create" className="flex items-center justify-center space-x-2 w-full bg-indigo-600 text-white p-4 rounded-2xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all">
-                            <PlusSquare size={20} />
-                            <span className="font-bold">Đăng bài</span>
-                        </NavLink>
-                    </div>
-                </nav>
-
-                <div className="p-6 border-t border-slate-100/50 bg-slate-50/50">
-                    <div className="flex items-center space-x-3 mb-4">
+                <div className="px-6 pb-4 border-b border-slate-100/50 bg-slate-50/50 mb-4 pt-4">
+                    <div className="flex items-center space-x-3 mb-3">
                         <img src={user?.avatar || "https://ui-avatars.com/api/?name=User&background=random"} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white shadow-sm" />
                         <div className="flex-1 overflow-hidden">
-                            <p className="font-bold text-slate-800 truncate">{user?.fullName || "User"}</p>
+                            <p className="font-bold text-slate-800 truncate text-sm">{user?.fullName || "User"}</p>
                             <p className="text-xs text-slate-500 truncate">@{user?.username || "username"}</p>
                         </div>
                     </div>
-                    <button onClick={logout} className="flex items-center space-x-3 text-slate-500 hover:text-red-600 hover:bg-red-50 p-3 rounded-xl w-full transition-all group">
-                        <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+                    <button onClick={logout} className="flex items-center space-x-2 text-slate-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl w-full transition-all group text-sm">
+                        <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
                         <span className="font-medium">Đăng xuất</span>
                     </button>
                 </div>
+
+                <nav className="flex-1 px-4 space-y-2 pb-6">
+                    <NavItem to="/" icon={<Home size={20} />} label="Trang chủ" />
+                    <NavItem to="/search" icon={<Search size={20} />} label="Tìm kiếm" />
+                    <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" />
+                    <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" />
+                    <NavItem to={`/profile/${user?.id}`} icon={<User size={20} />} label="Hồ sơ" />
+                    <NavItem to="/settings" icon={<Settings size={20} />} label="Cài đặt" />
+
+                    <div className="pt-4">
+                        <NavLink to="/create" className="flex items-center justify-center space-x-2 w-full bg-indigo-600 text-white p-3 rounded-xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all">
+                            <PlusSquare size={18} />
+                            <span className="font-bold text-sm">Đăng bài</span>
+                        </NavLink>
+                    </div>
+                </nav>
             </aside>
 
             {/* Mobile Header */}
@@ -157,7 +157,7 @@ export default function Layout() {
 function NavItem({ to, icon, label, count }: { to: string; icon: React.ReactNode; label: string; count?: number }) {
     return (
         <NavLink to={to} className={({ isActive }) =>
-            `flex items-center justify-between p-3.5 rounded-xl transition-all duration-300 group ${isActive
+            `flex items-center justify-between p-2.5 rounded-xl transition-all duration-300 group ${isActive
                 ? 'bg-indigo-50/80 text-indigo-700 shadow-sm font-semibold'
                 : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600 font-medium'
             }`
