@@ -24,9 +24,16 @@ export const commentPost = (postId: number, content: string) => api.post(`/posts
 // ==== User Services ====
 export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
 export const dailyCheckIn = () => api.post('/users/check-in');
+export const searchUsers = (q: string) => api.get(`/users/search?q=${q}`);
+export const followUser = (id: number) => api.post(`/users/follow/${id}`);
 
 // ==== Admin Services ====
 export const getAllUsers = () => api.get('/users/admin/users');
 export const updateUserStatus = (id: number, data: { role?: string, isVip?: boolean, isActive?: boolean }) => api.put(`/users/admin/users/${id}`, data);
+
+// ==== Notification Services ====
+export const getNotifications = () => api.get('/notifications');
+export const markRead = (id: number) => api.put(`/notifications/${id}/read`);
+export const markAllRead = () => api.put('/notifications/read-all');
 
 export default api;
