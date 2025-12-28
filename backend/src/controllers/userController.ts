@@ -113,3 +113,68 @@ export const updateUserStatus = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Lỗi cập nhật user' });
     }
 };
+
+// Tìm kiếm User
+export const searchUsers = async (req: AuthRequest, res: Response) => {
+    const { q } = req.query;
+
+    if (!q) return res.json([]);
+
+    try {
+        const users = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { username: { contains: String(q), mode: 'insensitive' } },
+                    { fullName: { contains: String(q), mode: 'insensitive' } },
+                ],
+                isActive: true
+            },
+            select: { id: true, username: true, fullName: true, avatar: true, isVip: true },
+            take: 10
+        });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi tìm kiếm' });
+    }
+};
+
+// Follow / Unfollow
+export const followUser = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id; // Me
+    const targetId = Number(req.params.id); // Person to follow
+
+    if (userId === targetId) return res.status(400).json({ message: 'Không thể follow chính mình' });
+
+    try {
+        const existingFollow = await prisma.follow.findUnique({
+            where: { followerId_followingId: { followerId: userId, followingId: targetId } }
+        });
+
+        if (existingFollow) {
+            // Unfollow
+            await prisma.follow.delete({
+                where: { followerId_followingId: { followerId: userId, followingId: targetId } }
+            });
+            res.json({ message: 'Unfollowed', isFollowing: false });
+        } else {
+            // Follow
+            await prisma.follow.create({
+                data: { followerId: userId, followingId: targetId }
+            });
+
+            // Notification
+            await prisma.notification.create({
+                data: {
+                    type: 'follow',
+                    content: `${req.user?.username} đã bắt đầu theo dõi bạn`,
+                    userId: targetId,
+                    senderId: userId
+                }
+            });
+
+            res.json({ message: 'Followed', isFollowing: true });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi follow' });
+    }
+};

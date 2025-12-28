@@ -14,6 +14,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 import Layout from './components/layout/Layout';
 import AdminDashboard from './pages/AdminDashboard'; // Import
 
+import Search from './pages/Search'; // Import
+import Notifications from './pages/Notifications'; // Import
+
 function AppContent() {
   const { user } = useAuth();
 
@@ -26,9 +29,10 @@ function AppContent() {
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/" element={<Home />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/chat" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Chat Feature Coming Soon</div>} />
           <Route path="/profile/:id" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Profile Feature Coming Soon</div>} />
-          <Route path="/notifications" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Notifications Feature Coming Soon</div>} />
           <Route path="/create" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Create Post Feature Coming Soon</div>} />
         </Route>
 
