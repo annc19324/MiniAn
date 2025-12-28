@@ -41,6 +41,13 @@ npm install @types/socket.io-client
 npm install tailwindcss postcss autoprefixer --save-dev
 npx tailwindcss@3.4.14 init -p
 
+15. Cài plugin PostCSS mới của Tailwind
+npm install -D @tailwindcss/postcss
+
+16. fix lỗi TypeScript thiếu type definitions cho package pg
+npm install -D @types/pg
+
+npm install -D @types/express @types/node @types/cors @types/jsonwebtoken @types/bcryptjs @types/pg @types/multer
 
 
 

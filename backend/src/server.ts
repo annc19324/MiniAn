@@ -1,11 +1,13 @@
+// backend/src/server.ts
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';  // Giữ nguyên vì bạn dùng prisma-client-js
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
 import postRoutes from './routes/postRoutes';
+import authRoutes from './routes/authRoutes';  // Sửa ở đây
 
 dotenv.config();
 
@@ -16,11 +18,17 @@ const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL
 });
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+
+// Khai báo prisma
+const prismaInstance = new PrismaClient({ adapter });
+
+// Export rõ ràng để các file khác import
+export const prisma = prismaInstance;
 
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 
 app.get('/', (req, res) => {
@@ -29,7 +37,6 @@ app.get('/', (req, res) => {
 
 app.get('/test-db', async (req, res) => {
     try {
-        // Kiểm tra kết nối bằng cách đếm số lượng user
         const userCount = await prisma.user.count();
         res.json({
             message: 'Kết nối database thành công!',
@@ -45,7 +52,6 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
-// Đóng kết nối an toàn khi tắt server
 process.on('SIGINT', async () => {
     await prisma.$disconnect();
     await pool.end();
