@@ -35,5 +35,12 @@ npm install @prisma/adapter-pg
 npm install pg
 <!-- driver PostgreSQL cần thiết -->
 
+14. set up frontend
+npm install axios react-router-dom@6 zustand socket.io-client
+npm install @types/socket.io-client
+npm install tailwindcss postcss autoprefixer --save-dev
+npx tailwindcss@3.4.14 init -p
+
+
 
 
