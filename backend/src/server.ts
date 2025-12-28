@@ -12,6 +12,7 @@ import postRoutes from './routes/postRoutes';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
     res.send('🚀 MiniAn Backend is running.');

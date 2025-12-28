@@ -17,6 +17,10 @@ import AdminDashboard from './pages/AdminDashboard'; // Import
 import Search from './pages/Search'; // Import
 import Notifications from './pages/Notifications'; // Import
 
+import Chat from './pages/Chat';
+import Profile from './pages/Profile';
+import CreatePost from './pages/CreatePost';
+
 function AppContent() {
   const { user } = useAuth();
 
@@ -31,9 +35,9 @@ function AppContent() {
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/search" element={<Search />} />
-          <Route path="/chat" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Chat Feature Coming Soon</div>} />
-          <Route path="/profile/:id" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Profile Feature Coming Soon</div>} />
-          <Route path="/create" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Create Post Feature Coming Soon</div>} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/profile/:id" element={<Profile />} />
+          <Route path="/create" element={<CreatePost />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

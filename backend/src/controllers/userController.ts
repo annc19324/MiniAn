@@ -4,8 +4,10 @@ import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 // Lấy thông tin user (profile)
-export const getUserProfile = async (req: Request, res: Response) => {
+// Lấy thông tin user (profile)
+export const getUserProfile = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
+    const currentUserId = req.user!.id;
 
     try {
         const user = await prisma.user.findUnique({
@@ -20,7 +22,18 @@ export const getUserProfile = async (req: Request, res: Response) => {
         });
 
         if (!user) return res.status(404).json({ message: 'User not found' });
-        res.json(user);
+
+        // Check isFollowing
+        const follow = await prisma.follow.findUnique({
+            where: {
+                followerId_followingId: {
+                    followerId: currentUserId,
+                    followingId: Number(id)
+                }
+            }
+        });
+
+        res.json({ ...user, isFollowing: !!follow });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }

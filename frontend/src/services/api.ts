@@ -20,6 +20,7 @@ export const createPost = (formData: FormData) => api.post('/posts', formData, {
 });
 export const likePost = (postId: number) => api.post(`/posts/${postId}/like`);
 export const commentPost = (postId: number, content: string) => api.post(`/posts/${postId}/comment`, { content });
+export const getUserPosts = (userId: number) => api.get(`/posts/user/${userId}`);
 
 // ==== User Services ====
 export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
@@ -35,5 +36,11 @@ export const updateUserStatus = (id: number, data: { role?: string, isVip?: bool
 export const getNotifications = () => api.get('/notifications');
 export const markRead = (id: number) => api.put(`/notifications/${id}/read`);
 export const markAllRead = () => api.put('/notifications/read-all');
+
+// ==== Chat Services ====
+export const getConversations = () => api.get('/chat/conversations');
+export const startConversation = (targetUserId: number) => api.post('/chat/conversation/start', { targetUserId });
+export const getMessages = (roomId: number) => api.get(`/chat/${roomId}/messages`);
+export const sendMessage = (roomId: number, content: string) => api.post(`/chat/${roomId}/messages`, { content });
 
 export default api;

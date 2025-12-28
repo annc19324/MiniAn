@@ -149,3 +149,32 @@ export const createComment = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error });
     }
 };
+
+// Lấy bài viết của một user cụ thể
+export const getUserPosts = async (req: AuthRequest, res: Response) => {
+    const { userId } = req.params;
+
+    try {
+        const posts = await prisma.post.findMany({
+            where: { authorId: Number(userId) },
+            include: {
+                author: {
+                    select: { id: true, username: true, fullName: true, avatar: true },
+                },
+                likes: { select: { userId: true } },
+                comments: {
+                    include: {
+                        author: { select: { username: true, fullName: true, avatar: true } },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                },
+                _count: { select: { likes: true, comments: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        res.json(posts);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi lấy bài viết user', error });
+    }
+};
