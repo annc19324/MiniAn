@@ -27,6 +27,10 @@ export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
 export const dailyCheckIn = () => api.post('/users/check-in');
 export const searchUsers = (q: string) => api.get(`/users/search?q=${q}`);
 export const followUser = (id: number) => api.post(`/users/follow/${id}`);
+export const updateUserProfile = (data: FormData) => api.put('/users/profile/update', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+});
+export const getLeaderboard = () => api.get('/users/leaderboard');
 
 // ==== Admin Services ====
 export const getAllUsers = () => api.get('/users/admin/users');

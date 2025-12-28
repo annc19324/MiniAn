@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { uploadImage } from '../utils/upload';
 
 // Lấy thông tin user (profile)
 // Lấy thông tin user (profile)
@@ -189,5 +190,75 @@ export const followUser = async (req: AuthRequest, res: Response) => {
         }
     } catch (error) {
         res.status(500).json({ message: 'Lỗi follow' });
+    }
+};
+
+// Cập nhật Profile (User tự cập nhật)
+export const updateUserProfile = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    const { fullName, bio } = req.body;
+    const file = req.file;
+
+    try {
+        let imageUrl: string | undefined;
+        if (file) {
+            imageUrl = await uploadImage(file);
+        }
+
+        const dataToUpdate: any = {};
+        if (fullName) dataToUpdate.fullName = fullName;
+        if (bio !== undefined) dataToUpdate.bio = bio;
+        if (imageUrl) dataToUpdate.avatar = imageUrl;
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: dataToUpdate,
+            select: { id: true, username: true, fullName: true, avatar: true, bio: true, coins: true }
+        });
+
+        res.json({ message: 'Cập nhật thành công', user: updatedUser });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi cập nhật profile' });
+    }
+};
+
+// Đổi mật khẩu
+import bcrypt from 'bcryptjs';
+export const changePassword = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword }
+        });
+
+        res.json({ message: 'Đổi mật khẩu thành công' });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi đổi mật khẩu' });
+    }
+};
+
+// Lấy bảng xếp hạng (Top 10 Coin)
+export const getLeaderboard = async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.user.findMany({
+            orderBy: { coins: 'desc' },
+            take: 10,
+            select: { id: true, username: true, fullName: true, avatar: true, coins: true, isVip: true }
+        });
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi lấy bảng xếp hạng' });
     }
 };
