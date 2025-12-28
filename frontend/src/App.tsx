@@ -11,6 +11,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
 
+import Layout from './components/layout/Layout';
+import AdminDashboard from './pages/AdminDashboard'; // Import
+
 function AppContent() {
   const { user } = useAuth();
 
@@ -19,7 +22,17 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/chat" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Chat Feature Coming Soon</div>} />
+          <Route path="/profile/:id" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Profile Feature Coming Soon</div>} />
+          <Route path="/notifications" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Notifications Feature Coming Soon</div>} />
+          <Route path="/create" element={<div className="glass-card min-h-[500px] flex items-center justify-center text-slate-400">Create Post Feature Coming Soon</div>} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

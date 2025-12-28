@@ -21,7 +21,6 @@ export default function Register() {
         setError('');
         setLoading(true);
 
-        // Validate cơ bản
         if (password !== confirmPassword) {
             setError('Mật khẩu xác nhận không khớp!');
             setLoading(false);
@@ -42,7 +41,6 @@ export default function Register() {
                 fullName,
             });
 
-            // Đăng nhập luôn sau khi đăng ký thành công
             login(res.data.token, res.data.user);
             navigate('/');
         } catch (err: any) {
@@ -53,24 +51,26 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">MiniAn</h1>
-                <p className="text-center text-gray-600 mb-8">Tạo tài khoản mới</p>
+        <div className="min-h-screen auth-bg flex items-center justify-center p-4">
+            <div className="glass-card w-full max-w-md p-8 animate-fade-in relative z-10">
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl font-extrabold heading-gradient mb-2">MiniAn</h1>
+                    <p className="text-slate-500 font-medium">Tạo tài khoản mới</p>
+                </div>
 
                 {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-sm">
-                        {error}
+                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl mb-6 text-sm flex items-center gap-2 border border-red-100">
+                        <span className="font-bold">⚠️</span> {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="text"
                         placeholder="Tên đăng nhập (username)"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="glass-input w-full"
                         required
                         minLength={3}
                     />
@@ -80,7 +80,7 @@ export default function Register() {
                         placeholder="Email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="glass-input w-full"
                         required
                     />
 
@@ -89,16 +89,16 @@ export default function Register() {
                         placeholder="Họ và tên"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="glass-input w-full"
                         required
                     />
 
                     <input
                         type="password"
-                        placeholder="Mật khẩu"
+                        placeholder="Mật khẩu (ít nhất 6 ký tự)"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="glass-input w-full"
                         required
                         minLength={6}
                     />
@@ -108,26 +108,30 @@ export default function Register() {
                         placeholder="Xác nhận mật khẩu"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                        className="glass-input w-full"
                         required
                     />
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="glass-btn w-full flex justify-center items-center mt-4"
                     >
-                        {loading ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+                        {loading ? 'Đang tạo...' : 'Đăng ký ngay'}
                     </button>
                 </form>
 
-                <p className="text-center mt-8 text-gray-600">
+                <p className="text-center mt-8 text-slate-500 text-sm">
                     Đã có tài khoản?{' '}
-                    <Link to="/login" className="text-purple-600 font-semibold hover:underline">
+                    <Link to="/login" className="text-indigo-600 font-bold hover:underline">
                         Đăng nhập ngay
                     </Link>
                 </p>
             </div>
+
+            {/* Background Decorations */}
+            <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+            <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl -z-0 pointer-events-none"></div>
         </div>
     );
 }

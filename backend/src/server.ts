@@ -2,34 +2,37 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';  // Giữ nguyên vì bạn dùng prisma-client-js
+import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 import postRoutes from './routes/postRoutes';
-import authRoutes from './routes/authRoutes';  // Sửa ở đây
+import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Database Setup
 const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL
 });
 const adapter = new PrismaPg(pool);
-
-// Khai báo prisma
 const prismaInstance = new PrismaClient({ adapter });
-
-// Export rõ ràng để các file khác import
 export const prisma = prismaInstance;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
     res.send('🚀 MiniAn Backend is running.');
@@ -52,12 +55,42 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
+// Socket.io Setup
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*", // Cập nhật domain frontend khi deploy
+        methods: ["GET", "POST"]
+    }
+});
+
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+
+    socket.on("join_room", (roomId) => {
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+    });
+
+    socket.on("send_message", (data) => {
+        // data: { roomId, message, senderId ... }
+        // Lưu vào DB ở đây hoặc gọi controller
+        socket.to(data.roomId).emit("receive_message", data);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected:", socket.id);
+    });
+});
+
+// App Shutdown
 process.on('SIGINT', async () => {
     await prisma.$disconnect();
     await pool.end();
     process.exit(0);
 });
 
-app.listen(PORT, () => {
+// Start Server
+httpServer.listen(PORT, () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);
 });
