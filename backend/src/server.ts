@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 
+import postRoutes from './routes/postRoutes';
+
 dotenv.config();
 
 const app = express();
@@ -18,6 +20,8 @@ const prisma = new PrismaClient({ adapter });
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/api/posts', postRoutes);
 
 app.get('/', (req, res) => {
     res.send('🚀 MiniAn Backend is running.');
