@@ -74,8 +74,8 @@ function EditProfileModal({
             const res = await updateUserProfile(formData);
             onSuccess(res.data.user);
             onClose();
-        } catch (error) {
-            alert('Lỗi cập nhật');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Lỗi cập nhật');
         } finally {
             setLoading(false);
         }

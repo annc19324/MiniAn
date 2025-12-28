@@ -4,7 +4,7 @@ import { protect } from '../middleware/authMiddleware';
 import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUsers, followUser, updateUserProfile, getLeaderboard, changePassword } from '../controllers/userController';
 import multer from 'multer';
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer();
 const router = express.Router();
 
 // Public / Protected Routes
