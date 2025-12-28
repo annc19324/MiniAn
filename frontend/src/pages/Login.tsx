@@ -26,38 +26,55 @@ export default function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-                <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">MiniAn</h1>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <input
-                        type="text"
-                        placeholder="Username hoặc Email"
-                        value={emailOrUsername}
-                        onChange={(e) => setEmailOrUsername(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
-                    <input
-                        type="password"
-                        placeholder="Mật khẩu"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
+        <div className="min-h-screen auth-bg flex items-center justify-center p-4">
+            <div className="glass-card w-full max-w-md p-8 animate-fade-in relative z-10">
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl font-extrabold heading-gradient mb-2">MiniAn</h1>
+                    <p className="text-slate-500 font-medium">Đăng nhập để kết nối</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <input
+                            type="text"
+                            placeholder="Email hoặc Tên đăng nhập"
+                            value={emailOrUsername}
+                            onChange={(e) => setEmailOrUsername(e.target.value)}
+                            className="glass-input w-full"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type="password"
+                            placeholder="Mật khẩu"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="glass-input w-full"
+                            required
+                        />
+                    </div>
+
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                        className="glass-btn w-full flex justify-center items-center"
                     >
-                        {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                        {loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
                     </button>
                 </form>
-                <p className="text-center mt-6 text-gray-600">
-                    Chưa có tài khoản? <Link to="/register" className="text-blue-600 font-semibold">Đăng ký</Link>
+
+                <p className="text-center mt-8 text-slate-500 text-sm">
+                    Chưa có tài khoản?{' '}
+                    <Link to="/register" className="text-indigo-600 font-bold hover:underline">
+                        Đăng ký miễn phí
+                    </Link>
                 </p>
             </div>
+
+            {/* Background Decorations */}
+            <div className="fixed top-1/4 left-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl -z-0 pointer-events-none"></div>
+            <div className="fixed bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl -z-0 pointer-events-none"></div>
         </div>
     );
 }

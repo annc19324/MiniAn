@@ -1,168 +1,204 @@
 // src/pages/Home.tsx
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getFeed, createPost, likePost, dailyCheckIn } from '../services/api';
+import { MessageCircle, Heart, Share2, Image as ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import api from '../services/api';
 
-// Component Feed khi đã đăng nhập
-function Feed() {
-  const [posts, setPosts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.get('/posts/feed')
-      .then(res => {
-        setPosts(res.data.posts);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return <div className="text-center py-10">Đang tải bài viết...</div>;
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">Bảng tin</h2>
-      {posts.length === 0 ? (
-        <p className="text-center text-gray-500 py-10">
-          Chưa có bài viết nào. Hãy là người đầu tiên đăng bài!
-        </p>
-      ) : (
-        posts.map(post => (
-          <div key={post.id} className="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-            <div className="p-4 flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-300 rounded-full border-2 border-dashed" />
-              <div>
-                <p className="font-semibold">{post.author.fullName || post.author.username}</p>
-                <p className="text-sm text-gray-500">Vừa xong</p>
-              </div>
-            </div>
-
-            <div className="px-4 pb-2">
-              <p className="text-gray-800">{post.content}</p>
-            </div>
-
-            {post.image && (
-              <img src={post.image} alt="post" className="w-full object-cover max-h-96" />
-            )}
-
-            <div className="p-4 flex justify-around border-t">
-              <button className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg">
-                <span>👍</span> Thích ({post._count.likes})
-              </button>
-              <button className="flex items-center gap-2 text-gray-600 hover:bg-gray-100 px-4 py-2 rounded-lg">
-                <span>💬</span> Bình luận ({post._count.comments})
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
+interface Post {
+  id: number;
+  content: string;
+  image?: string;
+  author: {
+    id: number;
+    username: string;
+    fullName: string;
+    avatar?: string;
+  };
+  likes: { userId: number }[];
+  comments: any[];
+  _count: { likes: number, comments: number };
+  createdAt: string;
 }
 
-// Trang Home chính
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, login } = useAuth();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [content, setContent] = useState('');
+  const [image, setImage] = useState<File | null>(null);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Nếu đang load auth
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-2xl font-light text-gray-600">Đang tải...</div>
-      </div>
-    );
-  }
+  const fetchPosts = async () => {
+    try {
+      const res = await getFeed();
+      setPosts(res.data.posts);
+    } catch (error) {
+      console.error('Lỗi tải bảng tin', error);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
 
-  // Nếu CHƯA đăng nhập → Landing Page đẹp
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500">
-        {/* Hero Section */}
-        <div className="container mx-auto px-4 py-16 text-center text-white">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 drop-shadow-lg">
-            MiniAn
-          </h1>
-          <p className="text-xl md:text-3xl mb-8 font-light opacity-90">
-            Kết nối bạn bè, chia sẻ khoảnh khắc vui vẻ
-          </p>
-          <p className="text-lg md:text-xl mb-12 max-w-3xl mx-auto opacity-80">
-            Đăng bài, chat nhóm, like, comment, nhận coin hàng ngày — tất cả trong một ứng dụng nhỏ mà mạnh mẽ!
-          </p>
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-            <Link
-              to="/register"
-              className="bg-white text-purple-600 px-10 py-4 rounded-full text-xl font-bold shadow-lg hover:bg-gray-100 transform hover:scale-105 transition"
-            >
-              Đăng ký miễn phí
-            </Link>
-            <Link
-              to="/login"
-              className="border-2 border-white px-10 py-4 rounded-full text-xl font-bold hover:bg-white hover:text-purple-600 transition"
-            >
-              Đăng nhập
-            </Link>
-          </div>
-        </div>
+  const handlePostSubmit = async () => {
+    if (!content.trim() && !image) return;
+    setSubmitting(true);
+    const formData = new FormData();
+    formData.append('content', content);
+    if (image) formData.append('image', image);
 
-        {/* Features */}
-        <div className="bg-white/10 backdrop-blur-md py-16 mt-20">
-          <div className="container mx-auto px-4 grid md:grid-cols-3 gap-10 text-center">
-            <div className="bg-white/20 p-8 rounded-2xl">
-              <div className="text-5xl mb-4">💬</div>
-              <h3 className="text-2xl font-bold mb-3">Chat realtime</h3>
-              <p>Chat cá nhân hoặc nhóm với bạn bè mọi lúc</p>
-            </div>
-            <div className="bg-white/20 p-8 rounded-2xl">
-              <div className="text-5xl mb-4">📸</div>
-              <h3 className="text-2xl font-bold mb-3">Đăng bài ảnh</h3>
-              <p>Chia sẻ khoảnh khắc đẹp với ảnh và caption</p>
-            </div>
-            <div className="bg-white/20 p-8 rounded-2xl">
-              <div className="text-5xl mb-4">🪙</div>
-              <h3 className="text-2xl font-bold mb-3">Nhận coin hàng ngày</h3>
-              <p>Điểm danh nhận coin, mua VIP, ẩn danh...</p>
-            </div>
-          </div>
-        </div>
+    try {
+      await createPost(formData);
+      setContent('');
+      setImage(null);
+      fetchPosts();
+    } catch (error) {
+      alert('Đăng bài thất bại');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-        <footer className="text-center py-10 text-white/70">
-          © 2025 MiniAn - Dự án mạng xã hội mini của bạn
-        </footer>
-      </div>
-    );
-  }
+  const handleLike = async (postId: number) => {
+    try {
+      await likePost(postId);
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          const isLiked = p.likes.some(l => l.userId === user?.id);
+          return {
+            ...p,
+            likes: isLiked ? p.likes.filter(l => l.userId !== user?.id) : [...p.likes, { userId: user!.id }],
+            _count: {
+              ...p._count,
+              likes: isLiked ? p._count.likes - 1 : p._count.likes + 1
+            }
+          };
+        }
+        return p;
+      }));
+    } catch (error) {
+      console.error('Lỗi like', error);
+    }
+  };
 
-  // Nếu ĐÃ đăng nhập → Hiển thị Feed
+  const handleCheckIn = async () => {
+    try {
+      const res = await dailyCheckIn();
+      alert(res.data.message);
+      // Cập nhật lại user info nếu cần
+      if (user) {
+        const newUser = { ...user, coins: user.coins + (res.data.coinsAdded || 0) };
+        const token = localStorage.getItem('token');
+        if (token) login(token, newUser); // Cập nhật context
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Lỗi điểm danh');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header đơn giản khi đăng nhập */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">MiniAn</h1>
-          <div className="flex items-center gap-4">
-            <span>Xin chào, <strong>{user.fullName || user.username}</strong>!</span>
+    <div className="space-y-6">
+      <div className="glass-card mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+            Xin chào, {user?.fullName}!
+          </h2>
+          <p className="text-slate-500 text-sm">Coins: <span className="font-bold text-yellow-500">{user?.coins}</span> 🪙</p>
+        </div>
+        <button
+          onClick={handleCheckIn}
+          className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-bold text-sm"
+        >
+          📅 Điểm danh
+        </button>
+      </div>
+
+      <div className="glass-card p-4 flex gap-4 items-start">
+        <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+        <div className="flex-1">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Bạn đang nghĩ gì?"
+            rows={2}
+            className="glass-input w-full rounded-xl resize-none"
+          />
+
+          {image && (
+            <div className="mt-2 relative inline-block">
+              <img src={URL.createObjectURL(image)} alt="Preview" className="h-20 w-auto rounded-lg border border-slate-200" />
+              <button onClick={() => setImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mt-3">
+            <label className="cursor-pointer text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium">
+              <ImageIcon size={18} />
+              <span>Ảnh</span>
+              <input type="file" hidden accept="image/*" onChange={(e) => setImage(e.target.files?.[0] || null)} />
+            </label>
             <button
-              onClick={() => {
-                localStorage.removeItem('token');
-                window.location.reload();
-              }}
-              className="text-sm text-gray-600 hover:text-red-600"
+              onClick={handlePostSubmit}
+              disabled={submitting || (!content && !image)}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-medium shadow-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              Đăng xuất
+              {submitting ? 'Đăng...' : 'Đăng bài'}
             </button>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Feed bài viết */}
-      <Feed />
+      {loadingPosts ? (
+        <div className="text-center py-10 text-slate-400">Đang tải bảng tin...</div>
+      ) : posts.length === 0 ? (
+        <div className="text-center py-10 text-slate-400">Chưa có bài viết nào, hãy là người đầu tiên!</div>
+      ) : (
+        posts.map((post) => {
+          const isLiked = post.likes.some(l => l.userId === user?.id);
+          return (
+            <div key={post.id} className="glass-card animate-slide-up">
+              <div className="flex items-center gap-3 mb-4">
+                <Link to={`/profile/${post.author.id}`}>
+                  <img src={post.author.avatar || `https://ui-avatars.com/api/?name=${post.author.username}`} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                </Link>
+                <div>
+                  <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 hover:underline">{post.author.fullName}</Link>
+                  <p className="text-xs text-slate-500">{new Date(post.createdAt).toLocaleDateString('vi-VN')} {new Date(post.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+
+              <p className="text-slate-700 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+
+              {post.image && (
+                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                  <img src={post.image} alt="Post content" className="w-full h-auto max-h-96 object-cover" />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <button
+                  onClick={() => handleLike(post.id)}
+                  className={`flex items-center gap-2 transition-colors ${isLiked ? 'text-red-500' : 'text-slate-500 hover:text-red-500'}`}
+                >
+                  <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
+                  <span>{post._count.likes}</span>
+                </button>
+                <button className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors">
+                  <MessageCircle size={20} />
+                  <span>{post._count.comments}</span>
+                </button>
+                <button className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors">
+                  <Share2 size={20} />
+                </button>
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
