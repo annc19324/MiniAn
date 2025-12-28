@@ -42,10 +42,13 @@ export const getFeed = async (req: AuthRequest, res: Response) => {
     try {
         const posts = await prisma.post.findMany({
             where: {
-                OR: [
-                    { authorId: userId },
-                    { author: { followers: { some: { followerId: userId } } } },
-                ],
+                author: {
+                    following: {
+                        some: {
+                            followerId: userId
+                        }
+                    }
+                }
             },
             include: {
                 author: {
