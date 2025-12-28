@@ -22,6 +22,7 @@ interface UserProfile {
         posts: number;
     };
     isFollowing: boolean;
+    isFriend?: boolean;
 }
 
 interface Post {
@@ -238,8 +239,19 @@ export default function Profile() {
                                             : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30'
                                             }`}
                                     >
-                                        {profile.isFollowing ? <UserCheck size={18} /> : <UserPlus size={18} />}
-                                        {profile.isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                                        {profile.isFriend ? (
+                                            <>
+                                                <UserCheck size={18} /> Bạn bè
+                                            </>
+                                        ) : profile.isFollowing ? (
+                                            <>
+                                                <UserCheck size={18} /> Đang theo dõi
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus size={18} /> Theo dõi
+                                            </>
+                                        )}
                                     </button>
                                 </>
                             )}

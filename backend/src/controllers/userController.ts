@@ -24,8 +24,8 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // Check isFollowing
-        const follow = await prisma.follow.findUnique({
+        // Check isFollowing (Me -> Them)
+        const following = await prisma.follow.findUnique({
             where: {
                 followerId_followingId: {
                     followerId: currentUserId,
@@ -34,7 +34,19 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        res.json({ ...user, isFollowing: !!follow });
+        // Check isFollowedBy (Them -> Me)
+        const follower = await prisma.follow.findUnique({
+            where: {
+                followerId_followingId: {
+                    followerId: Number(id),
+                    followingId: currentUserId
+                }
+            }
+        });
+
+        const isFriend = !!following && !!follower;
+
+        res.json({ ...user, isFollowing: !!following, isFriend });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
