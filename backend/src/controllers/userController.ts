@@ -194,31 +194,73 @@ export const followUser = async (req: AuthRequest, res: Response) => {
 };
 
 // Cập nhật Profile (User tự cập nhật)
+// Cập nhật Profile (User tự cập nhật)
+// Cập nhật Profile (User tự cập nhật)
 export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
-    const { fullName, bio } = req.body;
+    const { fullName, bio, username, email } = req.body;
     const file = req.file;
 
     try {
+        console.log("Update Body:", req.body);
+
+        // Validation: Unique username
+        if (username) {
+            const userWithUsername = await prisma.user.findFirst({
+                where: {
+                    username: { equals: username, mode: 'insensitive' },
+                    NOT: { id: userId }
+                }
+            });
+            if (userWithUsername) {
+                return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
+            }
+        }
+
+        // Validation: Unique email
+        if (email) {
+            const userWithEmail = await prisma.user.findFirst({
+                where: {
+                    email: { equals: email, mode: 'insensitive' },
+                    NOT: { id: userId }
+                }
+            });
+            if (userWithEmail) {
+                return res.status(400).json({ message: 'Email đã tồn tại' });
+            }
+        }
+
         let imageUrl: string | undefined;
         if (file) {
-            imageUrl = await uploadImage(file);
+            try {
+                console.log('Starting avatar upload...', file.originalname);
+                imageUrl = await uploadImage(file);
+                console.log('Avatar uploaded:', imageUrl);
+            } catch (uploadError) {
+                console.error('Upload Error:', uploadError);
+                return res.status(500).json({ message: 'Lỗi tải lên ảnh đại diện', error: String(uploadError) });
+            }
         }
 
         const dataToUpdate: any = {};
         if (fullName) dataToUpdate.fullName = fullName;
         if (bio !== undefined) dataToUpdate.bio = bio;
+        if (username) dataToUpdate.username = username;
+        if (email) dataToUpdate.email = email;
         if (imageUrl) dataToUpdate.avatar = imageUrl;
+
+        console.log("Final dataToUpdate:", dataToUpdate);
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: dataToUpdate,
-            select: { id: true, username: true, fullName: true, avatar: true, bio: true, coins: true }
+            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true }
         });
 
         res.json({ message: 'Cập nhật thành công', user: updatedUser });
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi cập nhật profile' });
+        console.error("Lỗi cập nhật profile:", error);
+        res.status(500).json({ message: 'Lỗi cập nhật profile', error: String(error) });
     }
 };
 

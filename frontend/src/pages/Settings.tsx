@@ -6,7 +6,7 @@ import { User, Lock, Mail, Save } from 'lucide-react';
 import api from '../services/api';
 
 export default function Settings() {
-    const { user, login } = useAuth(); // We might need a way to refresh user logic or just update locally
+    const { user, login, updateUser } = useAuth(); // We might need a way to refresh user logic or just update locally
     // For password change specifically
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
@@ -27,12 +27,15 @@ export default function Settings() {
         try {
             const data = new FormData();
             data.append('fullName', formData.fullName);
+            data.append('username', formData.username);
+            data.append('email', formData.email);
             // bio if we add it
 
             const res = await updateUserProfile(data);
+            updateUser(res.data.user);
             alert('Cập nhật thông tin thành công');
-        } catch (error) {
-            alert('Lỗi cập nhật');
+        } catch (error: any) {
+            alert(error.response?.data?.message || 'Lỗi cập nhật');
         } finally {
             setLoading(false);
         }
@@ -71,8 +74,8 @@ export default function Settings() {
                             <input
                                 type="text"
                                 value={formData.username}
-                                disabled
-                                className="glass-input w-full opacity-60 cursor-not-allowed"
+                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                className="glass-input w-full"
                             />
                         </div>
                         <div>
@@ -80,8 +83,8 @@ export default function Settings() {
                             <input
                                 type="email"
                                 value={formData.email}
-                                disabled // Enable if backend supports
-                                className="glass-input w-full opacity-60 cursor-not-allowed"
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                className="glass-input w-full"
                             />
                         </div>
                     </div>
