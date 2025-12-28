@@ -6,7 +6,7 @@ import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUser
 const router = express.Router();
 
 // Public / Protected Routes
-router.get('/profile/:id', getUserProfile);
+router.get('/profile/:id', protect, getUserProfile);
 router.post('/check-in', protect, dailyCheckIn);
 router.get('/search', protect, searchUsers);
 router.post('/follow/:id', protect, followUser);
