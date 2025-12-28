@@ -1,7 +1,7 @@
 // src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProfile, getUserPosts, followUser } from '../services/api';
+import { getProfile, getUserPosts, followUser, updateUserProfile } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Link as LinkIcon, Calendar, Heart, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -35,6 +35,102 @@ interface Post {
     };
 }
 
+// EditProfileModal Component
+function EditProfileModal({
+    user,
+    onClose,
+    onSuccess
+}: {
+    user: UserProfile;
+    onClose: () => void;
+    onSuccess: (updatedUser: any) => void;
+}) {
+    const [fullName, setFullName] = useState(user.fullName);
+    const [bio, setBio] = useState(user.bio || '');
+    const [avatar, setAvatar] = useState<File | null>(null);
+    const [preview, setPreview] = useState(user.avatar);
+    const [loading, setLoading] = useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setAvatar(file);
+            setPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            formData.append('fullName', fullName);
+            formData.append('bio', bio);
+            if (avatar) {
+                formData.append('avatar', avatar);
+            }
+
+            // @ts-ignore
+            const res = await updateUserProfile(formData);
+            onSuccess(res.data.user);
+            onClose();
+        } catch (error) {
+            alert('Lỗi cập nhật');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-scale-in">
+                <h2 className="text-xl font-bold mb-4">Chỉnh sửa hồ sơ</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Avatar Upload */}
+                    <div className="flex justify-center mb-4">
+                        <div className="relative group cursor-pointer w-24 h-24">
+                            <img
+                                src={preview || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                                alt="Avatar Preview"
+                                className="w-full h-full rounded-full object-cover border-4 border-slate-100 shadow-sm"
+                            />
+                            <label className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white font-bold text-xs">
+                                Đổi ảnh
+                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Tên hiển thị</label>
+                        <input
+                            type="text"
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Tiểu sử</label>
+                        <textarea
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            rows={3}
+                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 mt-6">
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium">Hủy</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50">
+                            {loading ? 'Lưu...' : 'Lưu thay đổi'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
 export default function Profile() {
     const { id } = useParams();
     const { user: currentUser } = useAuth();
@@ -43,6 +139,7 @@ export default function Profile() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showEdit, setShowEdit] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -100,7 +197,10 @@ export default function Profile() {
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
                         {isMe ? (
-                            <button className="bg-black/20 hover:bg-black/30 text-white px-4 py-2 rounded-lg backdrop-blur-md font-medium transition-all">
+                            <button
+                                onClick={() => setShowEdit(true)}
+                                className="bg-black/20 hover:bg-black/30 text-white px-4 py-2 rounded-lg backdrop-blur-md font-medium transition-all"
+                            >
                                 Chỉnh sửa trang cá nhân
                             </button>
                         ) : (
@@ -134,8 +234,8 @@ export default function Profile() {
                                     <button
                                         onClick={handleFollow}
                                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg ${profile.isFollowing
-                                                ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                                                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30'
+                                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30'
                                             }`}
                                     >
                                         {profile.isFollowing ? <UserCheck size={18} /> : <UserPlus size={18} />}
@@ -209,6 +309,15 @@ export default function Profile() {
                     ))
                 )}
             </div>
+
+            {/* Edit Modal */}
+            {showEdit && profile && (
+                <EditProfileModal
+                    user={profile}
+                    onClose={() => setShowEdit(false)}
+                    onSuccess={(updatedUser) => setProfile(prev => prev ? { ...prev, ...updatedUser } : null)}
+                />
+            )}
         </div>
     );
 }

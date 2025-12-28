@@ -1,12 +1,84 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { Home, MessageCircle, User, PlusSquare, Bell, LogOut, Search } from 'lucide-react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Home, MessageCircle, User, PlusSquare, Bell, LogOut, Search, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+
+import { useState, useEffect } from 'react';
+import { getLeaderboard } from '../../services/api';
+import { Award } from 'lucide-react';
+import { io } from 'socket.io-client';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function Layout() {
     const { logout, user } = useAuth();
+    const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const res = await getLeaderboard();
+                setLeaderboard(res.data);
+            } catch (error) {
+                console.error("Lỗi lấy BXH");
+            }
+        };
+        fetchLeaderboard();
+    }, []);
+
+    // Global Socket for Notifications
+    useEffect(() => {
+        if (!user) return;
+        const socket = io(import.meta.env.VITE_SOCKET_URL);
+
+        socket.emit('join_room', user.id);
+
+        socket.on('receive_message', (data) => {
+            if (window.location.pathname !== '/chat') {
+                toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
+                    icon: '📩',
+                    style: { borderRadius: '10px', background: '#333', color: '#fff' },
+                });
+            }
+        });
+
+        socket.on('new_notification', (data) => {
+            toast(data.content, { icon: '🔔' });
+        });
+
+        return () => {
+            socket.disconnect();
+        }
+    }, [user]);
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+            <Toaster position="top-center" reverseOrder={false} />
+            {/* Leaderboard Sidebar (Left Side) */}
+            <aside className="hidden lg:flex w-64 flex-col bg-white/60 backdrop-blur-xl border-r border-white/50 min-h-screen fixed left-0 top-0 z-40 p-6 overscroll-y-auto">
+                <div className="flex items-center gap-2 mb-6 text-yellow-600">
+                    <Award size={24} />
+                    <h2 className="text-xl font-bold">Bảng Xếp Hạng</h2>
+                </div>
+
+                <div className="space-y-4">
+                    {leaderboard.map((u, index) => (
+                        <NavLink key={u.id} to={`/profile/${u.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/80 transition-all border border-transparent hover:border-indigo-50 group">
+                            <div className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-xs ${index === 0 ? 'bg-yellow-400 text-white' :
+                                index === 1 ? 'bg-slate-300 text-white' :
+                                    index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                {index + 1}
+                            </div>
+                            <img src={u.avatar || `https://ui-avatars.com/api/?name=${u.username}&background=random`} alt="Avatar" className="w-8 h-8 rounded-full border border-white shadow-sm" />
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-slate-800 text-sm truncate group-hover:text-indigo-600 transition-colors">{u.fullName}</p>
+                                <p className="text-xs text-yellow-600 font-bold">{u.coins} xu</p>
+                            </div>
+                        </NavLink>
+                    ))}
+                </div>
+            </aside>
+
             {/* Desktop Sidebar (Right Side) */}
             <aside className="hidden md:flex w-72 flex-col bg-white/80 backdrop-blur-xl border-l border-white/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)]">
                 <div className="p-8">
@@ -19,9 +91,10 @@ export default function Layout() {
                 <nav className="flex-1 px-6 space-y-3">
                     <NavItem to="/" icon={<Home size={22} />} label="Trang chủ" />
                     <NavItem to="/search" icon={<Search size={22} />} label="Tìm kiếm" />
-                    <NavItem to="/chat" icon={<MessageCircle size={22} />} label="Tin nhắn" count={3} />
+                    <NavItem to="/chat" icon={<MessageCircle size={22} />} label="Tin nhắn" />
                     <NavItem to="/notifications" icon={<Bell size={22} />} label="Thông báo" />
                     <NavItem to={`/profile/${user?.id}`} icon={<User size={22} />} label="Hồ sơ" />
+                    <NavItem to="/settings" icon={<Settings size={22} />} label="Cài đặt" />
 
                     <div className="pt-6 pb-2">
                         <NavLink to="/create" className="flex items-center justify-center space-x-2 w-full bg-indigo-600 text-white p-4 rounded-2xl shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all">
@@ -50,15 +123,20 @@ export default function Layout() {
             <header className="md:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-indigo-50 px-4 py-3 flex justify-between items-center shadow-sm">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">MiniAn</h1>
                 <div className="flex items-center gap-3">
-                    <button className="p-2 text-slate-600 hover:bg-slate-100 rounded-full relative">
-                        <Bell size={24} />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    <button
+                        onClick={() => navigate('/chat')}
+                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-full relative"
+                    >
+                        <MessageCircle size={24} />
                     </button>
+                    <NavLink to="/settings" className="p-2 text-slate-600 hover:bg-slate-100 rounded-full">
+                        <Settings size={24} />
+                    </NavLink>
                 </div>
             </header>
 
-            {/* Main Content (Shifted Left because Sidebar is Right) */}
-            <main className="flex-1 md:mr-72 pb-24 md:pb-10 px-4 py-6 max-w-5xl mx-auto w-full">
+            {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
+            <main className="flex-1 md:mr-72 lg:ml-64 pb-24 md:pb-10 px-4 py-6 max-w-5xl mx-auto w-full">
                 <Outlet />
             </main>
 
