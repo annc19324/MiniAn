@@ -62,25 +62,27 @@ app.get('/test-db', async (req, res) => {
 
 // Socket.io Setup
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
     cors: {
         origin: "*", // Cập nhật domain frontend khi deploy
         methods: ["GET", "POST"]
     }
 });
+app.set('io', io); // Make io accessible in controllers via req.app.get('io')
 
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
     socket.on("join_room", (roomId) => {
-        socket.join(roomId);
-        console.log(`User ${socket.id} joined room ${roomId}`);
+        socket.join(String(roomId));
+        console.log(`User ${socket.id} joined room ${String(roomId)}`);
     });
 
     socket.on("send_message", (data) => {
         // data: { roomId, message, senderId ... }
         // Lưu vào DB ở đây hoặc gọi controller
-        socket.to(data.roomId).emit("receive_message", data);
+        console.log(`Broadcasting message to room ${data.roomId}`);
+        socket.to(String(data.roomId)).emit("receive_message", data);
     });
 
     socket.on("disconnect", () => {

@@ -1,10 +1,10 @@
 // src/pages/Chat.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getConversations, getMessages, sendMessage, startConversation } from '../services/api';
+import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead } from '../services/api';
 import { io, Socket } from 'socket.io-client';
 import { Send, User as UserIcon, MoreVertical, Phone, MessageCircle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useLocation } from 'react-router-dom';
 
@@ -18,6 +18,7 @@ interface Message {
         avatar?: string;
     };
     createdAt: string;
+    isRead?: boolean;
 }
 
 interface Conversation {
@@ -29,6 +30,7 @@ interface Conversation {
         createdAt: string;
     };
     otherMemberId?: number;
+    unreadCount?: number;
 }
 
 export default function Chat() {
@@ -94,6 +96,14 @@ export default function Chat() {
                 const res = await getMessages(activeRoomId);
                 setMessages(res.data);
                 scrollToBottom();
+
+                // Reset unread count locally
+                setConversations(prev => prev.map(c =>
+                    c.id === activeRoomId ? { ...c, unreadCount: 0 } : c
+                ));
+
+                // Mark as read when opening room
+                await markMessagesRead(activeRoomId);
             } catch (error) {
                 console.error("Lỗi lấy tin nhắn", error);
             }
@@ -108,16 +118,62 @@ export default function Chat() {
             if (Number(data.roomId) === activeRoomId) {
                 setMessages((prev) => [...prev, data.messageData]);
                 scrollToBottom();
+
+                // Update conversation list last message without incrementing unread
+                setConversations(prev => prev.map(c =>
+                    c.id === activeRoomId
+                        ? { ...c, lastMessage: { content: data.messageData.content, createdAt: data.messageData.createdAt } }
+                        : c
+                ));
+
+                // Mark as read immediately if window is focused (simplified: just call it)
+                markMessagesRead(activeRoomId);
+            } else {
+                // Sent to another room, update unread count
+                setConversations(prev => prev.map(c => {
+                    if (c.id === Number(data.roomId)) {
+                        return {
+                            ...c,
+                            unreadCount: (c.unreadCount || 0) + 1,
+                            lastMessage: { content: data.messageData.content, createdAt: data.messageData.createdAt }
+                        };
+                    }
+                    return c;
+                }));
             }
-            // Update conversation list last message logic could go here
+        };
+
+        const handleMessagesRead = (data: any) => {
+            console.log("RX: messages_read event", data);
+
+            // If I am the reader, ignore (I read their messages, doesn't mean they read mine)
+            if (data.readerId === user?.id) return;
+
+            if (Number(data.roomId) === activeRoomId) {
+                // Sent messages read by other
+                setMessages((prev) => prev.map(msg => {
+                    if (msg.senderId === user?.id) return { ...msg, isRead: true };
+                    return msg;
+                }));
+            }
         };
 
         socket.on('receive_message', handleReceiveMessage);
+        socket.on('messages_read', handleMessagesRead);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
+            socket.off('messages_read', handleMessagesRead);
         };
     }, [activeRoomId, socket]);
+
+    // Join all rooms to listen for notifications
+    useEffect(() => {
+        if (!socket || conversations.length === 0) return;
+        conversations.forEach(c => {
+            socket.emit('join_room', c.id);
+        });
+    }, [conversations, socket]);
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -149,7 +205,8 @@ export default function Chat() {
             scrollToBottom();
 
             // Update conversation list
-            setConversations(conversations.map(c =>
+            // Update conversation list
+            setConversations(prev => prev.map(c =>
                 c.id === activeRoomId
                     ? { ...c, lastMessage: { content: tempContent, createdAt: new Date().toISOString() } }
                     : c
@@ -160,6 +217,8 @@ export default function Chat() {
             setNewMessage(tempContent); // Revert if failed
         }
     };
+
+
 
     const activeConversation = conversations.find(c => c.id === activeRoomId);
 
@@ -183,21 +242,28 @@ export default function Chat() {
                                 className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-white/50 transition-colors ${activeRoomId === c.id ? 'bg-indigo-50/80' : ''}`}
                             >
                                 <img
-                                    src={c.avatar || `https://ui-avatars.com/api/?name=${c.name}&background=random`}
+                                    src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random&color=fff&length=1`}
                                     className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
                                     alt="Avatar"
                                 />
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-bold text-slate-800 truncate">{c.name}</h4>
                                     <p className={`text-sm truncate ${activeRoomId === c.id ? 'text-indigo-600' : 'text-slate-500'}`}>
-                                        {c.lastMessage?.content || <span className="italic text-slate-400">Bắt đầu trò chuyện</span>}
+                                        {c.unreadCount ? <span className="font-bold text-slate-900">{c.lastMessage?.content}</span> : (c.lastMessage?.content || <span className="italic text-slate-400">Bắt đầu trò chuyện</span>)}
                                     </p>
                                 </div>
-                                {c.lastMessage && (
-                                    <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                                        {formatDistanceToNow(new Date(c.lastMessage.createdAt), { locale: vi, addSuffix: false })}
-                                    </span>
-                                )}
+                                <div className="flex flex-col items-end">
+                                    {c.lastMessage && (
+                                        <span className="text-[10px] text-slate-400 whitespace-nowrap mb-1">
+                                            {formatDistanceToNow(new Date(c.lastMessage.createdAt), { locale: vi, addSuffix: false })}
+                                        </span>
+                                    )}
+                                    {!!c.unreadCount && c.unreadCount > 0 && (
+                                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                                            {c.unreadCount}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ))
                     )}
@@ -215,7 +281,7 @@ export default function Chat() {
                                     ←
                                 </button>
                                 <img
-                                    src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${activeConversation?.name}&background=random`}
+                                    src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConversation?.name || '')}&background=random&color=fff&length=1`}
                                     className="w-10 h-10 rounded-full border border-white shadow-sm object-cover"
                                     alt="Avatar"
                                 />
@@ -231,31 +297,47 @@ export default function Chat() {
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-6">
                             {messages.map((msg, idx) => {
                                 const isMe = msg.senderId === user?.id;
                                 const showAvatar = !isMe && (idx === 0 || messages[idx - 1].senderId !== msg.senderId);
 
                                 return (
-                                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}>
+                                    <div
+                                        key={msg.id}
+                                        className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2 relative`}
+                                    >
                                         {!isMe && (
                                             <div className="w-8 flex-shrink-0">
                                                 {showAvatar && (
                                                     <img
-                                                        src={msg.sender.avatar || `https://ui-avatars.com/api/?name=${msg.sender.username}`}
+                                                        src={msg.sender.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender.username)}&background=random&color=fff&length=1`}
                                                         className="w-8 h-8 rounded-full shadow-sm"
                                                         alt="Sender"
                                                     />
                                                 )}
                                             </div>
                                         )}
-                                        <div
-                                            className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm ${isMe
-                                                ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
-                                                : 'bg-white text-slate-800 rounded-bl-none'
-                                                }`}
-                                        >
-                                            {msg.content}
+
+                                        <div className={`relative max-w-[70%]`}>
+                                            {/* Timestamp Tooltip/Display */}
+                                            <div className={`text-[10px] text-slate-400 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                                {format(new Date(msg.createdAt), "HH:mm EE dd/MM/yyyy", { locale: vi })}
+                                            </div>
+
+                                            <div
+                                                className={`px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative ${isMe
+                                                    ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
+                                                    : 'bg-white text-slate-800 rounded-bl-none'
+                                                    }`}
+                                            >
+                                                {msg.content}
+                                            </div>
+                                            {isMe && (
+                                                <div className="text-[10px] text-slate-400 text-right mt-1">
+                                                    {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -293,5 +375,3 @@ export default function Chat() {
         </div>
     );
 }
-
-

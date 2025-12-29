@@ -29,18 +29,38 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
             }
         });
 
+        console.log(`Found ${conversations.length} conversations for user ${userId}`);
+
         // Format lại data để dễ hiển thị ở frontend & Sort by last message
-        const formattedConversations = conversations.map(room => {
+        const formattedConversations = await Promise.all(conversations.map(async (room) => {
             // Tìm người kia trong box chat (giả sử chat 1-1)
             const otherMember = room.users.find(u => u.userId !== userId)?.user;
+
+            // Count unread messages
+            let unreadCount = 0;
+            try {
+                unreadCount = await prisma.message.count({
+                    where: {
+                        roomId: room.id,
+                        senderId: { not: userId },
+                        isRead: false
+                    }
+                });
+            } catch (err) {
+                console.error(`Error counting unread for room ${room.id}:`, err);
+            }
+
             return {
                 id: room.id,
                 name: otherMember?.fullName || room.name || 'Chat Group',
                 avatar: otherMember?.avatar,
                 lastMessage: room.messages[0],
-                otherMemberId: otherMember?.id
+                otherMemberId: otherMember?.id,
+                unreadCount
             };
-        }).sort((a, b) => {
+        }));
+
+        formattedConversations.sort((a, b) => {
             const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
             const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
             return timeB - timeA;
@@ -48,7 +68,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 
         res.json(formattedConversations);
     } catch (error) {
-        console.error(error);
+        console.error("Error in getConversations:", error);
         res.status(500).json({ message: 'Lỗi lấy danh sách chat' });
     }
 };
@@ -68,8 +88,12 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: 'asc' }
         });
 
+        // Debug logging
+        // console.log("Fetched messages sample:", messages.slice(-1)); 
+
         res.json(messages);
     } catch (error) {
+        console.error("Error fetching messages:", error);
         res.status(500).json({ message: 'Lỗi lấy tin nhắn' });
     }
 };
@@ -136,10 +160,58 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        // Không update updatedAt của Room vì DB không có field đó
+        // Notify Receiver for global unread count
+        const room = await prisma.room.findUnique({
+            where: { id: Number(roomId) },
+            include: { users: true }
+        });
+
+        if (room) {
+            const receiverFn = room.users.find(u => u.userId !== userId);
+            if (receiverFn) {
+                const io = req.app.get('io');
+                io.to(receiverFn.userId.toString()).emit('new_message_alert', { roomId: Number(roomId) });
+            }
+        }
 
         res.status(201).json(message);
     } catch (error) {
+        console.error("Send message error:", error);
         res.status(500).json({ message: 'Lỗi gửi tin nhắn' });
+    }
+};
+
+// Đánh dấu đã đọc tin nhắn trong Room
+export const markAsRead = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    const { roomId } = req.params;
+
+    try {
+        // Update tất cả tin nhắn trong room mà người gửi KHÔNG phải là user hiện tại
+        // và chưa được đọc
+        await prisma.message.updateMany({
+            where: {
+                roomId: Number(roomId),
+                senderId: { not: userId },
+                isRead: false
+            },
+            data: {
+                isRead: true
+            }
+        });
+
+        // Emit socket event
+        const io = req.app.get('io');
+        const roomStr = String(roomId);
+        console.log(`Emitting messages_read to room: ${roomStr} for reader: ${userId}`);
+        io.to(roomStr).emit('messages_read', { roomId: Number(roomId), readerId: userId });
+
+        // Notify the reader to update their global unread count (e.g. clear badge)
+        io.to(userId.toString()).emit('refresh_unread');
+
+        res.json({ success: true, message: 'Đã đánh dấu đã xem' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi cập nhật trạng thái đã xem' });
     }
 };

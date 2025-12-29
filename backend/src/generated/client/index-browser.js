@@ -192,7 +192,8 @@ exports.Prisma.MessageScalarFieldEnum = {
   roomId: 'roomId',
   senderId: 'senderId',
   receiverId: 'receiverId',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  isRead: 'isRead'
 };
 
 exports.Prisma.FollowScalarFieldEnum = {

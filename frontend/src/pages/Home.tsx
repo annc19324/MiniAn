@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getFeed, createPost, likePost, dailyCheckIn, commentPost } from '../services/api';
 import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
 interface Post {
@@ -260,6 +262,9 @@ export default function Home() {
                           </Link>
                           <p className="text-sm text-slate-700">{comment.content}</p>
                         </div>
+                        <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
+                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
+                        </span>
                       </div>
                     ))}
                   </div>

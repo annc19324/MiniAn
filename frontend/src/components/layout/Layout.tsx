@@ -7,10 +7,12 @@ import { getLeaderboard } from '../../services/api';
 import { Award } from 'lucide-react';
 import { io } from 'socket.io-client';
 import toast, { Toaster } from 'react-hot-toast';
+import { getConversations } from '../../services/api';
 
 export default function Layout() {
     const { logout, user } = useAuth();
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -45,10 +47,35 @@ export default function Layout() {
             toast(data.content, { icon: '🔔' });
         });
 
+        // Listen for new message alerts to update global count
+        socket.on('new_message_alert', () => {
+            setUnreadMessagesCount(prev => prev + 1);
+        });
+
+        // Listen for refresh triggers (e.g. from markAsRead)
+        socket.on('refresh_unread', () => {
+            fetchUnread();
+        });
+
         return () => {
             socket.disconnect();
         }
     }, [user]);
+
+    // Fetch unread count
+    const fetchUnread = async () => {
+        try {
+            const res = await getConversations();
+            const total = res.data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
+            setUnreadMessagesCount(total);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    useEffect(() => {
+        if (user) fetchUnread();
+    }, [user, window.location.pathname]); // Refresh when navigating too
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -105,7 +132,7 @@ export default function Layout() {
                 <nav className="flex-1 px-4 space-y-2 pb-6">
                     <NavItem to="/" icon={<Home size={20} />} label="Trang chủ" />
                     <NavItem to="/search" icon={<Search size={20} />} label="Tìm kiếm" />
-                    <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" />
+                    <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" count={unreadMessagesCount > 0 ? unreadMessagesCount : undefined} />
                     <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" />
                     <NavItem to={`/profile/${user?.id}`} icon={<User size={20} />} label="Hồ sơ" />
                     <NavItem to="/settings" icon={<Settings size={20} />} label="Cài đặt" />

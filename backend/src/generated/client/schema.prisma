@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider        = "prisma-client-js"
   output          = "../src/generated/client"
@@ -8,65 +6,60 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url đã chuyển sang prisma.config.ts
 }
 
 model User {
-  id           Int       @id @default(autoincrement())
-  username     String    @unique
-  email        String    @unique
-  password     String
-  fullName     String?
-  avatar       String?   @default("default-avatar.png")
-  bio          String?   @default("")
-  coins        Int       @default(0)
-  isVip        Boolean   @default(false)
-  vipExpiresAt DateTime?
-  role         Role      @default(USER)
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  // Relations
-  posts            Post[]
+  id               Int               @id @default(autoincrement())
+  username         String            @unique
+  email            String            @unique
+  password         String
+  fullName         String?
+  avatar           String?           @default("default-avatar.png")
+  bio              String?           @default("")
+  coins            Int               @default(0)
+  isVip            Boolean           @default(false)
+  vipExpiresAt     DateTime?
+  role             Role              @default(USER)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  coinTransactions CoinTransaction[]
   comments         Comment[]
-  likes            Like[]
-  notifications    Notification[] // Thông báo nhận được
-  sentMessages     Message[]         @relation("SentMessages")
-  receivedMessages Message[]         @relation("ReceivedMessages")
-  rooms            UserRoom[]
   followers        Follow[]          @relation("Following")
   following        Follow[]          @relation("Followers")
-  coinTransactions CoinTransaction[] // Lịch sử giao dịch coin
+  likes            Like[]
+  receivedMessages Message[]         @relation("ReceivedMessages")
+  sentMessages     Message[]         @relation("SentMessages")
+  notifications    Notification[]
+  posts            Post[]
+  rooms            UserRoom[]
 
   @@map("users")
 }
 
 model Post {
-  id        Int      @id @default(autoincrement())
-  content   String
-  image     String?
-  authorId  Int
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id            Int            @id @default(autoincrement())
+  content       String
+  image         String?
+  authorId      Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   comments      Comment[]
   likes         Like[]
   notifications Notification[] @relation("PostNotifications")
+  author        User           @relation(fields: [authorId], references: [id])
 
   @@map("posts")
 }
 
 model Comment {
-  id        Int      @id @default(autoincrement())
-  content   String
-  postId    Int
-  post      Post     @relation(fields: [postId], references: [id])
-  authorId  Int
-  author    User     @relation(fields: [authorId], references: [id])
-  createdAt DateTime @default(now())
-
+  id            Int            @id @default(autoincrement())
+  content       String
+  postId        Int
+  authorId      Int
+  createdAt     DateTime       @default(now())
+  author        User           @relation(fields: [authorId], references: [id])
+  post          Post           @relation(fields: [postId], references: [id])
   notifications Notification[] @relation("CommentNotifications")
 
   @@map("comments")
@@ -75,10 +68,10 @@ model Comment {
 model Like {
   id        Int      @id @default(autoincrement())
   postId    Int
-  post      Post     @relation(fields: [postId], references: [id])
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([postId, userId])
   @@map("likes")
@@ -89,26 +82,25 @@ model Notification {
   type      String
   content   String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   senderId  Int?
   postId    Int?
-  post      Post?    @relation("PostNotifications", fields: [postId], references: [id])
   commentId Int?
-  comment   Comment? @relation("CommentNotifications", fields: [commentId], references: [id])
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+  comment   Comment? @relation("CommentNotifications", fields: [commentId], references: [id])
+  post      Post?    @relation("PostNotifications", fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("notifications")
 }
 
 model Room {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String?
-  isGroup   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  users    UserRoom[]
-  messages Message[]
+  isGroup   Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  messages  Message[]
+  users     UserRoom[]
 
   @@map("rooms")
 }
@@ -117,9 +109,8 @@ model UserRoom {
   userId   Int
   roomId   Int
   joinedAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-  room Room @relation(fields: [roomId], references: [id])
+  room     Room     @relation(fields: [roomId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, roomId])
   @@map("user_rooms")
@@ -129,12 +120,13 @@ model Message {
   id         Int      @id @default(autoincrement())
   content    String
   roomId     Int
-  room       Room     @relation(fields: [roomId], references: [id])
   senderId   Int
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
   receiverId Int?
-  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
   createdAt  DateTime @default(now())
+  isRead     Boolean  @default(false)
+  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  room       Room     @relation(fields: [roomId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
 
   @@map("messages")
 }
@@ -142,9 +134,8 @@ model Message {
 model Follow {
   followerId  Int
   followingId Int
-
-  follower  User @relation("Following", fields: [followerId], references: [id])
-  following User @relation("Followers", fields: [followingId], references: [id])
+  follower    User @relation("Following", fields: [followerId], references: [id])
+  following   User @relation("Followers", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -153,10 +144,10 @@ model Follow {
 model CoinTransaction {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   amount    Int
   reason    String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("coin_transactions")
 }
