@@ -201,7 +201,7 @@ export const followUser = async (req: AuthRequest, res: Response) => {
             });
 
             // Notification
-            await prisma.notification.create({
+            const notif = await prisma.notification.create({
                 data: {
                     type: 'follow',
                     content: `${req.user?.username} đã bắt đầu theo dõi bạn`,
@@ -209,6 +209,10 @@ export const followUser = async (req: AuthRequest, res: Response) => {
                     senderId: userId
                 }
             });
+
+            // Socket Emit
+            const { io } = require('../server');
+            io.to(targetId.toString()).emit('new_notification', notif);
 
             res.json({ message: 'Followed', isFollowing: true });
         }

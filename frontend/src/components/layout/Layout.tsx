@@ -13,6 +13,7 @@ export default function Layout() {
     const { logout, user } = useAuth();
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+    const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -45,6 +46,7 @@ export default function Layout() {
 
         socket.on('new_notification', (data) => {
             toast(data.content, { icon: '🔔' });
+            setUnreadNotificationsCount(prev => prev + 1);
         });
 
         // Listen for new message alerts to update global count
@@ -65,9 +67,15 @@ export default function Layout() {
     // Fetch unread count
     const fetchUnread = async () => {
         try {
-            const res = await getConversations();
-            const total = res.data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
-            setUnreadMessagesCount(total);
+            // Messages
+            const resMsg = await getConversations();
+            const totalMsg = resMsg.data.reduce((acc: number, c: any) => acc + (c.unreadCount || 0), 0);
+            setUnreadMessagesCount(totalMsg);
+
+            // Notifications
+            const { getUnreadNotificationsCount } = await import('../../services/api');
+            const resNotif = await getUnreadNotificationsCount();
+            setUnreadNotificationsCount(resNotif.data.count);
         } catch (error) {
             console.error(error);
         }
@@ -133,7 +141,7 @@ export default function Layout() {
                     <NavItem to="/" icon={<Home size={20} />} label="Trang chủ" />
                     <NavItem to="/search" icon={<Search size={20} />} label="Tìm kiếm" />
                     <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" count={unreadMessagesCount > 0 ? unreadMessagesCount : undefined} />
-                    <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" />
+                    <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
                     <NavItem to={`/profile/${user?.id}`} icon={<User size={20} />} label="Hồ sơ" />
                     <NavItem to="/settings" icon={<Settings size={20} />} label="Cài đặt" />
 
@@ -177,7 +185,7 @@ export default function Layout() {
                 <NavLink to="/create" className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-3.5 rounded-2xl -mt-8 shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all border-4 border-slate-50">
                     <PlusSquare size={26} />
                 </NavLink>
-                <MobileNavItem to="/notifications" icon={<Bell size={24} />} />
+                <MobileNavItem to="/notifications" icon={<Bell size={24} />} count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
                 <MobileNavItem to={`/profile/${user?.id}`} icon={<User size={24} />} />
             </nav>
         </div>
