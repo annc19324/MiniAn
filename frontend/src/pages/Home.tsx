@@ -1,8 +1,8 @@
 // src/pages/Home.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getFeed, createPost, likePost, dailyCheckIn } from '../services/api';
-import { MessageCircle, Heart, Share2, Image as ImageIcon } from 'lucide-react';
+import { getFeed, createPost, likePost, dailyCheckIn, commentPost } from '../services/api';
+import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Post {
@@ -28,6 +28,9 @@ export default function Home() {
   const [image, setImage] = useState<File | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState('');
 
   const fetchPosts = async () => {
     try {
@@ -85,15 +88,34 @@ export default function Home() {
     }
   };
 
+  const handleCommentSubmit = async (postId: number) => {
+    if (!commentText.trim()) return;
+    try {
+      const res = await commentPost(postId, commentText);
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            comments: [res.data.comment, ...p.comments],
+            _count: { ...p._count, comments: p._count.comments + 1 }
+          };
+        }
+        return p;
+      }));
+      setCommentText('');
+    } catch (error) {
+      alert('Lỗi bình luận');
+    }
+  };
+
   const handleCheckIn = async () => {
     try {
       const res = await dailyCheckIn();
       alert(res.data.message);
-      // Cập nhật lại user info nếu cần
       if (user) {
         const newUser = { ...user, coins: user.coins + (res.data.coinsAdded || 0) };
         const token = localStorage.getItem('token');
-        if (token) login(token, newUser); // Cập nhật context
+        if (token) login(token, newUser);
       }
     } catch (error: any) {
       alert(error.response?.data?.message || 'Lỗi điểm danh');
@@ -174,12 +196,17 @@ export default function Home() {
               <p className="text-slate-700 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
               {post.image && (
-                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100">
-                  <img src={post.image} alt="Post content" className="w-full h-auto max-h-96 object-cover" />
+                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-slate-50">
+                  <img
+                    src={post.image}
+                    alt="Post content"
+                    onClick={() => setSelectedImage(post.image!)}
+                    className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                  />
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 mb-2">
                 <button
                   onClick={() => handleLike(post.id)}
                   className={`flex items-center gap-2 transition-colors ${isLiked ? 'text-red-500' : 'text-slate-500 hover:text-red-500'}`}
@@ -187,7 +214,10 @@ export default function Home() {
                   <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
                   <span>{post._count.likes}</span>
                 </button>
-                <button className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors">
+                <button
+                  onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)}
+                  className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors"
+                >
                   <MessageCircle size={20} />
                   <span>{post._count.comments}</span>
                 </button>
@@ -195,9 +225,69 @@ export default function Home() {
                   <Share2 size={20} />
                 </button>
               </div>
+
+              {activeCommentId === post.id && (
+                <div className="mt-4 pt-4 border-t border-slate-50 animate-fade-in">
+                  <div className="flex gap-2 mb-4">
+                    <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
+                        placeholder="Viết bình luận..."
+                        className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                      />
+                      <button
+                        onClick={() => handleCommentSubmit(post.id)}
+                        className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600 p-1"
+                      >
+                        <Send size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                    {post.comments.map((comment: any) => (
+                      <div key={comment.id} className="flex gap-2 items-start">
+                        <Link to={`/profile/${comment.authorId}`}>
+                          <img src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username}`} className="w-7 h-7 rounded-full" alt="CommenterAvatar" />
+                        </Link>
+                        <div className="bg-slate-50 p-2.5 rounded-2xl rounded-tl-none">
+                          <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs text-slate-900 block mb-0.5">
+                            {comment.author?.fullName}
+                          </Link>
+                          <p className="text-sm text-slate-700">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })
+      )}
+
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+          onClick={() => setSelectedImage(null)}
+        >
+          <button
+            onClick={() => setSelectedImage(null)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
+          >
+            <X size={32} />
+          </button>
+          <img
+            src={selectedImage}
+            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
+            alt="Full preview"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );
