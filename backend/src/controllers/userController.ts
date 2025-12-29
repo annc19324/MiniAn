@@ -57,7 +57,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
         const isFriend = !!following && !!follower;
 
         console.log(`[getUserProfile] Success for ID: ${id}`);
-        res.json({ ...user, isFollowing: !!following, isFriend });
+        res.json({ ...user, isFollowing: !!following, isFollowedBy: !!follower, isFriend });
     } catch (error) {
         console.error('[getUserProfile] Error:', error);
         res.status(500).json({ message: 'Server error', error: String(error) });
