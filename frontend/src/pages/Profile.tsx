@@ -22,6 +22,7 @@ interface UserProfile {
         posts: number;
     };
     isFollowing: boolean;
+    isFollowedBy?: boolean;
     isFriend?: boolean;
 }
 
@@ -171,14 +172,23 @@ export default function Profile() {
         if (!profile) return;
         try {
             await followUser(profile.id);
-            setProfile(prev => prev ? {
-                ...prev,
-                isFollowing: !prev.isFollowing,
-                _count: {
-                    ...prev._count,
-                    followers: prev.isFollowing ? prev._count.followers - 1 : prev._count.followers + 1
-                }
-            } : null);
+            setProfile(prev => {
+                if (!prev) return null;
+                const newIsFollowing = !prev.isFollowing;
+                // If I just followed, and they were following me (isFollowedBy), then we become friends.
+                // If I just unfollowed, we are no longer friends (even if they still follow me).
+                const newIsFriend = newIsFollowing && prev.isFollowedBy;
+
+                return {
+                    ...prev,
+                    isFollowing: newIsFollowing,
+                    isFriend: newIsFriend,
+                    _count: {
+                        ...prev._count,
+                        followers: newIsFollowing ? prev._count.followers + 1 : prev._count.followers - 1
+                    }
+                };
+            });
         } catch (error) {
             console.error("Lỗi follow", error);
         }
@@ -251,6 +261,10 @@ export default function Profile() {
                                         ) : profile.isFollowing ? (
                                             <>
                                                 <UserCheck size={18} /> Đang theo dõi
+                                            </>
+                                        ) : profile.isFollowedBy ? (
+                                            <>
+                                                <UserPlus size={18} /> Theo dõi lại
                                             </>
                                         ) : (
                                             <>

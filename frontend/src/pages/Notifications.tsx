@@ -83,7 +83,11 @@ export default function Notifications() {
                             key={n.id}
                             onClick={() => {
                                 if (!n.read) handleMarkRead(n.id);
-                                if (n.postId) navigate(`/post/${n.postId}`);
+                                if (n.type === 'follow' && n.sender?.id) {
+                                    navigate(`/profile/${n.sender.id}`);
+                                } else if (n.postId) {
+                                    navigate(`/post/${n.postId}`);
+                                }
                             }}
                             className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50' : 'opacity-75'}`}
                         >
