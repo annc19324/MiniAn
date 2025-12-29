@@ -156,6 +156,7 @@ export const createComment = async (req: AuthRequest, res: Response) => {
 // Lấy bài viết của một user cụ thể
 export const getUserPosts = async (req: AuthRequest, res: Response) => {
     const { userId } = req.params;
+    console.log(`[getUserPosts] Request for UserId: ${userId}`);
 
     try {
         const posts = await prisma.post.findMany({
@@ -176,8 +177,42 @@ export const getUserPosts = async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: 'desc' },
         });
 
+        console.log(`[getUserPosts] Found ${posts.length} posts for UserId: ${userId}`);
         res.json(posts);
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi lấy bài viết user', error });
+        console.error('[getUserPosts] Error:', error);
+        res.status(500).json({ message: 'Lỗi lấy bài viết user', error: String(error) });
+    }
+};
+
+// Lấy chi tiết một bài viết
+export const getPostById = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        const post = await prisma.post.findUnique({
+            where: { id: Number(id) },
+            include: {
+                author: {
+                    select: { id: true, username: true, fullName: true, avatar: true },
+                },
+                likes: { select: { userId: true } },
+                comments: {
+                    include: {
+                        author: { select: { username: true, fullName: true, avatar: true } },
+                    },
+                    orderBy: { createdAt: 'desc' },
+                },
+                _count: { select: { likes: true, comments: true } },
+            },
+        });
+
+        if (!post) {
+            return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+        }
+
+        res.json(post);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi lấy bài viết', error });
     }
 };

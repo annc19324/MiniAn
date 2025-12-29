@@ -21,6 +21,7 @@ import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import CreatePost from './pages/CreatePost';
 import Settings from './pages/Settings';
+import PostDetails from './pages/PostDetails';
 
 function AppContent() {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ function AppContent() {
           <Route path="/profile/:id" element={<Profile />} />
           <Route path="/create" element={<CreatePost />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/post/:id" element={<PostDetails />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />

@@ -223,7 +223,14 @@ export default function Home() {
                   <MessageCircle size={20} />
                   <span>{post._count.comments}</span>
                 </button>
-                <button className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors">
+                <button
+                  onClick={() => {
+                    const url = window.location.origin + '/post/' + post.id;
+                    navigator.clipboard.writeText(url);
+                    alert('Đã sao chép liên kết bài viết!');
+                  }}
+                  className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors"
+                >
                   <Share2 size={20} />
                 </button>
               </div>

@@ -21,6 +21,7 @@ export const createPost = (formData: FormData) => api.post('/posts', formData, {
 export const likePost = (postId: number) => api.post(`/posts/${postId}/like`);
 export const commentPost = (postId: number, content: string) => api.post(`/posts/${postId}/comment`, { content });
 export const getUserPosts = (userId: number) => api.get(`/posts/user/${userId}`);
+export const getPost = (id: number) => api.get(`/posts/${id}`);
 
 // ==== User Services ====
 export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
