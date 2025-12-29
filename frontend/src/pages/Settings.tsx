@@ -6,7 +6,8 @@ import api from '../services/api';
 import { User, Lock, Save, LogOut } from 'lucide-react';
 
 export default function Settings() {
-    const { user, login, logout, updateUser } = useAuth();
+    const { user, logout, updateUser } = useAuth();
+
     const [activeSection, setActiveSection] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
