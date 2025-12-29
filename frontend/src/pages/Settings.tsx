@@ -183,6 +183,42 @@ export default function Settings() {
                 )}
             </div>
 
+            {/* Admin Section (Only for Admin) */}
+            {user?.role === 'ADMIN' && (
+                <div className="glass-card overflow-hidden">
+                    <button
+                        onClick={() => toggleSection('admin')}
+                        className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 transition-all text-left"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
+                                <Lock size={24} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-800">Quản trị viên</h2>
+                                <p className="text-sm text-slate-500">Quản lý người dùng & hệ thống</p>
+                            </div>
+                        </div>
+                        <span className={`transform transition - transform ${activeSection === 'admin' ? 'rotate-180' : ''} `}>
+                            ▼
+                        </span>
+                    </button>
+
+                    {activeSection === 'admin' && (
+                        <div className="p-6 border-t border-slate-100 animate-slide-down">
+                            <p className="text-slate-600 mb-4">Truy cập bảng điều khiển quản trị để quản lý người dùng, bài viết và thống kê hệ thống.</p>
+                            <button
+                                onClick={() => window.location.href = '/admin'}
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                            >
+                                <Lock size={20} />
+                                Truy cập Admin Dashboard
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Logout Section (Always visible or accordion? User requested "Logout button lost". Lets make it a button card) */}
             <button
                 onClick={logout}
