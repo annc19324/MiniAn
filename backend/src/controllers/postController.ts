@@ -96,7 +96,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
             // Tạo notification (nếu không phải tự like)
             const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
             if (post?.authorId !== userId) {
-                await prisma.notification.create({
+                const notif = await prisma.notification.create({
                     data: {
                         type: 'like',
                         content: `${req.user?.username} đã thích bài viết của bạn`,
@@ -105,6 +105,10 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
                         postId: Number(postId),
                     },
                 });
+
+                // Socket Emit
+                const { io } = require('../server'); // Dynamic require to avoid circular dependency
+                io.to(post!.authorId.toString()).emit('new_notification', notif);
             }
 
             res.json({ message: 'Đã like' });
@@ -135,7 +139,7 @@ export const createComment = async (req: AuthRequest, res: Response) => {
         // Tạo notification
         const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
         if (post?.authorId !== userId) {
-            await prisma.notification.create({
+            const notif = await prisma.notification.create({
                 data: {
                     type: 'comment',
                     content: `${req.user?.username} đã bình luận bài viết của bạn`,
@@ -145,6 +149,10 @@ export const createComment = async (req: AuthRequest, res: Response) => {
                     commentId: comment.id,
                 },
             });
+
+            // Socket Emit
+            const { io } = require('../server');
+            io.to(post!.authorId.toString()).emit('new_notification', notif);
         }
 
         res.status(201).json({ message: 'Bình luận thành công', comment });

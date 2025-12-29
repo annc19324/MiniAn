@@ -39,6 +39,7 @@ export const updateUserStatus = (id: number, data: { role?: string, isVip?: bool
 
 // ==== Notification Services ====
 export const getNotifications = () => api.get('/notifications');
+export const getUnreadNotificationsCount = () => api.get('/notifications/unread-count');
 export const markRead = (id: number) => api.put(`/notifications/${id}/read`);
 export const markAllRead = () => api.put('/notifications/read-all');
 

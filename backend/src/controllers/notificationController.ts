@@ -56,6 +56,10 @@ export const markRead = async (req: AuthRequest, res: Response) => {
             where: { id: Number(id), userId },
             data: { read: true }
         });
+
+        const { io } = require('../server');
+        io.to(userId.toString()).emit('refresh_unread');
+
         res.json({ message: 'Đã đọc' });
     } catch (error) {
         res.status(500).json({ message: 'Lỗi cập nhật' });
@@ -71,8 +75,28 @@ export const markAllRead = async (req: AuthRequest, res: Response) => {
             where: { userId, read: false },
             data: { read: true }
         });
+
+        const { io } = require('../server');
+        io.to(userId.toString()).emit('refresh_unread');
+
         res.json({ message: 'Đã đọc tất cả' });
     } catch (error) {
         res.status(500).json({ message: 'Lỗi cập nhật' });
+    }
+};
+
+// Lấy số lượng thông báo chưa đọc
+export const getUnreadNotificationCount = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    try {
+        const count = await prisma.notification.count({
+            where: {
+                userId,
+                read: false
+            }
+        });
+        res.json({ count });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi lấy số thông báo chưa đọc' });
     }
 };
