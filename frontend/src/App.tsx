@@ -22,6 +22,7 @@ import Profile from './pages/Profile';
 import CreatePost from './pages/CreatePost';
 import Settings from './pages/Settings';
 import PostDetails from './pages/PostDetails';
+import LeaderboardPage from './pages/LeaderboardPage';
 
 function AppContent() {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ function AppContent() {
           <Route path="/create" element={<CreatePost />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/post/:id" element={<PostDetails />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" />} />
