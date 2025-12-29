@@ -1,7 +1,7 @@
 // src/pages/LeaderboardPage.tsx
 import { useState, useEffect } from 'react';
 import { getLeaderboard } from '../services/api';
-import { Award, Medal } from 'lucide-react';
+import { Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface LeaderboardUser {
@@ -49,9 +49,9 @@ export default function LeaderboardPage() {
                     {users.map((u, index) => (
                         <div key={u.id} className="flex items-center gap-4 p-4 hover:bg-white/80 transition-colors">
                             <div className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full font-black text-lg shadow-sm ${index === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white ring-4 ring-yellow-100' :
-                                    index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
-                                        index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
-                                            'bg-slate-100 text-slate-500'
+                                index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
+                                    index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
+                                        'bg-slate-100 text-slate-500'
                                 }`}>
                                 {index + 1}
                             </div>

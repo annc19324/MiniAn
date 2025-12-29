@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { searchUsers, followUser } from '../services/api';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search as SearchIcon, UserPlus, UserCheck } from 'lucide-react';
+import { Search as SearchIcon, UserPlus } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 
 interface User {

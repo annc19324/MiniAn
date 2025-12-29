@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, User as UserIcon, MoreVertical, Phone, MessageCircle } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle } from 'lucide-react';
+
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useLocation } from 'react-router-dom';
