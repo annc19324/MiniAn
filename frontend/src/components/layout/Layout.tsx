@@ -150,6 +150,9 @@ export default function Layout() {
             <header className="md:hidden sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-indigo-50 px-4 py-3 flex justify-between items-center shadow-sm">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">MiniAn</h1>
                 <div className="flex items-center gap-3">
+                    <NavLink to="/leaderboard" className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-full">
+                        <Award size={24} />
+                    </NavLink>
                     <button
                         onClick={() => navigate('/chat')}
                         className="p-2 text-slate-600 hover:bg-slate-100 rounded-full relative"
