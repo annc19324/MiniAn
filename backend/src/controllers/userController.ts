@@ -6,11 +6,18 @@ import { uploadImage } from '../utils/upload';
 
 // Lấy thông tin user (profile)
 // Lấy thông tin user (profile)
+// Lấy thông tin user (profile)
 export const getUserProfile = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
-    const currentUserId = req.user!.id;
+    console.log(`[getUserProfile] Request for ID: ${id}`);
 
     try {
+        if (!req.user) {
+            console.error('[getUserProfile] No user in request');
+            return res.status(401).json({ message: 'User not authenticated' });
+        }
+        const currentUserId = req.user.id;
+
         const user = await prisma.user.findUnique({
             where: { id: Number(id) },
             select: {
@@ -22,7 +29,10 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
             }
         });
 
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) {
+            console.log(`[getUserProfile] User ${id} not found`);
+            return res.status(404).json({ message: 'User not found' });
+        }
 
         // Check isFollowing (Me -> Them)
         const following = await prisma.follow.findUnique({
@@ -46,9 +56,11 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
 
         const isFriend = !!following && !!follower;
 
+        console.log(`[getUserProfile] Success for ID: ${id}`);
         res.json({ ...user, isFollowing: !!following, isFriend });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('[getUserProfile] Error:', error);
+        res.status(500).json({ message: 'Server error', error: String(error) });
     }
 };
 

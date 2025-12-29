@@ -1,9 +1,9 @@
-// src/pages/Notifications.tsx
 import { useState, useEffect } from 'react';
 import { getNotifications, markRead, markAllRead } from '../services/api';
 import { CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 interface Notification {
     id: number;
@@ -11,6 +11,7 @@ interface Notification {
     content: string;
     read: boolean;
     createdAt: string;
+    postId?: number;
     sender?: {
         id: number;
         username: string;
@@ -21,6 +22,7 @@ interface Notification {
 export default function Notifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchNotifications();
@@ -79,7 +81,10 @@ export default function Notifications() {
                     notifications.map((n) => (
                         <div
                             key={n.id}
-                            onClick={() => !n.read && handleMarkRead(n.id)}
+                            onClick={() => {
+                                if (!n.read) handleMarkRead(n.id);
+                                if (n.postId) navigate(`/post/${n.postId}`);
+                            }}
                             className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50' : 'opacity-75'}`}
                         >
                             <img

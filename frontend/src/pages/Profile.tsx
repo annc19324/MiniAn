@@ -144,19 +144,24 @@ export default function Profile() {
 
     useEffect(() => {
         const fetchData = async () => {
+            console.log("Fetching profile data for ID:", id);
             if (!id) return;
             setLoading(true);
             try {
+                console.log("Calling Promise.all...");
                 const [profileRes, postsRes] = await Promise.all([
                     getProfile(Number(id)),
                     getUserPosts(Number(id))
                 ]);
+                console.log("Profile Res:", profileRes.data);
+                console.log("Posts Res Length:", postsRes.data.length);
                 setProfile(profileRes.data);
                 setPosts(postsRes.data);
             } catch (error) {
                 console.error("Lỗi tải profile", error);
             } finally {
                 setLoading(false);
+                console.log("Loading set to false");
             }
         };
         fetchData();
