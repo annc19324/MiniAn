@@ -46,5 +46,6 @@ export const getConversations = () => api.get('/chat/conversations');
 export const startConversation = (targetUserId: number) => api.post('/chat/conversation/start', { targetUserId });
 export const getMessages = (roomId: number) => api.get(`/chat/${roomId}/messages`);
 export const sendMessage = (roomId: number, content: string) => api.post(`/chat/${roomId}/messages`, { content });
+export const markMessagesRead = (roomId: number) => api.put(`/chat/read/${roomId}`);
 
 export default api;
