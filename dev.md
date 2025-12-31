@@ -51,3 +51,4 @@ npm install -D @types/express @types/node @types/cors @types/jsonwebtoken @types
 
 
 
+npm install && npx prisma db push && npx prisma generate && npx tsx prisma/seed.ts && npm run build
