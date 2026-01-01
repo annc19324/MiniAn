@@ -35,8 +35,10 @@ export default function Layout() {
         socket.emit('join_room', user.id);
 
         socket.on('receive_message', (data) => {
+            console.log("Socket: receive_message", data);
             if (window.location.pathname !== '/chat') {
                 const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+                console.log("Sound enabled (msg):", soundEnabled);
                 if (soundEnabled) playNotificationSound();
 
                 toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
@@ -48,7 +50,9 @@ export default function Layout() {
         });
 
         socket.on('new_notification', (data) => {
+            console.log("Socket: new_notification", data);
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+            console.log("Sound enabled (notif):", soundEnabled);
             if (soundEnabled) playNotificationSound();
 
             toast(data.content, { icon: '🔔' });
