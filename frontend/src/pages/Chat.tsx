@@ -393,9 +393,9 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="fixed inset-x-2 top-[70px] bottom-[9%] z-30 lg:z-auto lg:static lg:inset-auto flex lg:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="fixed inset-x-2 top-[70px] bottom-[50px] z-30 xl:z-auto xl:static xl:inset-auto flex xl:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
-            <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
+            <div className={`w-full xl:w-[30%] xl:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden xl:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-indigo-50 dark:border-slate-800 space-y-3">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
                     <div className="relative">
@@ -408,14 +408,15 @@ export default function Chat() {
                             className="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                     </div>
-                    <button
-                        onClick={() => setShowCreateGroupModal(true)}
-                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-[1.02] active:scale-95"
-                    >
-                        <Users size={18} />
-                        <span>Tạo nhóm mới</span>
-                    </button>
                 </div>
+                <button
+                    onClick={() => setShowCreateGroupModal(true)}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-[1.02] active:scale-95"
+                >
+                    <Users size={18} />
+                    <span>Tạo nhóm mới</span>
+                </button>
+
                 <div className="flex-1 overflow-y-auto">
                     {conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
                         <div className="p-4 text-center text-slate-400 text-sm">Không tìm thấy cuộc trò chuyện.</div>
@@ -718,25 +719,27 @@ export default function Chat() {
             />
 
             {/* Group Management Modal */}
-            {activeConversation?.isGroup && (
-                <GroupManagementModal
-                    isOpen={showGroupManagement}
-                    onClose={() => setShowGroupManagement(false)}
-                    roomId={activeRoomId!}
-                    groupName={activeConversation.name}
-                    groupAvatar={activeConversation.avatar}
-                    members={activeConversation.members || []}
-                    createdBy={activeConversation.createdBy}
-                    onUpdate={async () => {
-                        const res = await getConversations();
-                        setConversations(res.data);
-                    }}
-                    onDelete={() => {
-                        setActiveRoomId(null);
-                        setMessages([]);
-                    }}
-                />
-            )}
-        </div >
+            {
+                activeConversation?.isGroup && (
+                    <GroupManagementModal
+                        isOpen={showGroupManagement}
+                        onClose={() => setShowGroupManagement(false)}
+                        roomId={activeRoomId!}
+                        groupName={activeConversation.name}
+                        groupAvatar={activeConversation.avatar}
+                        members={activeConversation?.members || []}
+                        createdBy={activeConversation?.createdBy}
+                        onUpdate={async () => {
+                            const res = await getConversations();
+                            setConversations(res.data);
+                        }}
+                        onDelete={() => {
+                            setActiveRoomId(null);
+                            setMessages([]);
+                        }}
+                    />
+                )
+            }
+        </div>
     );
 }
