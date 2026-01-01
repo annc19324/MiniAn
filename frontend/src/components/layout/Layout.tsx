@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { getLeaderboard } from '../../services/api';
 import { Award } from 'lucide-react';
 import { io } from 'socket.io-client';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { getConversations } from '../../services/api';
 
 export default function Layout() {
@@ -87,7 +87,6 @@ export default function Layout() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
-            <Toaster position="top-center" reverseOrder={false} />
             {/* Leaderboard Sidebar (Left Side) */}
             <aside className="hidden lg:flex w-64 flex-col bg-white/60 backdrop-blur-xl border-r border-white/50 min-h-screen fixed left-0 top-0 z-40 p-6 overscroll-y-auto">
                 <div className="flex items-center gap-2 mb-6 text-yellow-600">

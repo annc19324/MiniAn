@@ -1,8 +1,8 @@
-// src/pages/Register.tsx
 import { useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function Register() {
     const [username, setUsername] = useState('');
@@ -23,12 +23,14 @@ export default function Register() {
 
         if (password !== confirmPassword) {
             setError('Mật khẩu xác nhận không khớp!');
+            toast.error('Mật khẩu xác nhận không khớp!');
             setLoading(false);
             return;
         }
 
         if (password.length < 6) {
             setError('Mật khẩu phải ít nhất 6 ký tự');
+            toast.error('Mật khẩu phải ít nhất 6 ký tự');
             setLoading(false);
             return;
         }
@@ -42,9 +44,12 @@ export default function Register() {
             });
 
             login(res.data.token, res.data.user);
+            toast.success('Đăng ký thành công! Chào mừng bạn.');
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Đăng ký thất bại, vui lòng thử lại');
+            const msg = err.response?.data?.message || 'Đăng ký thất bại, vui lòng thử lại';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

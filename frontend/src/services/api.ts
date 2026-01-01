@@ -37,6 +37,8 @@ export const getLeaderboard = () => api.get('/users/leaderboard');
 export const getAllUsers = () => api.get('/users/admin/users');
 export const updateUserStatus = (id: number, data: { role?: string, isVip?: boolean, isActive?: boolean }) => api.put(`/users/admin/users/${id}`, data);
 export const updateUserCoins = (id: number, amount: number) => api.post(`/users/admin/users/${id}/coins`, { amount });
+export const deleteUser = (id: number) => api.delete(`/users/admin/users/${id}`);
+export const adminCreateUser = (data: any) => api.post('/users/admin/users', data);
 
 // ==== Notification Services ====
 export const getNotifications = () => api.get('/notifications');

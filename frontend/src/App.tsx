@@ -24,11 +24,35 @@ import Settings from './pages/Settings';
 import PostDetails from './pages/PostDetails';
 import LeaderboardPage from './pages/LeaderboardPage';
 
+import { Toaster } from 'react-hot-toast';
+
 function AppContent() {
   const { user } = useAuth();
 
   return (
     <Router>
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 2000,
+          style: {
+            background: '#333',
+            color: '#fff',
+            borderRadius: '12px',
+          },
+          success: {
+            style: {
+              background: '#10B981',
+            },
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+            },
+          },
+        }}
+      />
       <Routes>
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />

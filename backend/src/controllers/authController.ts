@@ -105,9 +105,13 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
             },
         });
 
-        // Kiểm tra user và password
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ message: 'Email/Username hoặc mật khẩu không đúng' });
+        if (!user) {
+            return res.status(404).json({ message: 'Tài khoản không tồn tại' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Mật khẩu không đúng' });
         }
 
         // Xóa password khỏi response

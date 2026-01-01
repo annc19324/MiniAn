@@ -1,9 +1,9 @@
-// src/pages/AdminDashboard.tsx
 import { useState, useEffect } from 'react';
-import { getAllUsers, updateUserStatus, updateUserCoins } from '../services/api';
+import { getAllUsers, updateUserStatus, updateUserCoins, deleteUser, adminCreateUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, Shield, Crown, Coins } from 'lucide-react';
+import { Search, Users, Shield, Crown, Coins, X, UserPlus, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface User {
     id: number;
@@ -23,31 +23,47 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Modals Check
+    const [coinModal, setCoinModal] = useState<{ isOpen: boolean, userId: number | null, type: 'add' | 'subtract', amount: string }>({
+        isOpen: false, userId: null, type: 'add', amount: ''
+    });
+
+    const [createModal, setCreateModal] = useState({
+        isOpen: false,
+        username: '', email: '', password: '', fullName: ''
+    });
+
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, userId: number | null, username: string }>({
+        isOpen: false, userId: null, username: ''
+    });
+
     useEffect(() => {
         if (user && user.role !== 'ADMIN') {
             navigate('/');
             return;
         }
-
-        const fetchData = async () => {
-            try {
-                const res = await getAllUsers();
-                setUsers(res.data);
-            } catch (error) {
-                console.error("Lỗi tải users", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, [user, navigate]);
 
+    const fetchData = async () => {
+        try {
+            const res = await getAllUsers();
+            setUsers(res.data);
+        } catch (error) {
+            console.error("Lỗi tải users", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ... Existing handlers ...
     const handleRoleChange = async (id: number, newRole: string) => {
         try {
             await updateUserStatus(id, { role: newRole });
             setUsers(users.map(u => u.id === id ? { ...u, role: newRole } : u));
+            toast.success('Cập nhật vai trò thành công');
         } catch (error) {
-            alert('Lỗi cập nhật role');
+            toast.error('Lỗi cập nhật role');
         }
     };
 
@@ -55,8 +71,9 @@ export default function AdminDashboard() {
         try {
             await updateUserStatus(id, { isVip: !currentVip });
             setUsers(users.map(u => u.id === id ? { ...u, isVip: !currentVip } : u));
+            toast.success(`Đã ${!currentVip ? 'kích hoạt' : 'hủy'} VIP`);
         } catch (error) {
-            alert('Lỗi cập nhật VIP');
+            toast.error('Lỗi cập nhật VIP');
         }
     };
 
@@ -64,30 +81,67 @@ export default function AdminDashboard() {
         try {
             await updateUserStatus(id, { isActive: !currentActive });
             setUsers(users.map(u => u.id === id ? { ...u, isActive: !currentActive } : u));
+            toast.success(`Đã ${!currentActive ? 'mở khóa' : 'khóa'} tài khoản`);
         } catch (error) {
-            alert('Lỗi cập nhật trạng thái');
+            toast.error('Lỗi cập nhật trạng thái');
         }
     };
 
-    const handleCoinUpdate = async (id: number, type: 'add' | 'subtract') => {
-        const amountStr = prompt(type === 'add' ? 'Nhập số coin muốn cộng:' : 'Nhập số coin muốn trừ:');
-        if (!amountStr) return;
+    // Coin Logic
+    const openCoinModal = (id: number, type: 'add' | 'subtract') => {
+        setCoinModal({ isOpen: true, userId: id, type, amount: '' });
+    };
 
-        let amount = parseInt(amountStr);
-        if (isNaN(amount) || amount <= 0) {
-            alert('Vui lòng nhập số hợp lệ');
+    const handleSaveCoin = async () => {
+        if (!coinModal.userId || !coinModal.amount) return;
+        const amountNum = parseInt(coinModal.amount);
+        if (isNaN(amountNum) || amountNum <= 0) {
+            toast.error('Vui lòng nhập số tiền hợp lệ');
             return;
         }
-
-        if (type === 'subtract') amount = -amount;
-
+        const finalAmount = coinModal.type === 'subtract' ? -amountNum : amountNum;
         try {
-            const res = await updateUserCoins(id, amount);
+            const res = await updateUserCoins(coinModal.userId, finalAmount);
             // @ts-ignore
-            setUsers(users.map(u => u.id === id ? { ...u, coins: res.data.coins } : u));
-            alert('Cập nhật coin thành công');
+            setUsers(users.map(u => u.id === coinModal.userId ? { ...u, coins: res.data.coins } : u));
+            toast.success('Cập nhật xu thành công');
+            setCoinModal({ ...coinModal, isOpen: false });
         } catch (error) {
-            alert('Lỗi cập nhật coin');
+            toast.error('Lỗi cập nhật xu');
+        }
+    };
+
+    // Create User Logic
+    const handleCreateUser = async () => {
+        const { username, email, password, fullName } = createModal;
+        if (!username || !email || !password) {
+            toast.error('Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+        try {
+            await adminCreateUser({ username, email, password, fullName });
+            toast.success('Tạo người dùng thành công');
+            setCreateModal({ isOpen: false, username: '', email: '', password: '', fullName: '' });
+            fetchData(); // Reload list
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Lỗi tạo người dùng');
+        }
+    };
+
+    // Delete User Logic
+    const openDeleteModal = (u: User) => {
+        setDeleteModal({ isOpen: true, userId: u.id, username: u.username });
+    };
+
+    const handleDeleteUser = async () => {
+        if (!deleteModal.userId) return;
+        try {
+            await deleteUser(deleteModal.userId);
+            setUsers(users.filter(u => u.id !== deleteModal.userId));
+            toast.success('Xóa người dùng thành công');
+            setDeleteModal({ isOpen: false, userId: null, username: '' });
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Lỗi xóa người dùng');
         }
     };
 
@@ -113,40 +167,20 @@ export default function AdminDashboard() {
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                        <Users size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Tổng User</p>
-                        <p className="text-2xl font-bold text-slate-800">{stats.total}</p>
-                    </div>
+                    <div className="p-3 bg-blue-100 text-blue-600 rounded-xl"><Users size={24} /></div>
+                    <div><p className="text-sm text-slate-500 font-medium">Tổng User</p><p className="text-2xl font-bold text-slate-800">{stats.total}</p></div>
                 </div>
                 <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-green-100 text-green-600 rounded-xl">
-                        <Users size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Hoạt động</p>
-                        <p className="text-2xl font-bold text-slate-800">{stats.active}</p>
-                    </div>
+                    <div className="p-3 bg-green-100 text-green-600 rounded-xl"><Users size={24} /></div>
+                    <div><p className="text-sm text-slate-500 font-medium">Hoạt động</p><p className="text-2xl font-bold text-slate-800">{stats.active}</p></div>
                 </div>
                 <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl">
-                        <Crown size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">VIP</p>
-                        <p className="text-2xl font-bold text-slate-800">{stats.vip}</p>
-                    </div>
+                    <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl"><Crown size={24} /></div>
+                    <div><p className="text-sm text-slate-500 font-medium">VIP</p><p className="text-2xl font-bold text-slate-800">{stats.vip}</p></div>
                 </div>
                 <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
-                        <Shield size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-500 font-medium">Admin</p>
-                        <p className="text-2xl font-bold text-slate-800">{stats.admins}</p>
-                    </div>
+                    <div className="p-3 bg-purple-100 text-purple-600 rounded-xl"><Shield size={24} /></div>
+                    <div><p className="text-sm text-slate-500 font-medium">Admin</p><p className="text-2xl font-bold text-slate-800">{stats.admins}</p></div>
                 </div>
             </div>
 
@@ -162,7 +196,13 @@ export default function AdminDashboard() {
                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                     />
                 </div>
-                {/* Future actions like 'Export User' or 'Add User' can go here */}
+                <button
+                    onClick={() => setCreateModal({ ...createModal, isOpen: true })}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30"
+                >
+                    <UserPlus size={18} />
+                    Thêm thành viên
+                </button>
             </div>
 
             <div className="glass-card overflow-hidden">
@@ -183,9 +223,7 @@ export default function AdminDashboard() {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {filteredUsers.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="p-8 text-center text-slate-400">Không tìm thấy kết quả</td>
-                                </tr>
+                                <tr><td colSpan={6} className="p-8 text-center text-slate-400">Không tìm thấy kết quả</td></tr>
                             ) : (
                                 filteredUsers.map((u) => (
                                     <tr key={u.id} className="hover:bg-slate-50/50 transition-colors">
@@ -201,8 +239,8 @@ export default function AdminDashboard() {
                                             <div className="flex items-center gap-2">
                                                 <span>{u.coins}</span> <Coins size={14} className="text-yellow-500" />
                                                 <div className="flex flex-col gap-1 ml-2">
-                                                    <button onClick={() => handleCoinUpdate(u.id, 'add')} className="px-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-[10px] font-bold">+</button>
-                                                    <button onClick={() => handleCoinUpdate(u.id, 'subtract')} className="px-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold">-</button>
+                                                    <button onClick={() => openCoinModal(u.id, 'add')} className="px-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-[10px] font-bold">+</button>
+                                                    <button onClick={() => openCoinModal(u.id, 'subtract')} className="px-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold">-</button>
                                                 </div>
                                             </div>
                                         </td>
@@ -218,20 +256,21 @@ export default function AdminDashboard() {
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col gap-2 items-start">
-                                                <button
-                                                    onClick={() => handleVipToggle(u.id, u.isVip)}
-                                                    className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${u.isVip ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-white text-slate-400 border-slate-200 hover:border-yellow-300'}`}
-                                                >
+                                                <button onClick={() => handleVipToggle(u.id, u.isVip)} className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${u.isVip ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-white text-slate-400 border-slate-200 hover:border-yellow-300'}`}>
                                                     {u.isVip ? 'VIP Member' : 'Set VIP'}
+                                                </button>
+                                                <button onClick={() => handleActiveToggle(u.id, u.isActive)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${u.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>
+                                                    {u.isActive ? 'Active' : 'Banned'}
                                                 </button>
                                             </div>
                                         </td>
                                         <td className="p-4">
                                             <button
-                                                onClick={() => handleActiveToggle(u.id, u.isActive)}
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${u.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+                                                onClick={() => openDeleteModal(u)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Xóa người dùng này"
                                             >
-                                                {u.isActive ? 'Active' : 'Banned'}
+                                                <Trash2 size={18} />
                                             </button>
                                         </td>
                                     </tr>
@@ -241,6 +280,90 @@ export default function AdminDashboard() {
                     </table>
                 </div>
             </div>
+
+            {/* Coin Modal */}
+            {coinModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl scale-100 animate-scale-in">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="font-bold text-lg text-slate-800">{coinModal.type === 'add' ? 'Cộng xu' : 'Trừ xu'}</h3>
+                            <button onClick={() => setCoinModal({ ...coinModal, isOpen: false })} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                        </div>
+                        <div className="p-6">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Nhập số lượng xu</label>
+                            <div className="relative">
+                                <Coins className="absolute left-3 top-1/2 -translate-y-1/2 text-yellow-500" size={20} />
+                                <input
+                                    type="number"
+                                    value={coinModal.amount}
+                                    onChange={(e) => setCoinModal({ ...coinModal, amount: e.target.value })}
+                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-bold text-lg"
+                                    placeholder="0"
+                                    autoFocus
+                                    onKeyDown={(e) => e.key === 'Enter' && handleSaveCoin()}
+                                />
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button onClick={() => setCoinModal({ ...coinModal, isOpen: false })} className="flex-1 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Hủy</button>
+                                <button onClick={handleSaveCoin} className={`flex-1 py-2.5 rounded-xl font-bold text-white transition-all shadow-lg shadow-indigo-500/20 ${coinModal.type === 'add' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>Xác nhận</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create User Modal */}
+            {createModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl scale-100 animate-scale-in">
+                        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="font-bold text-lg text-slate-800">Thêm thành viên mới</h3>
+                            <button onClick={() => setCreateModal({ ...createModal, isOpen: false })} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Tên đăng nhập *</label>
+                                <input type="text" value={createModal.username} onChange={e => setCreateModal({ ...createModal, username: e.target.value })} className="w-full p-2 bg-slate-50 border rounded-lg focus:outline-none focus:border-indigo-500" placeholder="username" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Email *</label>
+                                <input type="email" value={createModal.email} onChange={e => setCreateModal({ ...createModal, email: e.target.value })} className="w-full p-2 bg-slate-50 border rounded-lg focus:outline-none focus:border-indigo-500" placeholder="user@example.com" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Mật khẩu *</label>
+                                <input type="password" value={createModal.password} onChange={e => setCreateModal({ ...createModal, password: e.target.value })} className="w-full p-2 bg-slate-50 border rounded-lg focus:outline-none focus:border-indigo-500" placeholder="******" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Họ tên</label>
+                                <input type="text" value={createModal.fullName} onChange={e => setCreateModal({ ...createModal, fullName: e.target.value })} className="w-full p-2 bg-slate-50 border rounded-lg focus:outline-none focus:border-indigo-500" placeholder="Nguyen Van A" />
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button onClick={() => setCreateModal({ ...createModal, isOpen: false })} className="flex-1 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Hủy</button>
+                                <button onClick={handleCreateUser} className="flex-1 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20">Tạo tài khoản</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl scale-100 animate-scale-in">
+                        <div className="p-6 text-center">
+                            <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={24} />
+                            </div>
+                            <h3 className="font-bold text-lg text-slate-800 mb-2">Xác nhận xóa?</h3>
+                            <p className="text-slate-500 text-sm mb-6">Bạn có chắc chắn muốn xóa người dùng <span className="font-bold text-slate-800">{deleteModal.username}</span>? Hành động này không thể hoàn tác.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => setDeleteModal({ ...deleteModal, isOpen: false })} className="flex-1 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Hủy</button>
+                                <button onClick={handleDeleteUser} className="flex-1 py-2.5 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-all shadow-lg shadow-red-500/20">Xóa vĩnh viễn</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
