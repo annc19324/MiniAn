@@ -61,7 +61,7 @@ export const updateMessage = (id: number, content: string) => api.put(`/chat/mes
 
 // Group Chat Services
 export const createGroup = (name: string, memberIds: number[]) => api.post('/chat/group/create', { name, memberIds });
-export const updateGroup = (id: number, data: { name?: string, avatar?: string }) => api.put(`/chat/group/${id}`, data);
+export const updateGroup = (id: number, data: FormData) => api.put(`/chat/group/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const addGroupMember = (roomId: number, memberId: number) => api.post(`/chat/group/${roomId}/member/add`, { memberId });
 export const removeGroupMember = (roomId: number, memberId: number) => api.delete(`/chat/group/${roomId}/member/remove`, { data: { memberId } });
 export const leaveGroup = (roomId: number) => api.post(`/chat/group/${roomId}/leave`);

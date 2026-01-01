@@ -711,6 +711,7 @@ export default function Chat() {
                     onClose={() => setShowGroupManagement(false)}
                     roomId={activeRoomId!}
                     groupName={activeConversation.name}
+                    groupAvatar={activeConversation.avatar}
                     members={activeConversation.members || []}
                     createdBy={activeConversation.createdBy}
                     onUpdate={async () => {
