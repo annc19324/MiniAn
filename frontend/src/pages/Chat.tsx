@@ -464,17 +464,34 @@ export default function Chat() {
                                 <button onClick={() => setActiveRoomId(null)} className="md:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
                                     ←
                                 </button>
-                                <Link to={`/profile/${activeConversation?.otherMemberId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                                    <img
-                                        src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
-                                        className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                        alt="Avatar"
-                                    />
-                                    <div>
-                                        <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
-                                        <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
-                                    </div>
-                                </Link>
+                                {activeConversation?.isGroup ? (
+                                    <button
+                                        onClick={() => setShowGroupManagement(true)}
+                                        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                                    >
+                                        <img
+                                            src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
+                                            className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
+                                            alt="Avatar"
+                                        />
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">{activeConversation.memberCount} thành viên</span>
+                                        </div>
+                                    </button>
+                                ) : (
+                                    <Link to={`/profile/${activeConversation?.otherMemberId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                                        <img
+                                            src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
+                                            className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
+                                            alt="Avatar"
+                                        />
+                                        <div>
+                                            <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
+                                            <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
+                                        </div>
+                                    </Link>
+                                )}
                             </div>
                             <div className="flex gap-2 text-slate-400 dark:text-slate-500 relative" ref={roomMenuRef}>
                                 <Phone size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />

@@ -1,7 +1,7 @@
 // src/components/GroupManagementModal.tsx
 import { useState, useEffect } from 'react';
-import { X, UserPlus, UserMinus, LogOut, Users as UsersIcon, Search } from 'lucide-react';
-import { addGroupMember, removeGroupMember, leaveGroup, searchUsers } from '../services/api';
+import { X, UserPlus, UserMinus, LogOut, Users as UsersIcon, Search, Camera } from 'lucide-react';
+import { addGroupMember, removeGroupMember, leaveGroup, searchUsers, updateGroup } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { useAuth } from '../context/AuthContext';
@@ -43,7 +43,8 @@ export default function GroupManagementModal({
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [isAddingMember, setIsAddingMember] = useState(false);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
 
     const isAdmin = user?.id === createdBy;
 
@@ -81,14 +82,43 @@ export default function GroupManagementModal({
     };
 
     const handleRemoveMember = async (memberId: number) => {
-        if (!confirm('Bạn có chắc muốn xóa thành viên này?')) return;
-
         try {
             await removeGroupMember(roomId, memberId);
             toast.success('Đã xóa thành viên');
             onUpdate();
         } catch (error: any) {
             toast.error(error.response?.data?.message || 'Lỗi xóa thành viên');
+        }
+    };
+
+    const handleUploadAvatar = async (file: File) => {
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Upload to cloudinary via backend
+            const uploadRes = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            if (!uploadRes.ok) throw new Error('Upload failed');
+
+            const { imageUrl } = await uploadRes.json();
+
+            // Update group avatar
+            await updateGroup(roomId, { avatar: imageUrl });
+            toast.success('Đã cập nhật ảnh nhóm');
+            onUpdate();
+        } catch (error: any) {
+            toast.error('Lỗi cập nhật ảnh nhóm');
+        } finally {
+            setUploading(false);
+            setAvatarFile(null);
         }
     };
 
@@ -131,6 +161,38 @@ export default function GroupManagementModal({
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                    {/* Group Avatar (Admin Only) */}
+                    {isAdmin && (
+                        <div>
+                            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Ảnh đại diện nhóm</h3>
+                            <div className="relative w-24 h-24 mx-auto group">
+                                <img
+                                    src={getAvatarUrl(members[0]?.avatar, groupName)}
+                                    className="w-24 h-24 rounded-full border-4 border-white dark:border-slate-700 shadow-lg object-cover"
+                                    alt="Group avatar"
+                                />
+                                <label className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
+                                    <Camera className="text-white" size={24} />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        hidden
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleUploadAvatar(file);
+                                        }}
+                                        disabled={uploading}
+                                    />
+                                </label>
+                                {uploading && (
+                                    <div className="absolute inset-0 rounded-full bg-black/70 flex items-center justify-center">
+                                        <div className="text-white text-xs">Đang tải...</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Members List */}
                     <div>
                         <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Thành viên</h3>
