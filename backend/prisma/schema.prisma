@@ -47,7 +47,7 @@ model Post {
   comments      Comment[]
   likes         Like[]
   notifications Notification[] @relation("PostNotifications")
-  author        User           @relation(fields: [authorId], references: [id])
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("posts")
 }
@@ -58,8 +58,8 @@ model Comment {
   postId        Int
   authorId      Int
   createdAt     DateTime       @default(now())
-  author        User           @relation(fields: [authorId], references: [id])
-  post          Post           @relation(fields: [postId], references: [id])
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post          Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
   notifications Notification[] @relation("CommentNotifications")
 
   @@map("comments")
@@ -70,8 +70,8 @@ model Like {
   postId    Int
   userId    Int
   createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@map("likes")
@@ -87,9 +87,9 @@ model Notification {
   commentId Int?
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  comment   Comment? @relation("CommentNotifications", fields: [commentId], references: [id])
-  post      Post?    @relation("PostNotifications", fields: [postId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  comment   Comment? @relation("CommentNotifications", fields: [commentId], references: [id], onDelete: Cascade)
+  post      Post?    @relation("PostNotifications", fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
@@ -104,7 +104,7 @@ model Room {
   updatedAt DateTime   @default(now()) @updatedAt
   messages  Message[]
   users     UserRoom[]
-  creator   User?      @relation("CreatedRooms", fields: [createdBy], references: [id])
+  creator   User?      @relation("CreatedRooms", fields: [createdBy], references: [id], onDelete: SetNull)
 
   @@map("rooms")
 }
@@ -114,7 +114,7 @@ model UserRoom {
   roomId   Int
   joinedAt DateTime @default(now())
   room     Room     @relation(fields: [roomId], references: [id])
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roomId])
   @@map("user_rooms")
@@ -131,9 +131,9 @@ model Message {
   isRead     Boolean  @default(false)
   deletedBy  Int[]    @default([])
   isRecalled Boolean  @default(false)
-  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: SetNull)
   room       Room     @relation(fields: [roomId], references: [id])
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
@@ -141,8 +141,8 @@ model Message {
 model Follow {
   followerId  Int
   followingId Int
-  follower    User @relation("Following", fields: [followerId], references: [id])
-  following   User @relation("Followers", fields: [followingId], references: [id])
+  follower    User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
   @@map("follows")
@@ -154,7 +154,7 @@ model CoinTransaction {
   amount    Int
   reason    String
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("coin_transactions")
 }
