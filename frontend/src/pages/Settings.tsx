@@ -1,10 +1,10 @@
-// src/pages/Settings.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { requestNotificationPermission } from '../utils/notificationUtils';
 
 export default function Settings() {
     const { user, logout, updateUser } = useAuth();
@@ -18,6 +18,7 @@ export default function Settings() {
         email: user?.email || '',
         fullName: user?.fullName || ''
     });
+    const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
 
     const toggleSection = (section: string) => {
         setActiveSection(activeSection === section ? null : section);
@@ -33,6 +34,7 @@ export default function Settings() {
             data.append('email', formData.email);
 
             const res = await updateUserProfile(data);
+            // @ts-ignore
             updateUser(res.data.user);
             alert('Cập nhật thông tin thành công');
         } catch (error: any) {
@@ -56,6 +58,13 @@ export default function Settings() {
         } catch (error: any) {
             alert(error.response?.data?.message || 'Lỗi đổi mật khẩu');
         }
+    };
+
+    const handleEnableNotifications = async () => {
+        const granted = await requestNotificationPermission();
+        setNotificationPermission(granted ? 'granted' : 'denied');
+        if (granted) alert("Đã bật thông báo hệ thống!");
+        else alert("Bạn đã từ chối quyền thông báo. Vui lòng bật lại trong cài đặt trình duyệt.");
     };
 
     return (
@@ -91,6 +100,45 @@ export default function Settings() {
                                 className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-300'}`}
                             >
                                 <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${theme === 'dark' ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Notification Accordion */}
+            <div className="glass-card overflow-hidden">
+                <button
+                    onClick={() => toggleSection('notifications')}
+                    className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-pink-100 text-pink-600 rounded-lg dark:bg-pink-900/30 dark:text-pink-400">
+                            <Bell size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Thông báo</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Cài đặt thông báo hệ thống</p>
+                        </div>
+                    </div>
+                    <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'notifications' ? 'rotate-180' : ''}`}>
+                        ▼
+                    </span>
+                </button>
+
+                {activeSection === 'notifications' && (
+                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới ngay cả khi ẩn tab.</p>
+                            </div>
+                            <button
+                                onClick={handleEnableNotifications}
+                                disabled={notificationPermission === 'granted'}
+                                className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                            >
+                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật thông báo'}
                             </button>
                         </div>
                     </div>

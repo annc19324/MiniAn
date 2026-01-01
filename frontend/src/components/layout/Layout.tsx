@@ -8,6 +8,7 @@ import { Award } from 'lucide-react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { getConversations } from '../../services/api';
+import { sendSystemNotification } from '../../utils/notificationUtils';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -27,8 +28,6 @@ export default function Layout() {
         };
         fetchLeaderboard();
     }, []);
-
-    // Global Socket for Notifications
     useEffect(() => {
         if (!user) return;
         const socket = io(import.meta.env.VITE_SOCKET_URL);
@@ -41,12 +40,14 @@ export default function Layout() {
                     icon: '📩',
                     style: { borderRadius: '10px', background: '#333', color: '#fff' },
                 });
+                sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
             }
         });
 
         socket.on('new_notification', (data) => {
             toast(data.content, { icon: '🔔' });
             setUnreadNotificationsCount(prev => prev + 1);
+            sendSystemNotification('Thông báo mới', data.content);
         });
 
         // Listen for new message alerts to update global count
