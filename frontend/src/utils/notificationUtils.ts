@@ -1,5 +1,4 @@
 
-
 export const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
         console.warn("This browser does not support desktop notification");
