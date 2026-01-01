@@ -188,6 +188,71 @@ export const updateUserCoins = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// ADMIN: Xóa User
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+
+    try {
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'Không có quyền truy cập' });
+        }
+
+        // Không cho phép xóa chính mình
+        if (req.user.id === Number(id)) {
+            return res.status(400).json({ message: 'Không thể tự xóa tài khoản của chính mình' });
+        }
+
+        // Xóa related data (Cascade handle bởi Prisma schema thường tốt hơn, nhưng ở đây có thể cần manual nếu schema không set)
+        // Với Prisma Relation Mode, cần xóa data con trước.
+        // Giả sử schema đã set onDelete: Cascade. Nếu chưa, sẽ lỗi.
+        // Để an toàn, chúng ta dùng transaction xóa vài thứ.
+        // Tuy nhiên, đơn giản nhất là delete user và catch lỗi.
+
+        await prisma.user.delete({ where: { id: Number(id) } });
+
+        res.json({ message: 'Đã xóa người dùng thành công' });
+    } catch (error) {
+        console.error("Delete user error:", error);
+        res.status(500).json({ message: 'Lỗi xóa người dùng (có thể do ràng buộc dữ liệu)' });
+    }
+};
+
+// ADMIN: Tạo User mới
+export const adminCreateUser = async (req: AuthRequest, res: Response) => {
+    const { username, email, password, fullName, role, isVip, coins } = req.body;
+
+    try {
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'Không có quyền truy cập' });
+        }
+
+        // Check exists
+        const exists = await prisma.user.findFirst({
+            where: { OR: [{ username }, { email }] }
+        });
+        if (exists) return res.status(400).json({ message: 'Username hoặc Email đã tồn tại' });
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        const newUser = await prisma.user.create({
+            data: {
+                username,
+                email,
+                password: hashedPassword,
+                fullName: fullName || username,
+                role: role || 'USER',
+                isVip: isVip || false,
+                coins: coins || 0
+            }
+        });
+
+        res.status(201).json({ message: 'Tạo người dùng thành công', user: newUser });
+    } catch (error) {
+        console.error("Create user error:", error);
+        res.status(500).json({ message: 'Lỗi tạo người dùng' });
+    }
+};
+
 
 // Tìm kiếm User
 export const searchUsers = async (req: AuthRequest, res: Response) => {

@@ -4,6 +4,8 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
+import toast from 'react-hot-toast';
+
 export default function Login() {
     const [emailOrUsername, setEmailOrUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -17,9 +19,12 @@ export default function Login() {
         try {
             const res = await api.post('/auth/login', { emailOrUsername, password });
             login(res.data.token, res.data.user);
+            toast.success('Đăng nhập thành công!');
             navigate('/');
         } catch (err: any) {
-            alert(err.response?.data?.message || 'Đăng nhập thất bại');
+            console.error("Login failed:", err);
+            const msg = err.response?.data?.message || err.message || 'Đăng nhập thất bại';
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
