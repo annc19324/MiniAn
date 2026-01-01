@@ -32,6 +32,7 @@ model User {
   notifications    Notification[]
   posts            Post[]
   rooms            UserRoom[]
+  createdRooms     Room[]            @relation("CreatedRooms")
 
   @@map("users")
 }
@@ -96,10 +97,14 @@ model Notification {
 model Room {
   id        Int        @id @default(autoincrement())
   name      String?
+  avatar    String?
   isGroup   Boolean    @default(false)
+  createdBy Int?
   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   messages  Message[]
   users     UserRoom[]
+  creator   User?      @relation("CreatedRooms", fields: [createdBy], references: [id])
 
   @@map("rooms")
 }

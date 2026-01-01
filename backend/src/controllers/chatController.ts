@@ -341,3 +341,259 @@ export const updateMessage = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Lỗi sửa tin nhắn', error });
     }
 };
+
+// ==== GROUP CHAT FUNCTIONS ====
+
+// Tạo nhóm chat
+export const createGroup = async (req: AuthRequest, res: Response) => {
+    const userId = req.user!.id;
+    const { name, memberIds } = req.body; // memberIds: array of user IDs to add
+
+    if (!name || !name.trim()) {
+        return res.status(400).json({ message: 'Tên nhóm không được để trống' });
+    }
+
+    try {
+        // Create group with creator + members
+        const allMemberIds = [userId, ...(memberIds || [])].filter((id, idx, arr) => arr.indexOf(id) === idx); // Remove duplicates
+
+        const group = await prisma.room.create({
+            data: {
+                name: name.trim(),
+                isGroup: true,
+                createdBy: userId,
+                users: {
+                    create: allMemberIds.map(id => ({ userId: id }))
+                }
+            },
+            include: {
+                users: {
+                    include: {
+                        user: {
+                            select: { id: true, username: true, fullName: true, avatar: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        res.status(201).json(group);
+    } catch (error) {
+        console.error('Create group error:', error);
+        res.status(500).json({ message: 'Lỗi tạo nhóm chat', error });
+    }
+};
+
+// Cập nhật thông tin nhóm (tên, avatar)
+export const updateGroup = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const { name, avatar } = req.body;
+
+    try {
+        const room = await prisma.room.findUnique({
+            where: { id: Number(id) }
+        });
+
+        if (!room) return res.status(404).json({ message: 'Không tìm thấy nhóm' });
+        if (!room.isGroup) return res.status(400).json({ message: 'Không phải nhóm chat' });
+
+        // Only creator can update group info (or could check if user is member)
+        if (room.createdBy !== userId) {
+            return res.status(403).json({ message: 'Chỉ người tạo nhóm mới có quyền cập nhật' });
+        }
+
+        const updatedRoom = await prisma.room.update({
+            where: { id: Number(id) },
+            data: {
+                ...(name && { name: name.trim() }),
+                ...(avatar !== undefined && { avatar })
+            },
+            include: {
+                users: {
+                    include: {
+                        user: {
+                            select: { id: true, username: true, fullName: true, avatar: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Emit socket to notify members
+        const io = req.app.get('io');
+        updatedRoom.users.forEach(u => {
+            io.to(u.userId.toString()).emit('group_updated', { group: updatedRoom });
+        });
+
+        res.json(updatedRoom);
+    } catch (error) {
+        console.error('Update group error:', error);
+        res.status(500).json({ message: 'Lỗi cập nhật nhóm', error });
+    }
+};
+
+// Thêm thành viên vào nhóm
+export const addGroupMember = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params; // Room ID
+    const userId = req.user!.id;
+    const { memberId } = req.body; // User ID to add
+
+    try {
+        const room = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: { users: true }
+        });
+
+        if (!room) return res.status(404).json({ message: 'Không tìm thấy nhóm' });
+        if (!room.isGroup) return res.status(400).json({ message: 'Không phải nhóm chat' });
+
+        // Check if current user is member
+        const isMember = room.users.some(u => u.userId === userId);
+        if (!isMember) return res.status(403).json({ message: 'Bạn không phải thành viên nhóm' });
+
+        // Check if target user is already member
+        const isAlreadyMember = room.users.some(u => u.userId === memberId);
+        if (isAlreadyMember) return res.status(400).json({ message: 'Người dùng đã trong nhóm' });
+
+        // Add member
+        await prisma.userRoom.create({
+            data: {
+                userId: memberId,
+                roomId: Number(id)
+            }
+        });
+
+        // Fetch updated room
+        const updatedRoom = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: {
+                users: {
+                    include: {
+                        user: {
+                            select: { id: true, username: true, fullName: true, avatar: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Emit socket
+        const io = req.app.get('io');
+        updatedRoom?.users.forEach(u => {
+            io.to(u.userId.toString()).emit('group_member_added', { group: updatedRoom, newMemberId: memberId });
+        });
+
+        res.json(updatedRoom);
+    } catch (error) {
+        console.error('Add member error:', error);
+        res.status(500).json({ message: 'Lỗi thêm thành viên', error });
+    }
+};
+
+// Xóa thành viên khỏi nhóm
+export const removeGroupMember = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params; // Room ID
+    const userId = req.user!.id;
+    const { memberId } = req.body; // User ID to remove
+
+    try {
+        const room = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: { users: true }
+        });
+
+        if (!room) return res.status(404).json({ message: 'Không tìm thấy nhóm' });
+        if (!room.isGroup) return res.status(400).json({ message: 'Không phải nhóm chat' });
+
+        // Only creator can remove members (or member can remove themselves)
+        if (room.createdBy !== userId && memberId !== userId) {
+            return res.status(403).json({ message: 'Chỉ người tạo nhóm hoặc chính bạn mới có quyền xóa' });
+        }
+
+        // Cannot remove creator
+        if (memberId === room.createdBy && memberId !== userId) {
+            return res.status(400).json({ message: 'Không thể xóa người tạo nhóm' });
+        }
+
+        // Remove member
+        await prisma.userRoom.delete({
+            where: {
+                userId_roomId: {
+                    userId: memberId,
+                    roomId: Number(id)
+                }
+            }
+        });
+
+        // Fetch updated room
+        const updatedRoom = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: {
+                users: {
+                    include: {
+                        user: {
+                            select: { id: true, username: true, fullName: true, avatar: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Emit socket
+        const io = req.app.get('io');
+        updatedRoom?.users.forEach(u => {
+            io.to(u.userId.toString()).emit('group_member_removed', { group: updatedRoom, removedMemberId: memberId });
+        });
+        // Also notify removed member
+        io.to(memberId.toString()).emit('removed_from_group', { roomId: Number(id) });
+
+        res.json(updatedRoom);
+    } catch (error) {
+        console.error('Remove member error:', error);
+        res.status(500).json({ message: 'Lỗi xóa thành viên', error });
+    }
+};
+
+// Rời nhóm (leave group)
+export const leaveGroup = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    try {
+        const room = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: { users: true }
+        });
+
+        if (!room) return res.status(404).json({ message: 'Không tìm thấy nhóm' });
+        if (!room.isGroup) return res.status(400).json({ message: 'Không phải nhóm chat' });
+
+        // Creator cannot leave (must transfer ownership or delete group)
+        if (room.createdBy === userId) {
+            return res.status(400).json({ message: 'Người tạo nhóm không thể rời khỏi nhóm. Vui lòng chuyển quyền quản trị hoặc xóa nhóm.' });
+        }
+
+        // Remove self
+        await prisma.userRoom.delete({
+            where: {
+                userId_roomId: {
+                    userId: userId,
+                    roomId: Number(id)
+                }
+            }
+        });
+
+        // Emit socket
+        const io = req.app.get('io');
+        room.users.forEach(u => {
+            io.to(u.userId.toString()).emit('group_member_removed', { roomId: Number(id), removedMemberId: userId });
+        });
+
+        res.json({ message: 'Đã rời khỏi nhóm' });
+    } catch (error) {
+        console.error('Leave group error:', error);
+        res.status(500).json({ message: 'Lỗi rời nhóm', error });
+    }
+};
+

@@ -1,7 +1,11 @@
 // src/routes/chatRoutes.ts
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { getConversations, getMessages, startConversation, sendMessage, markAsRead, deleteConversation, updateMessage, deleteMessage } from '../controllers/chatController';
+import {
+    getConversations, getMessages, startConversation, sendMessage, markAsRead,
+    deleteConversation, updateMessage, deleteMessage,
+    createGroup, updateGroup, addGroupMember, removeGroupMember, leaveGroup
+} from '../controllers/chatController';
 
 const router = express.Router();
 
@@ -16,4 +20,12 @@ router.put('/read/:roomId', protect, markAsRead);
 router.put('/message/:id', protect, updateMessage);
 router.delete('/message/:id', protect, deleteMessage);
 
+// Group chat routes
+router.post('/group/create', protect, createGroup);
+router.put('/group/:id', protect, updateGroup);
+router.post('/group/:id/member/add', protect, addGroupMember);
+router.delete('/group/:id/member/remove', protect, removeGroupMember);
+router.post('/group/:id/leave', protect, leaveGroup);
+
 export default router;
+
