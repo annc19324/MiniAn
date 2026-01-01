@@ -1,5 +1,4 @@
-// Simple 'ding' sound in base64 to avoid loading external files and improve compatibility
-const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRl9vT1xXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'; // Short placeholder, will use a real one or Oscillator fallback properly
+
 
 export const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
