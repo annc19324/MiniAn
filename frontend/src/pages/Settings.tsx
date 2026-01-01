@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon, Bell, Volume2 } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { requestNotificationPermission } from '../utils/notificationUtils';
+import { requestNotificationPermission, sendSystemNotification, playNotificationSound } from '../utils/notificationUtils';
 
 export default function Settings() {
     const { user, logout, updateUser } = useAuth();
@@ -204,13 +204,22 @@ export default function Settings() {
                                 <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới.</p>
                             </div>
-                            <button
-                                onClick={handleEnableNotifications}
-                                disabled={notificationPermission === 'granted'}
-                                className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                            >
-                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => sendSystemNotification("Kiểm tra thông báo", "Đây là thông báo thử nghiệm từ MiniAn!")}
+                                    className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg text-sm font-bold"
+                                    title="Gửi thông báo thử"
+                                >
+                                    Thử
+                                </button>
+                                <button
+                                    onClick={handleEnableNotifications}
+                                    disabled={notificationPermission === 'granted'}
+                                    className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                                >
+                                    {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Sound Toggle */}
@@ -224,12 +233,21 @@ export default function Settings() {
                                     <p className="text-sm text-slate-500 dark:text-slate-400">Phát âm thanh khi có thông báo mới</p>
                                 </div>
                             </div>
-                            <button
-                                onClick={toggleSound}
-                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${soundEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                            >
-                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => playNotificationSound()}
+                                    className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg"
+                                    title="Phát âm thanh thử"
+                                >
+                                    <Play size={18} />
+                                </button>
+                                <button
+                                    onClick={toggleSound}
+                                    className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${soundEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                >
+                                    <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
