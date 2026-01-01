@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, X, Send } from 'lucide-react';
 import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -86,7 +87,7 @@ function EditProfileModal({
             onSuccess(res.data.user);
             onClose();
         } catch (error: any) {
-            alert(error.response?.data?.message || 'Lỗi cập nhật');
+            toast.error(error.response?.data?.message || 'Lỗi cập nhật');
         } finally {
             setLoading(false);
         }
@@ -94,8 +95,8 @@ function EditProfileModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl animate-scale-in">
-                <h2 className="text-xl font-bold mb-4">Chỉnh sửa hồ sơ</h2>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-scale-in border dark:border-slate-800">
+                <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Chỉnh sửa hồ sơ</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {/* Avatar Upload */}
                     <div className="flex justify-center mb-4">
@@ -113,25 +114,25 @@ function EditProfileModal({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Tên hiển thị</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tên hiển thị</label>
                         <input
                             type="text"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Tiểu sử</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tiểu sử</label>
                         <textarea
                             value={bio}
                             onChange={(e) => setBio(e.target.value)}
                             rows={3}
-                            className="w-full p-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                            className="w-full p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                         />
                     </div>
                     <div className="flex justify-end gap-2 mt-6">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium">Hủy</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg font-medium">Hủy</button>
                         <button type="submit" disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50">
                             {loading ? 'Lưu...' : 'Lưu thay đổi'}
                         </button>
@@ -251,7 +252,7 @@ export default function Profile() {
             }));
             setCommentText('');
         } catch (error) {
-            alert('Lỗi bình luận');
+            toast.error('Lỗi bình luận');
         }
     };
 
@@ -417,7 +418,7 @@ export default function Profile() {
                                             onClick={() => {
                                                 const url = window.location.origin + '/post/' + post.id;
                                                 navigator.clipboard.writeText(url);
-                                                alert('Đã sao chép liên kết bài viết!');
+                                                toast.success('Đã sao chép liên kết bài viết!');
                                             }}
                                             className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                                         >

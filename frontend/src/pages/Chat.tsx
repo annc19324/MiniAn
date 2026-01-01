@@ -3,11 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search } from 'lucide-react';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 interface Message {
     id: number;
@@ -44,6 +44,7 @@ export default function Chat() {
     const [socket, setSocket] = useState<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Initialize Socket
     useEffect(() => {
@@ -229,14 +230,24 @@ export default function Chat() {
         <div className="flex h-[calc(100vh-120px)] md:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
             <div className={`w-full md:w-80 border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
-                <div className="p-4 border-b border-indigo-50 dark:border-slate-800">
+                <div className="p-4 border-b border-indigo-50 dark:border-slate-800 space-y-3">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                        />
+                    </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                    {conversations.length === 0 ? (
-                        <div className="p-4 text-center text-slate-400 text-sm">Chưa có cuộc trò chuyện nào.</div>
+                    {conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
+                        <div className="p-4 text-center text-slate-400 text-sm">Không tìm thấy cuộc trò chuyện.</div>
                     ) : (
-                        conversations.map((c) => (
+                        conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).map((c) => (
                             <div
                                 key={c.id}
                                 onClick={() => setActiveRoomId(c.id)}
@@ -281,15 +292,17 @@ export default function Chat() {
                                 <button onClick={() => setActiveRoomId(null)} className="md:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
                                     ←
                                 </button>
-                                <img
-                                    src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConversation?.name || '')}&background=random&color=fff&length=1`}
-                                    className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                    alt="Avatar"
-                                />
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
-                                    <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
-                                </div>
+                                <Link to={`/profile/${activeConversation?.otherMemberId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                                    <img
+                                        src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConversation?.name || '')}&background=random&color=fff&length=1`}
+                                        className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
+                                        alt="Avatar"
+                                    />
+                                    <div>
+                                        <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
+                                        <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
+                                    </div>
+                                </Link>
                             </div>
                             <div className="flex gap-2 text-slate-400 dark:text-slate-500">
                                 <Phone size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
