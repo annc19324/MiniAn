@@ -38,9 +38,6 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 
         // Format lại data để dễ hiển thị ở frontend & Sort by last message
         const formattedConversations = await Promise.all(conversations.map(async (room) => {
-            // Tìm người kia trong box chat (giả sử chat 1-1)
-            const otherMember = room.users.find(u => u.userId !== userId)?.user;
-
             // Count unread messages
             let unreadCount = 0;
             try {
@@ -58,14 +55,33 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                 console.error(`Error counting unread for room ${room.id}:`, err);
             }
 
-            return {
-                id: room.id,
-                name: otherMember?.fullName || room.name || 'Chat Group',
-                avatar: otherMember?.avatar,
-                lastMessage: room.messages[0],
-                otherMemberId: otherMember?.id,
-                unreadCount
-            };
+            // Phân biệt group chat vs 1-1 chat
+            if (room.isGroup) {
+                // Group chat: hiển thị tên nhóm và avatar nhóm
+                return {
+                    id: room.id,
+                    name: room.name || 'Nhóm chat',
+                    avatar: room.avatar,
+                    isGroup: true,
+                    memberCount: room.users.length,
+                    members: room.users.map(u => u.user),
+                    createdBy: room.createdBy,
+                    lastMessage: room.messages[0],
+                    unreadCount
+                };
+            } else {
+                // 1-1 chat: hiển thị thông tin người kia
+                const otherMember = room.users.find(u => u.userId !== userId)?.user;
+                return {
+                    id: room.id,
+                    name: otherMember?.fullName || 'Unknown User',
+                    avatar: otherMember?.avatar,
+                    isGroup: false,
+                    otherMemberId: otherMember?.id,
+                    lastMessage: room.messages[0],
+                    unreadCount
+                };
+            }
         }));
 
         formattedConversations.sort((a, b) => {

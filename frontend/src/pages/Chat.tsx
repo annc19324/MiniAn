@@ -7,6 +7,7 @@ import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, Rotate
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreateGroupModal from '../components/CreateGroupModal';
+import GroupManagementModal from '../components/GroupManagementModal';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -46,6 +47,15 @@ interface Conversation {
     };
     otherMemberId?: number;
     unreadCount?: number;
+    isGroup?: boolean;
+    memberCount?: number;
+    members?: Array<{
+        id: number;
+        username: string;
+        fullName: string;
+        avatar?: string;
+    }>;
+    createdBy?: number;
 }
 
 export default function Chat() {
@@ -60,6 +70,7 @@ export default function Chat() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+    const [showGroupManagement, setShowGroupManagement] = useState(false);
 
     // Edit/Delete State
     const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
@@ -473,7 +484,19 @@ export default function Chat() {
                                     onClick={() => setShowRoomMenu(!showRoomMenu)}
                                 />
                                 {showRoomMenu && (
-                                    <div className="absolute right-0 top-8 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-scale-in">
+                                    <div className="absolute right-0 top-8 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-scale-in">
+                                        {activeConversation?.isGroup && (
+                                            <button
+                                                onClick={() => {
+                                                    setShowGroupManagement(true);
+                                                    setShowRoomMenu(false);
+                                                }}
+                                                className="w-full text-left px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-sm font-medium transition-colors"
+                                            >
+                                                <Users size={16} />
+                                                Quản lý nhóm
+                                            </button>
+                                        )}
                                         <button
                                             onClick={handleDeleteConv}
                                             className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium transition-colors"
@@ -663,6 +686,22 @@ export default function Chat() {
                     setConversations(res.data);
                 }}
             />
+
+            {/* Group Management Modal */}
+            {activeConversation?.isGroup && (
+                <GroupManagementModal
+                    isOpen={showGroupManagement}
+                    onClose={() => setShowGroupManagement(false)}
+                    roomId={activeRoomId!}
+                    groupName={activeConversation.name}
+                    members={activeConversation.members || []}
+                    createdBy={activeConversation.createdBy}
+                    onUpdate={async () => {
+                        const res = await getConversations();
+                        setConversations(res.data);
+                    }}
+                />
+            )}
         </div >
     );
 }
