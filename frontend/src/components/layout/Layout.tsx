@@ -109,7 +109,7 @@ export default function Layout() {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row transition-colors duration-300">
             {/* Leaderboard Sidebar (Left Side) */}
-            <aside className="hidden lg:flex w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto transition-colors duration-300">
+            <aside className="hidden lg:flex w-56 xl:w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-6 text-yellow-600 dark:text-yellow-500">
                     <Award size={24} />
                     <h2 className="text-xl font-bold">Bảng Xếp Hạng</h2>
@@ -135,7 +135,7 @@ export default function Layout() {
             </aside>
 
             {/* Desktop Sidebar (Right Side) */}
-            <aside className="hidden lg:flex w-72 flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-white/50 dark:border-slate-800/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none overflow-y-auto transition-colors duration-300">
+            <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-white/50 dark:border-slate-800/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none overflow-y-auto transition-colors duration-300">
                 <div className="p-6">
                     <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tighter">
                         MiniAn
@@ -199,7 +199,7 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            <main className="flex-1 lg:mr-72 lg:ml-64 pb-24 lg:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full transition-all duration-300">
+            <main className="flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 pb-24 lg:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full transition-all duration-300">
                 <Outlet />
             </main>
 
