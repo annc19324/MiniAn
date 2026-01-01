@@ -89,18 +89,18 @@ export default function Notifications() {
                                     navigate(`/post/${n.postId}`);
                                 }
                             }}
-                            className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50' : 'opacity-75'}`}
+                            className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50 dark:bg-indigo-900/30' : 'opacity-75'}`}
                         >
                             <img
                                 src={n.sender?.avatar || `https://ui-avatars.com/api/?name=${n.sender?.username || 'System'}&background=random`}
-                                className="w-12 h-12 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                                className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm flex-shrink-0"
                                 alt="Sender"
                             />
                             <div className="flex-1">
-                                <p className="text-slate-800 leading-snug">
+                                <p className="text-slate-800 dark:text-slate-200 leading-snug">
                                     <span className="font-bold">{n.sender?.username || 'Hệ thống'}</span> {n.content.replace(n.sender?.username || '', '')}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: vi })}
                                 </p>
                             </div>
