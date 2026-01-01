@@ -20,6 +20,7 @@ interface Message {
     sender: {
         id: number;
         username: string;
+        fullName: string;
         avatar?: string;
     };
     createdAt: string;
@@ -542,11 +543,14 @@ export default function Chat() {
                                         {!isMe && (
                                             <div className="w-8 flex-shrink-0">
                                                 {showAvatar && (
-                                                    <img
-                                                        src={getAvatarUrl(msg.sender.avatar, msg.sender.username)}
-                                                        className="w-8 h-8 rounded-full shadow-sm"
-                                                        alt="Sender"
-                                                    />
+                                                    <Link to={`/profile/${msg.senderId}`}>
+                                                        <img
+                                                            src={getAvatarUrl(msg.sender.avatar, msg.sender.username)}
+                                                            className="w-8 h-8 rounded-full shadow-sm hover:opacity-80 transition-opacity"
+                                                            title={msg.sender.fullName}
+                                                            alt={msg.sender.fullName}
+                                                        />
+                                                    </Link>
                                                 )}
                                             </div>
                                         )}
@@ -590,6 +594,16 @@ export default function Chat() {
                                         )}
 
                                         <div className={`relative max-w-[70%]`}>
+                                            {/* Show sender name in group chat */}
+                                            {activeConversation?.isGroup && !isMe && showAvatar && (
+                                                <Link
+                                                    to={`/profile/${msg.senderId}`}
+                                                    className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 ml-1 block hover:underline hover:text-indigo-500 transition-colors font-medium"
+                                                >
+                                                    {msg.sender.fullName}
+                                                </Link>
+                                            )}
+
                                             {/* Timestamp Tooltip/Display */}
                                             {!isEditing && (
                                                 <div className={`text-[10px] text-slate-400 dark:text-slate-500 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
