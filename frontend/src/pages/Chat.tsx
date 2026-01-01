@@ -632,7 +632,7 @@ export default function Chat() {
 
                                             {/* Timestamp Tooltip/Display - Moved to Bottom */}
                                             {!isEditing && (
-                                                <div className={`text-[10px] text-slate-400 dark:text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                                <div className={`text-[10px] text-slate-400 dark:text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'}`}>
                                                     {format(new Date(msg.createdAt), "HH:mm dd/MM/yyyy", { locale: vi })}
                                                     {isMe && (
                                                         <span className="ml-2">
