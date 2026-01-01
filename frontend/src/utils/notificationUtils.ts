@@ -42,44 +42,25 @@ export const sendSystemNotification = (title: string, body?: string, icon?: stri
     }
 };
 
-export const playNotificationSound = async () => {
+const NOTIFICATION_AUDIO_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+
+export const playNotificationSound = () => {
     try {
-        console.log("Playing notification sound via Web Audio API...");
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) {
-            console.error("AudioContext not supported");
-            return;
+        console.log("Playing notification sound via HTML5 Audio...");
+        const audio = new Audio(NOTIFICATION_AUDIO_URL);
+        audio.volume = 0.5;
+
+        const playPromise = audio.play();
+
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                console.log("Audio playback started.");
+            })
+                .catch(error => {
+                    console.warn("Audio playback prevented by browser autoplay policy.", error);
+                });
         }
-
-        const ctx = new AudioContext();
-
-        if (ctx.state === 'suspended') {
-            await ctx.resume();
-        }
-
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        // Sound profile: simple 'ding'
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch A5
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); // Quick drop to A4
-
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5);
-
-        // Clean up context to release hardware resources
-        setTimeout(() => {
-            if (ctx.state !== 'closed') ctx.close();
-        }, 600);
-
     } catch (e) {
-        console.error("Audio play failed", e);
+        console.error("Audio constructor failed", e);
     }
 };
