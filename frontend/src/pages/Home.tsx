@@ -2,10 +2,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getFeed, createPost, likePost, dailyCheckIn, commentPost } from '../services/api';
-import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send, Search } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 interface Post {
   id: number;
@@ -33,6 +34,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchPosts = async () => {
     try {
@@ -113,14 +115,14 @@ export default function Home() {
   const handleCheckIn = async () => {
     try {
       const res = await dailyCheckIn();
-      alert(res.data.message);
+      toast.success(res.data.message);
       if (user) {
         const newUser = { ...user, coins: user.coins + (res.data.coinsAdded || 0) };
         const token = localStorage.getItem('token');
         if (token) login(token, newUser);
       }
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Lỗi điểm danh');
+      toast.error(error.response?.data?.message || 'Lỗi điểm danh');
     }
   };
 
@@ -139,6 +141,18 @@ export default function Home() {
         >
           📅 Điểm danh
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
+        <input
+          type="text"
+          placeholder="Tìm kiếm bài viết, người dùng..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white dark:bg-slate-900 border border-indigo-50 dark:border-slate-800 text-slate-800 dark:text-slate-200 pl-12 pr-4 py-3 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
+        />
       </div>
 
       <div className="glass-card p-4 flex gap-4 items-start">
@@ -181,7 +195,10 @@ export default function Home() {
       ) : posts.length === 0 ? (
         <div className="text-center py-10 text-slate-400">Chưa có bài viết nào, hãy là người đầu tiên!</div>
       ) : (
-        posts.map((post) => {
+        posts.filter(p =>
+          p.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.author.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+        ).map((post) => {
           const isLiked = post.likes.some(l => l.userId === user?.id);
           return (
             <div key={post.id} className="glass-card animate-slide-up">
