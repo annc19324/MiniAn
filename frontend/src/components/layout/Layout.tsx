@@ -35,17 +35,28 @@ export default function Layout() {
         socket.emit('join_room', user.id);
 
         socket.on('receive_message', (data) => {
-            // GLOBAL LOGIC: Always play sound variable check
+            // Sound Logic:
+            // 1. If global setting is OFF -> No sound.
+            // 2. If global setting is ON:
+            //    - If user is NOT on /chat -> Play sound.
+            //    - If user IS on /chat but tab is hidden -> Play sound.
+            //    - If user IS on /chat and viewing -> NO sound (as per request).
+
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+            const isChatPage = window.location.pathname === '/chat';
+            const isHidden = document.hidden;
+
             if (soundEnabled) {
-                playNotificationSound();
+                if (!isChatPage || isHidden) {
+                    playNotificationSound();
+                }
             }
 
             // Always try to send system notification
             sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
 
             // Toast logic: Only show if NOT on chat page or hidden
-            if (window.location.pathname !== '/chat' || document.hidden) {
+            if (!isChatPage || isHidden) {
                 toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
                     icon: '📩',
                     style: { borderRadius: '10px', background: '#333', color: '#fff' },
@@ -54,6 +65,7 @@ export default function Layout() {
         });
 
         socket.on('new_notification', (data) => {
+            // For general notifications (Likes, Comments, Follows), ALWAYS play sound if enabled
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
             if (soundEnabled) {
                 playNotificationSound();
