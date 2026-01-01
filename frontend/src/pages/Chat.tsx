@@ -593,7 +593,7 @@ export default function Chat() {
                                             </div>
                                         )}
 
-                                        <div className={`relative max-w-[70%]`}>
+                                        <div className={`relative max-w-[70%] flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                                             {/* Show sender name in group chat */}
                                             {activeConversation?.isGroup && !isMe && showAvatar && (
                                                 <Link
@@ -602,13 +602,6 @@ export default function Chat() {
                                                 >
                                                     {msg.sender.fullName}
                                                 </Link>
-                                            )}
-
-                                            {/* Timestamp Tooltip/Display */}
-                                            {!isEditing && (
-                                                <div className={`text-[10px] text-slate-400 dark:text-slate-500 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                                                    {format(new Date(msg.createdAt), "HH:mm EE dd/MM/yyyy", { locale: vi })}
-                                                </div>
                                             )}
 
                                             {isEditing ? (
@@ -637,9 +630,15 @@ export default function Chat() {
                                                 </div>
                                             )}
 
-                                            {isMe && !isEditing && (
-                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-1">
-                                                    {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                            {/* Timestamp Tooltip/Display - Moved to Bottom */}
+                                            {!isEditing && (
+                                                <div className={`text-[10px] text-slate-400 dark:text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                                    {format(new Date(msg.createdAt), "HH:mm dd/MM/yyyy", { locale: vi })}
+                                                    {isMe && (
+                                                        <span className="ml-2">
+                                                            {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
