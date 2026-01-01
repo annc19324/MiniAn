@@ -35,12 +35,8 @@ export default function Layout() {
         socket.emit('join_room', user.id);
 
         socket.on('receive_message', (data) => {
-            console.log("Socket: receive_message", data);
-
             // GLOBAL LOGIC: Always play sound variable check
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-            console.log("Global Sound Check (Msg):", soundEnabled);
-
             if (soundEnabled) {
                 playNotificationSound();
             }
@@ -58,11 +54,7 @@ export default function Layout() {
         });
 
         socket.on('new_notification', (data) => {
-            console.log("Socket: new_notification", data);
-
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-            console.log("Global Sound Check (Notif):", soundEnabled);
-
             if (soundEnabled) {
                 playNotificationSound();
             }
