@@ -70,8 +70,8 @@ export default function LeaderboardPage() {
                                     {u.fullName}
                                 </Link>
                                 <div className="flex items-center gap-2 text-sm text-slate-500">
-                                    <span>@{u.username}</span>
-                                    {u.isVip && <span className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5 py-0.5 rounded font-bold">VIP</span>}
+                                    <span className="truncate max-w-[100px] md:max-w-[200px]">@{u.username}</span>
+                                    {u.isVip && <span className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0">VIP</span>}
                                 </div>
                             </div>
 
