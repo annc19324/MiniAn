@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, X, Send } from 'lucide-react';
 import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
