@@ -36,23 +36,26 @@ export default function Layout() {
 
         socket.on('receive_message', (data) => {
             console.log("Socket: receive_message", data);
-            if (window.location.pathname !== '/chat') {
-                const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-                console.log("Sound enabled (msg):", soundEnabled);
-                if (soundEnabled) playNotificationSound();
 
+            // Logic: Always play sound and notify if enabled
+            const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+            if (soundEnabled) playNotificationSound();
+
+            sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
+
+            // Only show in-app toast if NOT on chat page to avoid clutter, 
+            // OR if the window is hidden/blurred (user won't see the chat UI)
+            if (window.location.pathname !== '/chat' || document.hidden) {
                 toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
                     icon: '📩',
                     style: { borderRadius: '10px', background: '#333', color: '#fff' },
                 });
-                sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
             }
         });
 
         socket.on('new_notification', (data) => {
             console.log("Socket: new_notification", data);
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-            console.log("Sound enabled (notif):", soundEnabled);
             if (soundEnabled) playNotificationSound();
 
             toast(data.content, { icon: '🔔' });
