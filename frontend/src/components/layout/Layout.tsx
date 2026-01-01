@@ -107,9 +107,9 @@ export default function Layout() {
     }, [user, window.location.pathname]); // Refresh when navigating too
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col md:flex-row transition-colors duration-300">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row transition-colors duration-300">
             {/* Leaderboard Sidebar (Left Side) */}
-            <aside className="hidden xl:flex w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto transition-colors duration-300">
+            <aside className="hidden lg:flex w-56 xl:w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-6 text-yellow-600 dark:text-yellow-500">
                     <Award size={24} />
                     <h2 className="text-xl font-bold">Bảng Xếp Hạng</h2>
@@ -135,7 +135,7 @@ export default function Layout() {
             </aside>
 
             {/* Desktop Sidebar (Right Side) */}
-            <aside className="hidden xl:flex w-72 flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-white/50 dark:border-slate-800/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none overflow-y-auto transition-colors duration-300">
+            <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-white/50 dark:border-slate-800/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none overflow-y-auto transition-colors duration-300">
                 <div className="p-6">
                     <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tighter">
                         MiniAn
@@ -175,7 +175,7 @@ export default function Layout() {
             </aside>
 
             {/* Mobile Header */}
-            <header className="xl:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 py-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300">
+            <header className="lg:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 py-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300">
                 <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">MiniAn</h1>
                 <div className="flex items-center gap-3">
                     <NavLink to="/leaderboard" className="p-2 text-yellow-600 dark:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-full">
@@ -199,12 +199,12 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            <main className="flex-1 xl:mr-72 xl:ml-64 pb-24 xl:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full transition-all duration-300">
+            <main className="flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 pb-24 lg:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full transition-all duration-300">
                 <Outlet />
             </main>
 
             {/* Mobile Bottom Nav */}
-            <nav className="xl:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-none pb-safe transition-colors duration-300">
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-none pb-safe transition-colors duration-300">
                 <MobileNavItem to="/" icon={<Home size={24} />} />
                 <MobileNavItem to="/search" icon={<Search size={24} />} />
                 <NavLink to="/create" className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white p-3.5 rounded-2xl -mt-8 shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all border-4 border-slate-50 dark:border-slate-950">

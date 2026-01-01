@@ -393,29 +393,31 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="fixed inset-x-2 top-[70px] bottom-[50px] z-30 xl:z-auto xl:static xl:inset-auto flex xl:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="fixed inset-x-2 top-[70px] bottom-[50px] z-30 lg:z-auto lg:static lg:inset-auto flex lg:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
-            <div className={`w-full xl:w-[30%] xl:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden xl:flex' : 'flex'}`}>
-                <div className="p-4 border-b border-indigo-50 dark:border-slate-800 space-y-3">
+            <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
+                <div className="p-3 border-b border-indigo-50 dark:border-slate-800 space-y-3">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                        />
+                    <div className="flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 pl-9 pr-3 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                            />
+                        </div>
+                        <button
+                            onClick={() => setShowCreateGroupModal(true)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl flex items-center justify-center shadow-md shadow-indigo-500/20 transition-all active:scale-95"
+                            title="Tạo nhóm mới"
+                        >
+                            <Users size={18} />
+                        </button>
                     </div>
                 </div>
-                <button
-                    onClick={() => setShowCreateGroupModal(true)}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-[1.02] active:scale-95"
-                >
-                    <Users size={18} />
-                    <span>Tạo nhóm mới</span>
-                </button>
 
                 <div className="flex-1 overflow-y-auto">
                     {conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
@@ -425,27 +427,27 @@ export default function Chat() {
                             <div
                                 key={c.id}
                                 onClick={() => setActiveRoomId(c.id)}
-                                className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors ${activeRoomId === c.id ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
+                                className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800/50 ${activeRoomId === c.id ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
                             >
                                 <img
                                     src={getAvatarUrl(c.avatar, c.name)}
-                                    className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm object-cover"
+                                    className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
                                     alt="Avatar"
                                 />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 truncate">{c.name}</h4>
-                                    <p className={`text-sm truncate ${activeRoomId === c.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                    <h4 className="font-semibold text-slate-800 dark:text-slate-200 truncate text-sm">{c.name}</h4>
+                                    <p className={`text-xs truncate ${activeRoomId === c.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                         {c.unreadCount ? <span className="font-bold text-slate-900 dark:text-white">{c.lastMessage?.content}</span> : (c.lastMessage?.content || <span className="italic text-slate-400 dark:text-slate-500">Bắt đầu trò chuyện</span>)}
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-end">
+                                <div className="flex flex-col items-end gap-1">
                                     {c.lastMessage && (
-                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap mb-1">
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
                                             {formatDistanceToNow(new Date(c.lastMessage.createdAt), { locale: vi, addSuffix: false })}
                                         </span>
                                     )}
                                     {!!c.unreadCount && c.unreadCount > 0 && (
-                                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                                        <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
                                             {c.unreadCount}
                                         </span>
                                     )}
