@@ -166,6 +166,11 @@ export default function Layout() {
                         className="p-2 text-slate-600 hover:bg-slate-100 rounded-full relative"
                     >
                         <MessageCircle size={24} />
+                        {unreadMessagesCount > 0 && (
+                            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full ring-2 ring-white transform translate-x-1 -translate-y-1">
+                                {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                            </span>
+                        )}
                     </button>
                     <NavLink to="/settings" className="p-2 text-slate-600 hover:bg-slate-100 rounded-full">
                         <Settings size={24} />
@@ -215,7 +220,11 @@ function MobileNavItem({ to, icon, count }: { to: string; icon: React.ReactNode;
             `p-3 rounded-2xl transition-all relative ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400'}`
         }>
             {icon}
-            {count && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>}
+            {!!count && count > 0 && (
+                <span className="absolute top-2 right-2 w-4 h-4 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full ring-2 ring-white transform translate-x-1 -translate-y-1">
+                    {count > 99 ? '99+' : count}
+                </span>
+            )}
         </NavLink>
     );
 }
