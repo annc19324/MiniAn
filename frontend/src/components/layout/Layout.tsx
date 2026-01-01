@@ -199,7 +199,7 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            <main className="flex-1 lg:mr-72 xl:ml-64 pb-24 lg:pb-10 px-4 py-6 max-w-5xl mx-auto w-full transition-all duration-300">
+            <main className="flex-1 lg:mr-72 xl:ml-64 pb-24 lg:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full transition-all duration-300">
                 <Outlet />
             </main>
 
