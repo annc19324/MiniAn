@@ -2,6 +2,7 @@
 import { Response } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { uploadImage } from '../utils/upload';
 
 // Lấy danh sách cuộc trò chuyện (Rooms)
 export const getConversations = async (req: AuthRequest, res: Response) => {
@@ -404,7 +405,8 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 export const updateGroup = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.id;
-    const { name, avatar } = req.body;
+    const { name } = req.body;
+    const file = req.file;
 
     try {
         const room = await prisma.room.findUnique({
@@ -414,16 +416,22 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
         if (!room) return res.status(404).json({ message: 'Không tìm thấy nhóm' });
         if (!room.isGroup) return res.status(400).json({ message: 'Không phải nhóm chat' });
 
-        // Only creator can update group info (or could check if user is member)
+        // Only creator can update group info
         if (room.createdBy !== userId) {
             return res.status(403).json({ message: 'Chỉ người tạo nhóm mới có quyền cập nhật' });
+        }
+
+        // Upload avatar if file provided
+        let avatarUrl: string | undefined;
+        if (file) {
+            avatarUrl = await uploadImage(file);
         }
 
         const updatedRoom = await prisma.room.update({
             where: { id: Number(id) },
             data: {
                 ...(name && { name: name.trim() }),
-                ...(avatar !== undefined && { avatar })
+                ...(avatarUrl && { avatar: avatarUrl })
             },
             include: {
                 users: {
