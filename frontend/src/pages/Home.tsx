@@ -1,12 +1,13 @@
 // src/pages/Home.tsx
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getFeed, createPost, likePost, dailyCheckIn, commentPost } from '../services/api';
-import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send, Search } from 'lucide-react';
+import { getFeed, createPost, likePost, dailyCheckIn, commentPost, deletePost } from '../services/api';
+import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send, Search, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 interface Post {
   id: number;
@@ -35,6 +36,10 @@ export default function Home() {
   const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
+  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [editPostContent, setEditPostContent] = useState('');
+  const navigate = useNavigate();
 
   const fetchPosts = async () => {
     try {
@@ -49,6 +54,16 @@ export default function Home() {
 
   useEffect(() => {
     fetchPosts();
+  }, []);
+
+  // Click outside to close post menu
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveMenuPostId(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const handlePostSubmit = async () => {
@@ -126,6 +141,35 @@ export default function Home() {
     }
   };
 
+  const handleDeletePost = async (postId: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return;
+    try {
+      await deletePost(postId);
+      setPosts(posts.filter(p => p.id !== postId));
+      toast.success('Đã xóa bài viết');
+    } catch (error) {
+      toast.error('Lỗi xóa bài viết');
+    }
+  };
+
+  const handleStartEditPost = (post: Post) => {
+    setEditingPostId(post.id);
+    setEditPostContent(post.content);
+    setActiveMenuPostId(null);
+  };
+
+  const handleUpdatePost = async (postId: number) => {
+    if (!editPostContent.trim()) return;
+    try {
+      const res = await import('../services/api').then(m => m.updatePost(postId, editPostContent));
+      setPosts(posts.map(p => p.id === postId ? { ...p, content: res.data.content } : p)); // Assuming API returns updated post
+      setEditingPostId(null);
+      toast.success('Đã cập nhật bài viết');
+    } catch (error) {
+      toast.error('Lỗi cập nhật bài viết');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="glass-card mb-6 flex justify-between items-center">
@@ -156,7 +200,7 @@ export default function Home() {
       </div>
 
       <div className="glass-card p-4 flex gap-4 items-start">
-        <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
+        <img src={getAvatarUrl(user?.avatar, user?.username)} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
         <div className="flex-1">
           <textarea
             value={content}
@@ -204,7 +248,7 @@ export default function Home() {
             <div key={post.id} className="glass-card animate-slide-up">
               <div className="flex items-center gap-3 mb-4">
                 <Link to={`/profile/${post.author.id}`}>
-                  <img src={post.author.avatar || `https://ui-avatars.com/api/?name=${post.author.username}`} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
+                  <img src={getAvatarUrl(post.author.avatar, post.author.username)} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
                 </Link>
                 <div>
                   <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">{post.author.fullName}</Link>
@@ -212,18 +256,62 @@ export default function Home() {
                 </div>
               </div>
 
-              <p className="text-slate-700 dark:text-slate-200 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
-
-              {post.image && (
-                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-                  <img
-                    src={post.image}
-                    alt="Post content"
-                    onClick={() => setSelectedImage(post.image!)}
-                    className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
-                  />
+              {user?.id === post.author.id && (
+                <div className="absolute top-4 right-4 relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id);
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <MoreHorizontal size={20} />
+                  </button>
+                  {activeMenuPostId === post.id && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute right-0 top-8 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-10 overflow-hidden animate-scale-in"
+                    >
+                      <button onClick={() => handleStartEditPost(post)} className="w-full text-left px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-sm font-medium">
+                        <Edit2 size={16} /> Sửa
+                      </button>
+                      <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium">
+                        <Trash2 size={16} /> Xóa
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {editingPostId === post.id ? (
+                <div className="mb-4">
+                  <textarea
+                    value={editPostContent}
+                    onChange={(e) => setEditPostContent(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-indigo-200 dark:border-slate-700 rounded-xl p-3 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+                    rows={3}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => setEditingPostId(null)} className="px-3 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">Hủy</button>
+                    <button onClick={() => handleUpdatePost(post.id)} className="px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">Lưu</button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-700 dark:text-slate-200 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              )}
+
+              {
+                post.image && (
+                  <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+                    <img
+                      src={post.image}
+                      alt="Post content"
+                      onClick={() => setSelectedImage(post.image!)}
+                      className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                    />
+                  </div>
+                )
+              }
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 mb-2">
                 <button
@@ -252,72 +340,76 @@ export default function Home() {
                 </button>
               </div>
 
-              {activeCommentId === post.id && (
-                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 animate-fade-in">
-                  <div className="flex gap-2 mb-4">
-                    <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
-                    <div className="flex-1 relative">
-                      <input
-                        type="text"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
-                        placeholder="Viết bình luận..."
-                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200"
-                      />
-                      <button
-                        onClick={() => handleCommentSubmit(post.id)}
-                        className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600 p-1"
-                      >
-                        <Send size={16} />
-                      </button>
+              {
+                activeCommentId === post.id && (
+                  <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 animate-fade-in">
+                    <div className="flex gap-2 mb-4">
+                      <img src={getAvatarUrl(user?.avatar, user?.username)} className="w-8 h-8 rounded-full" alt="MyAvatar" />
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
+                          placeholder="Viết bình luận..."
+                          className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200"
+                        />
+                        <button
+                          onClick={() => handleCommentSubmit(post.id)}
+                          className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600 p-1"
+                        >
+                          <Send size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                      {post.comments.map((comment: any) => (
+                        <div key={comment.id} className="flex gap-2 items-start">
+                          <Link to={`/profile/${comment.authorId}`}>
+                            <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-7 h-7 rounded-full" alt="CommenterAvatar" />
+                          </Link>
+                          <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none">
+                            <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5">
+                              {comment.author?.fullName}
+                            </Link>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
+                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
-                    {post.comments.map((comment: any) => (
-                      <div key={comment.id} className="flex gap-2 items-start">
-                        <Link to={`/profile/${comment.authorId}`}>
-                          <img src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username}`} className="w-7 h-7 rounded-full" alt="CommenterAvatar" />
-                        </Link>
-                        <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none">
-                          <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5">
-                            {comment.author?.fullName}
-                          </Link>
-                          <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
-                        </div>
-                        <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
-                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )
+              }
             </div>
           );
         })
       )}
 
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
-          onClick={() => setSelectedImage(null)}
-        >
-          <button
+      {
+        selectedImage && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
             onClick={() => setSelectedImage(null)}
-            className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
           >
-            <X size={32} />
-          </button>
-          <img
-            src={selectedImage}
-            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
-            alt="Full preview"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-    </div>
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
+            >
+              <X size={32} />
+            </button>
+            <img
+              src={selectedImage}
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
+              alt="Full preview"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )
+      }
+    </div >
   );
 }

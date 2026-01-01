@@ -13,7 +13,7 @@ model User {
   email            String            @unique
   password         String
   fullName         String?
-  avatar           String?           @default("default-avatar.png")
+  avatar           String?           @default("default-avatar.jpg")
   bio              String?           @default("")
   coins            Int               @default(0)
   isVip            Boolean           @default(false)
@@ -122,7 +122,10 @@ model Message {
   senderId   Int
   receiverId Int?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   isRead     Boolean  @default(false)
+  deletedBy  Int[]    @default([])
+  isRecalled Boolean  @default(false)
   receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
   room       Room     @relation(fields: [roomId], references: [id])
   sender     User     @relation("SentMessages", fields: [senderId], references: [id])

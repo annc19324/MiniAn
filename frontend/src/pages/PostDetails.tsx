@@ -1,12 +1,13 @@
 // src/pages/PostDetails.tsx
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getPost, likePost, commentPost } from '../services/api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { getPost, likePost, commentPost, deletePost, updatePost } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Heart, MessageCircle, Share2, Send, ChevronLeft } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 interface Post {
     id: number;
@@ -26,10 +27,16 @@ interface Post {
 
 export default function PostDetails() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
+
+    // Edit State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState('');
+    const [showMenu, setShowMenu] = useState(false);
 
     useEffect(() => {
         if (id) fetchPost();
@@ -85,6 +92,39 @@ export default function PostDetails() {
         toast.success('Đã sao chép liên kết bài viết: ' + url);
     };
 
+    const handleDelete = async () => {
+        if (!post || !confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return;
+        try {
+            await deletePost(post.id);
+            toast.success('Đã xóa bài viết');
+            navigate('/');
+        } catch (error) {
+            toast.error('Lỗi xóa bài viết');
+        }
+    };
+
+    const handleUpdate = async () => {
+        if (!post || !editContent.trim()) return;
+        try {
+            const res = await updatePost(post.id, editContent);
+            setPost(res.data);
+            setIsEditing(false);
+            toast.success('Đã cập nhật bài viết');
+        } catch (error) {
+            toast.error('Lỗi cập nhật bài viết');
+        }
+    };
+
+    const toggleEdit = () => {
+        if (isEditing) {
+            setIsEditing(false);
+        } else {
+            setEditContent(post?.content || '');
+            setIsEditing(true);
+            setShowMenu(false);
+        }
+    };
+
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải bài viết...</div>;
     if (!post) return <div className="text-center p-10 text-slate-400">Không tìm thấy bài viết.</div>;
 
@@ -98,19 +138,56 @@ export default function PostDetails() {
             </Link>
 
             <div className="glass-card animate-fade-in">
-                <div className="flex items-center gap-3 mb-4">
-                    <Link to={`/profile/${post.author.id}`}>
-                        <img src={post.author.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.username)}`} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
-                    </Link>
-                    <div>
-                        <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 dark:text-white text-lg hover:underline">{post.author.fullName}</Link>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {new Date(post.createdAt).toLocaleDateString('vi-VN')} lúc {new Date(post.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                        <Link to={`/profile/${post.author.id}`}>
+                            <img src={getAvatarUrl(post.author.avatar, post.author.username)} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                        </Link>
+                        <div>
+                            <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 dark:text-white text-lg hover:underline">{post.author.fullName}</Link>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                {new Date(post.createdAt).toLocaleDateString('vi-VN')} lúc {new Date(post.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        </div>
                     </div>
+                    {user?.id === post.author.id && (
+                        <div className="relative">
+                            <button onClick={() => setShowMenu(!showMenu)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                <MoreHorizontal />
+                            </button>
+                            {showMenu && (
+                                <div className="absolute right-0 top-10 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-10 overflow-hidden animate-scale-in">
+                                    <button onClick={toggleEdit} className="w-full text-left px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-sm font-medium">
+                                        <Edit2 size={16} /> Sửa bài viết
+                                    </button>
+                                    <button onClick={handleDelete} className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium">
+                                        <Trash2 size={16} /> Xóa bài viết
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                <p className="text-slate-800 dark:text-slate-200 text-lg mb-6 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                {isEditing ? (
+                    <div className="mb-6 space-y-3">
+                        <textarea
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[150px] text-slate-800 dark:text-slate-200"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button onClick={toggleEdit} className="px-4 py-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2">
+                                <X size={18} /> Hủy
+                            </button>
+                            <button onClick={handleUpdate} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 shadow-lg shadow-indigo-500/30">
+                                <Check size={18} /> Lưu
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-slate-800 dark:text-slate-200 text-lg mb-6 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                )}
 
                 {post.image && (
                     <div className="mb-6 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
@@ -142,7 +219,7 @@ export default function PostDetails() {
 
                 <div className="pt-4 border-t border-slate-50 dark:border-slate-800">
                     <div className="flex gap-3 mb-6">
-                        <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.username || 'User')}`} className="w-10 h-10 rounded-full" alt="MyAvatar" />
+                        <img src={getAvatarUrl(user?.avatar, user?.username)} className="w-10 h-10 rounded-full" alt="MyAvatar" />
                         <div className="flex-1 relative">
                             <input
                                 type="text"
@@ -165,7 +242,7 @@ export default function PostDetails() {
                         {post.comments.map((comment: any) => (
                             <div key={comment.id} className="flex gap-3 items-start animate-slide-up">
                                 <Link to={`/profile/${comment.authorId}`}>
-                                    <img src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author?.username)}`} className="w-10 h-10 rounded-full" alt="CommenterAvatar" />
+                                    <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-10 h-10 rounded-full" alt="CommenterAvatar" />
                                 </Link>
                                 <div className="flex-1">
                                     <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none inline-block min-w-[200px]">
