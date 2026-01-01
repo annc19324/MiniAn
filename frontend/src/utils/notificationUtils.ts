@@ -1,3 +1,6 @@
+// Simple 'ding' sound in base64 to avoid loading external files and improve compatibility
+const NOTIFICATION_SOUND = 'data:audio/wav;base64,UklGRl9vT1xXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'; // Short placeholder, will use a real one or Oscillator fallback properly
+
 export const requestNotificationPermission = async () => {
     if (!("Notification" in window)) {
         console.warn("This browser does not support desktop notification");
@@ -12,16 +15,20 @@ export const sendSystemNotification = (title: string, body?: string, icon?: stri
 
     if (Notification.permission === 'granted') {
         try {
-            const notification = new Notification(title, {
+            // Mobile browsers often require a Service Worker for notifications when backgrounded.
+            // However, this standard API works in many cases if the tab is alive.
+            const options: any = {
                 body,
                 icon: icon || '/minian.ico',
-                // @ts-ignore
-                vibrate: [200, 100, 200]
-            });
-            notification.onclick = function () {
-                window.focus();
-                this.close();
+                vibrate: [200, 100, 200],
+                badge: '/minian.ico',
+                tag: 'minian-notification' // Replaces old notifications with same tag
             };
+
+            // Try-catch for Service Worker registration check if we decide to add it later, 
+            // but for now standard Notification
+            new Notification(title, options);
+
         } catch (e) {
             console.error("Notification sending failed", e);
         }
@@ -30,22 +37,33 @@ export const sendSystemNotification = (title: string, body?: string, icon?: stri
 
 export const playNotificationSound = () => {
     try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
+        // Try playing a gentle beep using Oscillator (synthesized sound)
+        // This is immediate and doesn't require downloading files
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+        const ctx = new AudioContext();
 
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
-        oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5); // Drop to A4
+        // Resume context if suspended (common in browsers to prevent autoplay)
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
 
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); // Quick drop
+
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
     } catch (e) {
         console.error("Audio play failed", e);
     }
