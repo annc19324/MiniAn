@@ -9,7 +9,7 @@ import { getAvatarUrl } from '../utils/avatarUtils';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 
 interface Message {
     id: number;
@@ -50,7 +50,6 @@ interface Conversation {
 export default function Chat() {
     const { user } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate(); // For redirect after delete
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
