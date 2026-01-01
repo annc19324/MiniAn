@@ -393,9 +393,9 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="fixed inset-x-2 top-[70px] bottom-[50px] z-30 xl:z-auto xl:static xl:inset-auto flex xl:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="fixed inset-x-2 top-[70px] bottom-[50px] z-30 lg:z-auto lg:static lg:inset-auto flex lg:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
-            <div className={`w-full xl:w-[30%] xl:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden xl:flex' : 'flex'}`}>
+            <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-3 border-b border-indigo-50 dark:border-slate-800 space-y-3">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
                     <div className="flex gap-2">
@@ -459,13 +459,13 @@ export default function Chat() {
             </div>
 
             {/* Chat Box */}
-            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 ${!activeRoomId ? 'hidden xl:flex' : 'flex'}`}>
+            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 ${!activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 {activeRoomId ? (
                     <>
                         {/* Chat Header */}
                         <div className="p-4 border-b border-indigo-50 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex justify-between items-center z-10">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveRoomId(null)} className="xl:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                <button onClick={() => setActiveRoomId(null)} className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
                                     ←
                                 </button>
                                 {activeConversation?.isGroup ? (
