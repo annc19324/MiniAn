@@ -3,9 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import CreateGroupModal from '../components/CreateGroupModal';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -58,6 +59,7 @@ export default function Chat() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
 
     // Edit/Delete State
     const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
@@ -394,6 +396,13 @@ export default function Chat() {
                             className="w-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 pl-10 pr-4 py-2 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                         />
                     </div>
+                    <button
+                        onClick={() => setShowCreateGroupModal(true)}
+                        className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 font-medium shadow-lg shadow-indigo-500/30 transition-all transform hover:scale-[1.02] active:scale-95"
+                    >
+                        <Users size={18} />
+                        <span>Tạo nhóm mới</span>
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
@@ -644,6 +653,16 @@ export default function Chat() {
                     </div>
                 )
             }
+
+            {/* Create Group Modal */}
+            <CreateGroupModal
+                isOpen={showCreateGroupModal}
+                onClose={() => setShowCreateGroupModal(false)}
+                onGroupCreated={async () => {
+                    const res = await getConversations();
+                    setConversations(res.data);
+                }}
+            />
         </div >
     );
 }
