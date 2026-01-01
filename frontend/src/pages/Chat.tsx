@@ -393,7 +393,7 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="flex h-[calc(100vh-160px)] md:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="flex h-[calc(100vh-220px)] md:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
             <div className={`w-full md:w-80 border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-indigo-50 dark:border-slate-800 space-y-3">
@@ -600,7 +600,7 @@ export default function Chat() {
                                                     to={`/profile/${msg.senderId}`}
                                                     className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 ml-1 block hover:underline hover:text-indigo-500 transition-colors font-medium"
                                                 >
-                                                    {msg.sender.fullName}
+                                                    {msg.sender.fullName || msg.sender.username}
                                                 </Link>
                                             )}
 

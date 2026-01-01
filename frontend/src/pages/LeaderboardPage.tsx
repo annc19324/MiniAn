@@ -42,8 +42,8 @@ export default function LeaderboardPage() {
             </h1>
 
             <div className="glass-card overflow-hidden">
-                <div className="p-4 border-b border-indigo-50 bg-indigo-50/50">
-                    <p className="text-slate-600">Top những thành viên tích cực và giàu có nhất cộng đồng.</p>
+                <div className="p-4 border-b border-indigo-50 ">
+                    <p className="text-slate-600">Top những thành viên nhiều xu trong cộng đồng.</p>
                 </div>
 
                 <div className="divide-y divide-slate-100">
