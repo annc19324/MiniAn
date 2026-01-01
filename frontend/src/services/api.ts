@@ -36,6 +36,7 @@ export const getLeaderboard = () => api.get('/users/leaderboard');
 // ==== Admin Services ====
 export const getAllUsers = () => api.get('/users/admin/users');
 export const updateUserStatus = (id: number, data: { role?: string, isVip?: boolean, isActive?: boolean }) => api.put(`/users/admin/users/${id}`, data);
+export const updateUserCoins = (id: number, amount: number) => api.post(`/users/admin/users/${id}/coins`, { amount });
 
 // ==== Notification Services ====
 export const getNotifications = () => api.get('/notifications');
