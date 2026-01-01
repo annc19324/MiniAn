@@ -159,10 +159,10 @@ export default function Layout() {
 
                 <nav className="flex-1 px-4 space-y-2 pb-6">
                     <NavItem to="/" icon={<Home size={20} />} label="Trang chủ" />
-                    <NavItem to="/search" icon={<Search size={20} />} label="Tìm kiếm" />
-                    <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" count={unreadMessagesCount > 0 ? unreadMessagesCount : undefined} />
-                    <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
                     <NavItem to={`/profile/${user?.id}`} icon={<User size={20} />} label="Hồ sơ" />
+                    <NavItem to="/notifications" icon={<Bell size={20} />} label="Thông báo" count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
+                    <NavItem to="/chat" icon={<MessageCircle size={20} />} label="Tin nhắn" count={unreadMessagesCount > 0 ? unreadMessagesCount : undefined} />
+                    <NavItem to="/search" icon={<Search size={20} />} label="Tìm kiếm" />
                     <NavItem to="/settings" icon={<Settings size={20} />} label="Cài đặt" />
 
                     <div className="pt-4">

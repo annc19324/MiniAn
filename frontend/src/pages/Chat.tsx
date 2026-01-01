@@ -557,7 +557,7 @@ export default function Chat() {
 
                                         {/* Message Actions (Only for Me) */}
                                         {isMe && !isEditing && (
-                                            <div className="relative opacity-0 group-hover:opacity-100 transition-opacity self-center mr-2 order-first">
+                                            <div className="relative self-center mr-2 order-first">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setMsgMenuId(msgMenuId === msg.id ? null : msg.id); }}
                                                     className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700"
