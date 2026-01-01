@@ -69,7 +69,7 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleCoinUpdate = async (id: number, currentCoins: number, type: 'add' | 'subtract') => {
+    const handleCoinUpdate = async (id: number, type: 'add' | 'subtract') => {
         const amountStr = prompt(type === 'add' ? 'Nhập số coin muốn cộng:' : 'Nhập số coin muốn trừ:');
         if (!amountStr) return;
 
@@ -201,8 +201,8 @@ export default function AdminDashboard() {
                                             <div className="flex items-center gap-2">
                                                 <span>{u.coins}</span> <Coins size={14} className="text-yellow-500" />
                                                 <div className="flex flex-col gap-1 ml-2">
-                                                    <button onClick={() => handleCoinUpdate(u.id, u.coins, 'add')} className="px-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-[10px] font-bold">+</button>
-                                                    <button onClick={() => handleCoinUpdate(u.id, u.coins, 'subtract')} className="px-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold">-</button>
+                                                    <button onClick={() => handleCoinUpdate(u.id, 'add')} className="px-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-[10px] font-bold">+</button>
+                                                    <button onClick={() => handleCoinUpdate(u.id, 'subtract')} className="px-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold">-</button>
                                                 </div>
                                             </div>
                                         </td>
