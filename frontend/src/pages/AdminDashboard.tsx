@@ -1,6 +1,6 @@
 // src/pages/AdminDashboard.tsx
 import { useState, useEffect } from 'react';
-import { getAllUsers, updateUserStatus } from '../services/api';
+import { getAllUsers, updateUserStatus, updateUserCoins } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Search, Users, Shield, Crown, Coins } from 'lucide-react';
@@ -66,6 +66,28 @@ export default function AdminDashboard() {
             setUsers(users.map(u => u.id === id ? { ...u, isActive: !currentActive } : u));
         } catch (error) {
             alert('Lỗi cập nhật trạng thái');
+        }
+    };
+
+    const handleCoinUpdate = async (id: number, currentCoins: number, type: 'add' | 'subtract') => {
+        const amountStr = prompt(type === 'add' ? 'Nhập số coin muốn cộng:' : 'Nhập số coin muốn trừ:');
+        if (!amountStr) return;
+
+        let amount = parseInt(amountStr);
+        if (isNaN(amount) || amount <= 0) {
+            alert('Vui lòng nhập số hợp lệ');
+            return;
+        }
+
+        if (type === 'subtract') amount = -amount;
+
+        try {
+            const res = await updateUserCoins(id, amount);
+            // @ts-ignore
+            setUsers(users.map(u => u.id === id ? { ...u, coins: res.data.coins } : u));
+            alert('Cập nhật coin thành công');
+        } catch (error) {
+            alert('Lỗi cập nhật coin');
         }
     };
 
@@ -175,8 +197,14 @@ export default function AdminDashboard() {
                                             <div className="font-medium">{u.fullName}</div>
                                             <div className="text-xs text-slate-400">{u.email}</div>
                                         </td>
-                                        <td className="p-4 font-bold text-slate-700 flex items-center gap-1">
-                                            {u.coins} <Coins size={14} className="text-yellow-500" />
+                                        <td className="p-4 font-bold text-slate-700">
+                                            <div className="flex items-center gap-2">
+                                                <span>{u.coins}</span> <Coins size={14} className="text-yellow-500" />
+                                                <div className="flex flex-col gap-1 ml-2">
+                                                    <button onClick={() => handleCoinUpdate(u.id, u.coins, 'add')} className="px-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded text-[10px] font-bold">+</button>
+                                                    <button onClick={() => handleCoinUpdate(u.id, u.coins, 'subtract')} className="px-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded text-[10px] font-bold">-</button>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td className="p-4">
                                             <select

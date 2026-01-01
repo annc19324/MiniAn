@@ -152,6 +152,43 @@ export const updateUserStatus = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// ADMIN: Cộng/Trừ Coin
+export const updateUserCoins = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { amount } = req.body; // Có thể là số dương (cộng) hoặc âm (trừ)
+
+    try {
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'Không có quyền truy cập' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: Number(id) } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const newBalance = user.coins + Number(amount);
+
+        // Transaction
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: Number(id) },
+                data: { coins: newBalance }
+            }),
+            prisma.coinTransaction.create({
+                data: {
+                    userId: Number(id),
+                    amount: Number(amount),
+                    reason: `Admin ${req.user.username} updated coins`
+                }
+            })
+        ]);
+
+        res.json({ message: 'Cập nhật coin thành công', coins: newBalance });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi cập nhật coin' });
+    }
+};
+
+
 // Tìm kiếm User
 export const searchUsers = async (req: AuthRequest, res: Response) => {
     const { q } = req.query;

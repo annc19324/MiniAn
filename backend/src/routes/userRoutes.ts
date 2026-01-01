@@ -1,7 +1,7 @@
 // src/routes/userRoutes.ts
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUsers, followUser, updateUserProfile, getLeaderboard, changePassword } from '../controllers/userController';
+import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUsers, followUser, updateUserProfile, getLeaderboard, changePassword, updateUserCoins } from '../controllers/userController';
 import multer from 'multer';
 
 const upload = multer();
@@ -19,5 +19,6 @@ router.get('/leaderboard', getLeaderboard); // Public
 // Admin Routes
 router.get('/admin/users', protect, getAllUsers);
 router.put('/admin/users/:id', protect, updateUserStatus);
+router.post('/admin/users/:id/coins', protect, updateUserCoins); // New route for coins
 
 export default router;
