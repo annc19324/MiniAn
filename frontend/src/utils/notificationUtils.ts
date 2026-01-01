@@ -9,42 +9,52 @@ export const requestNotificationPermission = async () => {
 };
 
 export const sendSystemNotification = (title: string, body?: string, icon?: string) => {
-    if (!("Notification" in window)) return;
+    if (!("Notification" in window)) {
+        console.log("System Notification: Browser does not support notifications.");
+        return;
+    }
+
+    console.log("System Notification: Attempting to send...", title, Notification.permission);
 
     if (Notification.permission === 'granted') {
         try {
-            // Mobile browsers often require a Service Worker for notifications when backgrounded.
-            // However, this standard API works in many cases if the tab is alive.
             const options: any = {
                 body,
                 icon: icon || '/minian.ico',
                 vibrate: [200, 100, 200],
                 badge: '/minian.ico',
-                tag: 'minian-notification' // Replaces old notifications with same tag
+                tag: 'minian-notification',
+                silent: true // We play our custom sound to avoid double noise
             };
 
-            // Try-catch for Service Worker registration check if we decide to add it later, 
-            // but for now standard Notification
-            new Notification(title, options);
+            const notification = new Notification(title, options);
 
+            notification.onclick = function () {
+                window.focus();
+                this.close();
+            };
+            console.log("System Notification: Sent successfully.");
         } catch (e) {
-            console.error("Notification sending failed", e);
+            console.error("System Notification: Failed to send", e);
         }
+    } else {
+        console.warn("System Notification: Permission not granted. Current state:", Notification.permission);
     }
 };
 
-export const playNotificationSound = () => {
+export const playNotificationSound = async () => {
     try {
-        // Try playing a gentle beep using Oscillator (synthesized sound)
-        // This is immediate and doesn't require downloading files
+        console.log("Playing notification sound via Web Audio API...");
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
+        if (!AudioContext) {
+            console.error("AudioContext not supported");
+            return;
+        }
 
         const ctx = new AudioContext();
 
-        // Resume context if suspended (common in browsers to prevent autoplay)
         if (ctx.state === 'suspended') {
-            ctx.resume();
+            await ctx.resume();
         }
 
         const osc = ctx.createOscillator();
@@ -53,15 +63,22 @@ export const playNotificationSound = () => {
         osc.connect(gain);
         gain.connect(ctx.destination);
 
+        // Sound profile: simple 'ding'
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch
-        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); // Quick drop
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // High pitch A5
+        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1); // Quick drop to A4
 
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
 
         osc.start();
         osc.stop(ctx.currentTime + 0.5);
+
+        // Clean up context to release hardware resources
+        setTimeout(() => {
+            if (ctx.state !== 'closed') ctx.close();
+        }, 600);
+
     } catch (e) {
         console.error("Audio play failed", e);
     }
