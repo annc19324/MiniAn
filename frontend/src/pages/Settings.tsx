@@ -78,99 +78,41 @@ export default function Settings() {
         <div className="max-w-2xl mx-auto space-y-6">
             <h1 className="text-3xl font-extrabold heading-gradient mb-8">Cài đặt tài khoản</h1>
 
-            {/* Appearance Accordion */}
-            <div className="glass-card overflow-hidden">
-                <button
-                    onClick={() => toggleSection('appearance')}
-                    className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg dark:bg-yellow-900/30 dark:text-yellow-400">
-                            <Moon size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Giao diện</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Chế độ sáng / tối</p>
-                        </div>
-                    </div>
-                    <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'appearance' ? 'rotate-180' : ''}`}>
-                        ▼
-                    </span>
-                </button>
-
-                {activeSection === 'appearance' && (
-                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
-                        <div className="flex items-center justify-between">
-                            <span className="font-medium text-slate-700 dark:text-slate-300">Chế độ tối</span>
-                            <button
-                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                            >
-                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${theme === 'dark' ? 'translate-x-7' : 'translate-x-0'}`}></div>
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Notification Accordion */}
-            <div className="glass-card overflow-hidden">
-                <button
-                    onClick={() => toggleSection('notifications')}
-                    className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-pink-100 text-pink-600 rounded-lg dark:bg-pink-900/30 dark:text-pink-400">
-                            <Bell size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Thông báo</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Âm thanh & Thông báo đẩy</p>
-                        </div>
-                    </div>
-                    <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'notifications' ? 'rotate-180' : ''}`}>
-                        ▼
-                    </span>
-                </button>
-
-                {activeSection === 'notifications' && (
-                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down space-y-6">
-                        {/* Browser Notifications */}
-                        <div className="flex items-center justify-between">
+            {/* Admin Section (Only for Admin) */}
+            {user?.role === 'ADMIN' && (
+                <div className="glass-card overflow-hidden">
+                    <button
+                        onClick={() => toggleSection('admin')}
+                        className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg dark:bg-purple-900/30 dark:text-purple-400">
+                                <Lock size={24} />
+                            </div>
                             <div>
-                                <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới.</p>
+                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">Quản trị viên</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Quản lý người dùng & hệ thống</p>
                             </div>
-                            <button
-                                onClick={handleEnableNotifications}
-                                disabled={notificationPermission === 'granted'}
-                                className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                            >
-                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
-                            </button>
                         </div>
+                        <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'admin' ? 'rotate-180' : ''}`}>
+                            ▼
+                        </span>
+                    </button>
 
-                        {/* Sound Toggle */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-slate-100 text-slate-600 rounded-lg dark:bg-slate-800 dark:text-slate-400">
-                                    <Volume2 size={20} />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-slate-800 dark:text-white">Âm thanh thông báo</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Phát âm thanh khi có thông báo mới</p>
-                                </div>
-                            </div>
+                    {activeSection === 'admin' && (
+                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
+                            <p className="text-slate-600 dark:text-slate-300 mb-4">Truy cập bảng điều khiển quản trị để quản lý người dùng, bài viết và thống kê hệ thống.</p>
                             <button
-                                onClick={toggleSound}
-                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${soundEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                                onClick={() => window.location.href = '/admin'}
+                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                             >
-                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                <Lock size={20} />
+                                Truy cập Admin Dashboard
                             </button>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             {/* General Info Accordion */}
             <div className="glass-card overflow-hidden">
@@ -230,6 +172,65 @@ export default function Settings() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                )}
+            </div>
+
+            {/* Notification Accordion */}
+            <div className="glass-card overflow-hidden">
+                <button
+                    onClick={() => toggleSection('notifications')}
+                    className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-pink-100 text-pink-600 rounded-lg dark:bg-pink-900/30 dark:text-pink-400">
+                            <Bell size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Thông báo</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Âm thanh & Thông báo đẩy</p>
+                        </div>
+                    </div>
+                    <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'notifications' ? 'rotate-180' : ''}`}>
+                        ▼
+                    </span>
+                </button>
+
+                {activeSection === 'notifications' && (
+                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down space-y-6">
+                        {/* Browser Notifications */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới.</p>
+                            </div>
+                            <button
+                                onClick={handleEnableNotifications}
+                                disabled={notificationPermission === 'granted'}
+                                className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                            >
+                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
+                            </button>
+                        </div>
+
+                        {/* Sound Toggle */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 text-slate-600 rounded-lg dark:bg-slate-800 dark:text-slate-400">
+                                    <Volume2 size={20} />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Âm thanh thông báo</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Phát âm thanh khi có thông báo mới</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={toggleSound}
+                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${soundEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                            >
+                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -296,41 +297,40 @@ export default function Settings() {
                 )}
             </div>
 
-            {/* Admin Section (Only for Admin) */}
-            {user?.role === 'ADMIN' && (
-                <div className="glass-card overflow-hidden">
-                    <button
-                        onClick={() => toggleSection('admin')}
-                        className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 text-purple-600 rounded-lg dark:bg-purple-900/30 dark:text-purple-400">
-                                <Lock size={24} />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-800 dark:text-white">Quản trị viên</h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Quản lý người dùng & hệ thống</p>
-                            </div>
+            {/* Appearance Accordion */}
+            <div className="glass-card overflow-hidden">
+                <button
+                    onClick={() => toggleSection('appearance')}
+                    className="w-full flex items-center justify-between p-6 bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-700/50 transition-all text-left"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg dark:bg-yellow-900/30 dark:text-yellow-400">
+                            <Moon size={24} />
                         </div>
-                        <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'admin' ? 'rotate-180' : ''}`}>
-                            ▼
-                        </span>
-                    </button>
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Giao diện</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Chế độ sáng / tối</p>
+                        </div>
+                    </div>
+                    <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'appearance' ? 'rotate-180' : ''}`}>
+                        ▼
+                    </span>
+                </button>
 
-                    {activeSection === 'admin' && (
-                        <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
-                            <p className="text-slate-600 dark:text-slate-300 mb-4">Truy cập bảng điều khiển quản trị để quản lý người dùng, bài viết và thống kê hệ thống.</p>
+                {activeSection === 'appearance' && (
+                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
+                        <div className="flex items-center justify-between">
+                            <span className="font-medium text-slate-700 dark:text-slate-300">Chế độ tối</span>
                             <button
-                                onClick={() => window.location.href = '/admin'}
-                                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-300'}`}
                             >
-                                <Lock size={20} />
-                                Truy cập Admin Dashboard
+                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${theme === 'dark' ? 'translate-x-7' : 'translate-x-0'}`}></div>
                             </button>
                         </div>
-                    )}
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
 
             {/* Logout Section */}
             <button
