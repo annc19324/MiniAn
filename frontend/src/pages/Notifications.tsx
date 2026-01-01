@@ -4,6 +4,7 @@ import { CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 interface Notification {
     id: number;
@@ -92,7 +93,7 @@ export default function Notifications() {
                             className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50 dark:bg-indigo-900/30' : 'opacity-75'}`}
                         >
                             <img
-                                src={n.sender?.avatar || `https://ui-avatars.com/api/?name=${n.sender?.username || 'System'}&background=random`}
+                                src={getAvatarUrl(n.sender?.avatar, n.sender?.username || 'System')}
                                 className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm flex-shrink-0"
                                 alt="Sender"
                             />

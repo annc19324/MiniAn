@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @variant dark (&:where(.dark, .dark *));
 
+button,
+[type="button"],
+[type="submit"],
+[role="button"] {
+  cursor: pointer;
+}
+
 @layer base {
   :root {
     --glass-bg: rgba(255, 255, 255, 0.7);

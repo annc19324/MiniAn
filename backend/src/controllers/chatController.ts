@@ -23,6 +23,11 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                     }
                 },
                 messages: {
+                    where: {
+                        NOT: {
+                            deletedBy: { has: userId }
+                        }
+                    },
                     orderBy: { createdAt: 'desc' },
                     take: 1
                 }
@@ -43,7 +48,10 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                     where: {
                         roomId: room.id,
                         senderId: { not: userId },
-                        isRead: false
+                        isRead: false,
+                        NOT: {
+                            deletedBy: { has: userId }
+                        }
                     }
                 });
             } catch (err) {
@@ -76,10 +84,16 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 // Lấy tin nhắn của một Room
 export const getMessages = async (req: AuthRequest, res: Response) => {
     const { roomId } = req.params;
+    const userId = req.user!.id;
 
     try {
         const messages = await prisma.message.findMany({
-            where: { roomId: Number(roomId) },
+            where: {
+                roomId: Number(roomId),
+                NOT: {
+                    deletedBy: { has: userId }
+                }
+            },
             include: {
                 sender: {
                     select: { id: true, username: true, avatar: true }
@@ -213,5 +227,117 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Lỗi cập nhật trạng thái đã xem' });
+    }
+};
+// Xóa cuộc trò chuyện
+export const deleteConversation = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params; // Room ID
+    const userId = req.user!.id;
+
+    try {
+        const room = await prisma.room.findUnique({
+            where: { id: Number(id) },
+            include: { users: true }
+        });
+
+        if (!room) return res.status(404).json({ message: 'Không tìm thấy cuộc trò chuyện' });
+
+        // Check is member
+        const isMember = room.users.some(u => u.userId === userId);
+        if (!isMember) return res.status(403).json({ message: 'Không có quyền xóa cuộc trò chuyện này' });
+
+        // Delete dependencies first (messages, user_rooms)
+        await prisma.message.deleteMany({ where: { roomId: Number(id) } });
+        await prisma.userRoom.deleteMany({ where: { roomId: Number(id) } });
+        await prisma.room.delete({ where: { id: Number(id) } });
+
+        // Emit socket needed? Not necessarily, user will just see it gone on refresh. 
+        // Or emit 'conversation_deleted' to users.
+        const io = req.app.get('io');
+        room.users.forEach(u => {
+            io.to(u.userId.toString()).emit('conversation_deleted', { roomId: Number(id) });
+        });
+
+        res.json({ message: 'Đã xóa cuộc trò chuyện' });
+    } catch (error) {
+        console.error("Delete conv error:", error);
+        res.status(500).json({ message: 'Lỗi xóa cuộc trò chuyện', error });
+    }
+};
+
+// Xóa tin nhắn (Thu hồi hoặc Xóa phía tôi)
+export const deleteMessage = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { type } = req.body; // 'recall' | 'me'
+    const userId = req.user!.id;
+
+    try {
+        const message = await prisma.message.findUnique({ where: { id: Number(id) } });
+        if (!message) return res.status(404).json({ message: 'Không tìm thấy tin nhắn' });
+
+        if (type === 'me') {
+            // Delete for me only (Soft Delete)
+            await prisma.message.update({
+                where: { id: Number(id) },
+                data: {
+                    deletedBy: { push: [userId] }
+                }
+            });
+            return res.json({ message: 'Đã xóa tin nhắn phía bạn' });
+        } else {
+            // Recall (Delete for everyone) - Default if no type specified
+            if (message.senderId !== userId) {
+                return res.status(403).json({ message: 'Không có quyền thu hồi tin nhắn này' });
+            }
+
+            // Check 1h limit
+            const OneHour = 60 * 60 * 1000;
+            if (new Date().getTime() - new Date(message.createdAt).getTime() > OneHour) {
+                return res.status(400).json({ message: 'Chỉ có thể thu hồi tin nhắn trong vòng 1 giờ' });
+            }
+
+            await prisma.message.delete({ where: { id: Number(id) } });
+
+            // Emit socket
+            const io = req.app.get('io');
+            io.to(message.roomId.toString()).emit('message_deleted', { messageId: Number(id), roomId: message.roomId });
+
+            return res.json({ message: 'Đã thu hồi tin nhắn' });
+        }
+    } catch (error) {
+        console.error("Delete message error:", error);
+        res.status(500).json({ message: 'Lỗi xử lý tin nhắn', error });
+    }
+};
+
+// Sửa tin nhắn
+export const updateMessage = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { content } = req.body;
+    const userId = req.user!.id;
+
+    try {
+        const message = await prisma.message.findUnique({ where: { id: Number(id) } });
+        if (!message) return res.status(404).json({ message: 'Không tìm thấy tin nhắn' });
+
+        if (message.senderId !== userId) {
+            return res.status(403).json({ message: 'Không có quyền sửa tin nhắn này' });
+        }
+
+        const updatedMessage = await prisma.message.update({
+            where: { id: Number(id) },
+            data: { content },
+            include: {
+                sender: { select: { id: true, username: true, avatar: true } }
+            }
+        });
+
+        // Emit socket
+        const io = req.app.get('io');
+        io.to(message.roomId.toString()).emit('message_updated', { message: updatedMessage });
+
+        res.json(updatedMessage);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi sửa tin nhắn', error });
     }
 };

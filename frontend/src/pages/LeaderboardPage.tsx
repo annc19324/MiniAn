@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { getLeaderboard } from '../services/api';
 import { Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 interface LeaderboardUser {
     id: number;
@@ -58,7 +59,7 @@ export default function LeaderboardPage() {
 
                             <Link to={`/profile/${u.id}`} className="flex-shrink-0">
                                 <img
-                                    src={u.avatar || `https://ui-avatars.com/api/?name=${u.username}&background=random`}
+                                    src={getAvatarUrl(u.avatar, u.username)}
                                     className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
                                     alt="Avatar"
                                 />

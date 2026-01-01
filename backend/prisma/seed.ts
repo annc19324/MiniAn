@@ -3,6 +3,9 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
@@ -23,7 +26,7 @@ async function main() {
             password: hashedPassword,
             fullName: 'Administrator',
             role: 'ADMIN',
-            coins: 9999,
+            coins: 0,
             isVip: true,
         },
     });

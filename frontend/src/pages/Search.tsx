@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { searchUsers, followUser } from '../services/api';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Search as SearchIcon, UserPlus } from 'lucide-react';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -77,7 +78,7 @@ export default function Search() {
                     {results.map((u) => (
                         <div key={u.id} className="glass-card flex items-center justify-between">
                             <Link to={`/profile/${u.id}`} className="flex items-center gap-3">
-                                <img src={u.avatar || `https://ui-avatars.com/api/?name=${u.username}&background=random`} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                                <img src={getAvatarUrl(u.avatar, u.username)} className="w-12 h-12 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
                                 <div>
                                     <h3 className="font-bold text-slate-800 flex items-center gap-1">
                                         {u.fullName}

@@ -1,10 +1,11 @@
 // src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, X, Send } from 'lucide-react';
-import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost } from '../services/api';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, X, Send, Trash2, Edit2 } from 'lucide-react';
+import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost, deletePost } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -102,7 +103,7 @@ function EditProfileModal({
                     <div className="flex justify-center mb-4">
                         <div className="relative group cursor-pointer w-24 h-24">
                             <img
-                                src={preview || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                                src={preview ? (preview.startsWith('blob:') ? preview : getAvatarUrl(preview, user.username)) : getAvatarUrl(user.avatar, user.username)}
                                 alt="Avatar Preview"
                                 className="w-full h-full rounded-full object-cover border-4 border-slate-100 shadow-sm"
                             />
@@ -157,6 +158,7 @@ export default function Profile() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
     const [commentText, setCommentText] = useState('');
+    const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -256,6 +258,17 @@ export default function Profile() {
         }
     };
 
+    const handleDeletePost = async (postId: number) => {
+        if (!confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return;
+        try {
+            await deletePost(postId);
+            setPosts(posts.filter(p => p.id !== postId));
+            toast.success('Đã xóa bài viết');
+        } catch (error) {
+            toast.error('Lỗi xóa bài viết');
+        }
+    };
+
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải hồ sơ...</div>;
     if (!profile) return <div className="text-center p-10 text-slate-400">Không tìm thấy người dùng.</div>;
 
@@ -290,7 +303,7 @@ export default function Profile() {
                     {/* Avatar */}
                     <div className="-mt-16 mb-4 flex justify-between items-end">
                         <img
-                            src={profile.avatar || `https://ui-avatars.com/api/?name=${profile.username}&background=random`}
+                            src={getAvatarUrl(profile.avatar, profile.username)}
                             className="w-32 h-32 rounded-full border-4 border-white dark:border-slate-800 shadow-lg object-cover bg-white"
                             alt="Avatar"
                         />
@@ -385,8 +398,25 @@ export default function Profile() {
                     posts.map(post => {
                         const isLiked = post.likes?.some(l => l.userId === currentUser?.id);
                         return (
-                            <div key={post.id} className="glass-card p-4 animate-slide-up">
-                                <p className="mb-3 text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                            <div key={post.id} className="glass-card p-4 animate-slide-up relative">
+                                {isMe && (
+                                    <div className="absolute top-4 right-4" onMouseLeave={() => setActiveMenuPostId(null)}>
+                                        <button onClick={() => setActiveMenuPostId(activeMenuPostId === post.id ? null : post.id)} className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                                            <MoreHorizontal size={20} />
+                                        </button>
+                                        {activeMenuPostId === post.id && (
+                                            <div className="absolute right-0 top-8 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-10 overflow-hidden animate-scale-in">
+                                                <Link to={`/post/${post.id}`} className="w-full text-left px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-sm font-medium">
+                                                    <Edit2 size={16} /> Sửa
+                                                </Link>
+                                                <button onClick={() => handleDeletePost(post.id)} className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium">
+                                                    <Trash2 size={16} /> Xóa
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                <p className="mb-3 text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap pr-8">{post.content}</p>
                                 {post.image && (
                                     <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
                                         <img
@@ -515,3 +545,4 @@ export default function Profile() {
         </div>
     );
 }
+

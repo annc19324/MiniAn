@@ -1,13 +1,15 @@
 // src/pages/Chat.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead } from '../services/api';
+import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle, Search } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { getAvatarUrl } from '../utils/avatarUtils';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 interface Message {
     id: number;
@@ -19,7 +21,18 @@ interface Message {
         avatar?: string;
     };
     createdAt: string;
+    updatedAt: string;
     isRead?: boolean;
+    deletedBy: number[];
+    isRecalled: boolean;
+}
+
+interface ConfirmModalState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: 'danger' | 'info';
 }
 
 interface Conversation {
@@ -37,6 +50,7 @@ interface Conversation {
 export default function Chat() {
     const { user } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate(); // For redirect after delete
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
@@ -45,6 +59,21 @@ export default function Chat() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+
+    // Edit/Delete State
+    const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
+    const [editContent, setEditContent] = useState('');
+    const [msgMenuId, setMsgMenuId] = useState<number | null>(null);
+    const [showRoomMenu, setShowRoomMenu] = useState(false);
+    const roomMenuRef = useRef<HTMLDivElement>(null);
+    const msgMenuRef = useRef<HTMLDivElement>(null);
+    const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'danger'
+    });
 
     // Initialize Socket
     useEffect(() => {
@@ -160,22 +189,58 @@ export default function Chat() {
             }
         };
 
+        const handleMessageDeleted = (data: any) => {
+            if (Number(data.roomId) === activeRoomId) {
+                setMessages((prev) => prev.filter(m => m.id !== Number(data.messageId)));
+                // Also update last message in conversation list if needed
+                setConversations(prev => prev.map(c => {
+                    if (c.id === activeRoomId && c.lastMessage?.content && messages.length > 0) {
+                        // This is tricky without fetching again. Let's simplistically just leave it or fetch con-vos.
+                        // For now simplified:
+                        return c;
+                    }
+                    return c;
+                }));
+            }
+        };
+
+        const handleMessageUpdated = (data: any) => {
+            if (Number(data.message.roomId) === activeRoomId) {
+                setMessages((prev) => prev.map(m => m.id === data.message.id ? data.message : m));
+            }
+        };
+
         socket.on('receive_message', handleReceiveMessage);
         socket.on('messages_read', handleMessagesRead);
+        socket.on('message_deleted', handleMessageDeleted);
+        socket.on('message_updated', handleMessageUpdated);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
             socket.off('messages_read', handleMessagesRead);
+            socket.off('message_deleted', handleMessageDeleted);
+            socket.off('message_updated', handleMessageUpdated);
         };
-    }, [activeRoomId, socket]);
+    }, [activeRoomId, socket /* Remove messages from dependencies to avoid re-registering */]);
 
-    // Join all rooms to listen for notifications
+    // Click outside to close menus
     useEffect(() => {
-        if (!socket || conversations.length === 0) return;
-        conversations.forEach(c => {
-            socket.emit('join_room', c.id);
-        });
-    }, [conversations, socket]);
+        const handleClickOutside = (e: MouseEvent) => {
+            // Close room menu if click outside
+            if (roomMenuRef.current && !roomMenuRef.current.contains(e.target as Node)) {
+                setShowRoomMenu(false);
+            }
+            // Close message menu if click outside
+            if (msgMenuRef.current && !msgMenuRef.current.contains(e.target as Node)) {
+                setMsgMenuId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // ... (UseEffect for join_room is fine)
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -220,7 +285,95 @@ export default function Chat() {
         }
     };
 
+    // New Handlers
+    const closeConfirmModal = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
 
+    const handleDeleteConv = async () => {
+        if (!activeRoomId) return;
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xóa cuộc trò chuyện',
+            message: 'Bạn có chắc chắn muốn xóa cuộc trò chuyện này? Hành động này không thể hoàn tác.',
+            type: 'danger',
+            onConfirm: async () => {
+                try {
+                    await deleteConversation(activeRoomId);
+                    setConversations(prev => prev.filter(c => c.id !== activeRoomId));
+                    setActiveRoomId(null);
+                    setShowRoomMenu(false);
+                    toast.success('Đã xóa cuộc trò chuyện');
+                    closeConfirmModal();
+                } catch (error) {
+                    toast.error('Lỗi xóa cuộc trò chuyện');
+                    closeConfirmModal();
+                }
+            }
+        });
+    };
+
+    // Thu hồi (Recall) - Xóa cho tất cả mọi người
+    const handleRecallMsg = async (msgId: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Thu hồi tin nhắn',
+            message: 'Tin nhắn sẽ bị thu hồi với tất cả thành viên trong cuộc trò chuyện.',
+            type: 'danger',
+            onConfirm: async () => {
+                try {
+                    await deleteMessage(msgId, 'recall');
+                    // Optimistic update handled by socket 'message_deleted' usually, but here:
+                    setMessages(prev => prev.filter(m => m.id !== msgId));
+                    setMsgMenuId(null);
+                    toast.success('Đã thu hồi tin nhắn');
+                    closeConfirmModal();
+                } catch (error) {
+                    toast.error('Lỗi thu hồi tin nhắn');
+                    closeConfirmModal();
+                }
+            }
+        });
+    };
+
+    // Xóa phía tôi (Delete for me)
+    const handleDeleteMsgForMe = async (msgId: number) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Xóa ở phía tôi',
+            message: 'Tin nhắn sẽ chỉ bị xóa khỏi lịch sử chat của bạn. Người khác vẫn sẽ nhìn thấy.',
+            type: 'info',
+            onConfirm: async () => {
+                try {
+                    await deleteMessage(msgId, 'me');
+                    setMessages(prev => prev.filter(m => m.id !== msgId));
+                    setMsgMenuId(null);
+                    toast.success('Đã xóa tin nhắn');
+                    closeConfirmModal();
+                } catch (error) {
+                    toast.error('Lỗi xóa tin nhắn');
+                    closeConfirmModal();
+                }
+            }
+        });
+    };
+
+    const handleUpdateMsg = async () => {
+        if (!editingMsgId || !editContent.trim()) return;
+        try {
+            const res = await updateMessage(editingMsgId, editContent);
+            setMessages(prev => prev.map(m => m.id === editingMsgId ? res.data : m));
+            setEditingMsgId(null);
+            setEditContent('');
+            toast.success('Đã sửa tin nhắn');
+        } catch (error) {
+            toast.error('Lỗi sửa tin nhắn');
+        }
+    };
+
+    const startEditing = (msg: Message) => {
+        setEditingMsgId(msg.id);
+        setEditContent(msg.content);
+        setMsgMenuId(null);
+    };
 
     const activeConversation = conversations.find(c => c.id === activeRoomId);
 
@@ -254,7 +407,7 @@ export default function Chat() {
                                 className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors ${activeRoomId === c.id ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
                             >
                                 <img
-                                    src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random&color=fff&length=1`}
+                                    src={getAvatarUrl(c.avatar, c.name)}
                                     className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm object-cover"
                                     alt="Avatar"
                                 />
@@ -294,7 +447,7 @@ export default function Chat() {
                                 </button>
                                 <Link to={`/profile/${activeConversation?.otherMemberId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                                     <img
-                                        src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConversation?.name || '')}&background=random&color=fff&length=1`}
+                                        src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
                                         className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
                                         alt="Avatar"
                                     />
@@ -304,9 +457,24 @@ export default function Chat() {
                                     </div>
                                 </Link>
                             </div>
-                            <div className="flex gap-2 text-slate-400 dark:text-slate-500">
+                            <div className="flex gap-2 text-slate-400 dark:text-slate-500 relative" ref={roomMenuRef}>
                                 <Phone size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
-                                <MoreVertical size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
+                                <MoreVertical
+                                    size={20}
+                                    className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"
+                                    onClick={() => setShowRoomMenu(!showRoomMenu)}
+                                />
+                                {showRoomMenu && (
+                                    <div className="absolute right-0 top-8 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-scale-in">
+                                        <button
+                                            onClick={handleDeleteConv}
+                                            className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                            Xóa cuộc trò chuyện
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -315,17 +483,19 @@ export default function Chat() {
                             {messages.map((msg, idx) => {
                                 const isMe = msg.senderId === user?.id;
                                 const showAvatar = !isMe && (idx === 0 || messages[idx - 1].senderId !== msg.senderId);
+                                const isEditing = editingMsgId === msg.id;
 
                                 return (
                                     <div
                                         key={msg.id}
                                         className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2 relative`}
+                                        onMouseLeave={() => setMsgMenuId(null)}
                                     >
                                         {!isMe && (
                                             <div className="w-8 flex-shrink-0">
                                                 {showAvatar && (
                                                     <img
-                                                        src={msg.sender.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender.username)}&background=random&color=fff&length=1`}
+                                                        src={getAvatarUrl(msg.sender.avatar, msg.sender.username)}
                                                         className="w-8 h-8 rounded-full shadow-sm"
                                                         alt="Sender"
                                                     />
@@ -333,21 +503,79 @@ export default function Chat() {
                                             </div>
                                         )}
 
+                                        {/* Message Actions (Only for Me) */}
+                                        {isMe && !isEditing && (
+                                            <div className="relative opacity-0 group-hover:opacity-100 transition-opacity self-center mr-2 order-first">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setMsgMenuId(msgMenuId === msg.id ? null : msg.id); }}
+                                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700"
+                                                >
+                                                    <MoreHorizontal size={16} />
+                                                </button>
+                                                {msgMenuId === msg.id && (
+                                                    <div ref={msgMenuRef} className="absolute right-0 top-8 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-scale-in">
+                                                        <button
+                                                            onClick={() => startEditing(msg)}
+                                                            className="w-full text-left px-3 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-xs font-medium"
+                                                        >
+                                                            <Edit2 size={14} /> Sửa
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteMsgForMe(msg.id)}
+                                                            className="w-full text-left px-3 py-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-xs font-medium"
+                                                        >
+                                                            <Trash2 size={14} /> Xóa ở phía tôi
+                                                        </button>
+                                                        {/* Check 1h limit for recall */
+                                                            (new Date().getTime() - new Date(msg.createdAt).getTime() < 60 * 60 * 1000) && (
+                                                                <button
+                                                                    onClick={() => handleRecallMsg(msg.id)}
+                                                                    className="w-full text-left px-3 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-xs font-medium"
+                                                                >
+                                                                    <RotateCcw size={14} /> Thu hồi
+                                                                </button>
+                                                            )
+                                                        }
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <div className={`relative max-w-[70%]`}>
                                             {/* Timestamp Tooltip/Display */}
-                                            <div className={`text-[10px] text-slate-400 dark:text-slate-500 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                                                {format(new Date(msg.createdAt), "HH:mm EE dd/MM/yyyy", { locale: vi })}
-                                            </div>
+                                            {!isEditing && (
+                                                <div className={`text-[10px] text-slate-400 dark:text-slate-500 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                                    {format(new Date(msg.createdAt), "HH:mm EE dd/MM/yyyy", { locale: vi })}
+                                                </div>
+                                            )}
 
-                                            <div
-                                                className={`px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative ${isMe
-                                                    ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
-                                                    }`}
-                                            >
-                                                {msg.content}
-                                            </div>
-                                            {isMe && (
+                                            {isEditing ? (
+                                                <div className="flex gap-2 items-center">
+                                                    <input
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                        className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full min-w-[200px]"
+                                                        autoFocus
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleUpdateMsg()}
+                                                    />
+                                                    <button onClick={handleUpdateMsg} className="p-1.5 bg-indigo-500 text-white rounded-full hover:bg-indigo-600"><Check size={14} /></button>
+                                                    <button onClick={() => setEditingMsgId(null)} className="p-1.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600"><X size={14} /></button>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className={`px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative ${isMe
+                                                        ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
+                                                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                                                        }`}
+                                                >
+                                                    {msg.content}
+                                                    {msg.updatedAt && msg.createdAt && msg.updatedAt !== msg.createdAt && (
+                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1 italic block text-right">đã sửa</span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {isMe && !isEditing && (
                                                 <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-1">
                                                     {msg.isRead ? "Đã xem" : "Đã gửi"}
                                                 </div>
@@ -386,6 +614,37 @@ export default function Chat() {
                     </div>
                 )}
             </div>
-        </div>
+
+
+            {/* Custom Confirmation Modal */}
+            {
+                confirmModal.isOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-96 transform transition-all scale-100 animate-scale-in border border-slate-100 dark:border-slate-700">
+                            <h3 className={`text-lg font-bold mb-2 ${confirmModal.type === 'danger' ? 'text-red-600' : 'text-slate-800 dark:text-white'}`}>
+                                {confirmModal.title}
+                            </h3>
+                            <p className="text-slate-600 dark:text-slate-300 mb-6 text-sm leading-relaxed">
+                                {confirmModal.message}
+                            </p>
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={closeConfirmModal}
+                                    className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium text-sm transition-colors"
+                                >
+                                    Hủy bỏ
+                                </button>
+                                <button
+                                    onClick={confirmModal.onConfirm}
+                                    className={`px-4 py-2 rounded-xl text-white font-medium text-sm shadow-lg transform active:scale-95 transition-all ${confirmModal.type === 'danger' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/30' : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/30'}`}
+                                >
+                                    Xác nhận
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

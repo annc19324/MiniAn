@@ -49,7 +49,7 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
                 email,
                 password: hashedPassword,
                 fullName: fullName || username,
-                coins: 100, // Tặng coin khởi đầu
+                coins: 10, // Tặng coin khởi đầu
             },
             select: {
                 id: true,

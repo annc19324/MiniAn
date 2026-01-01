@@ -224,3 +224,65 @@ export const getPostById = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Lỗi lấy bài viết', error });
     }
 };
+// Xóa bài viết
+export const deletePost = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    try {
+        const post = await prisma.post.findUnique({ where: { id: Number(id) } });
+        if (!post) return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+
+        if (post.authorId !== userId && req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ message: 'Không có quyền xóa bài viết này' });
+        }
+
+        // Delete associated notifications/likes/comments first if strict relational integrity isn't set to Cascade
+        // But Prisma usually handles Cascade if configured. Let's assume database level cascade or manually delete.
+        // For safety/standard:
+        await prisma.like.deleteMany({ where: { postId: Number(id) } });
+        await prisma.comment.deleteMany({ where: { postId: Number(id) } });
+        await prisma.notification.deleteMany({ where: { postId: Number(id) } });
+
+        await prisma.post.delete({ where: { id: Number(id) } });
+
+        res.json({ message: 'Đã xóa bài viết' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi xóa bài viết', error });
+    }
+};
+
+// Sửa bài viết
+export const updatePost = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const { content } = req.body;
+    const userId = req.user!.id;
+
+    try {
+        const post = await prisma.post.findUnique({ where: { id: Number(id) } });
+        if (!post) return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+
+        if (post.authorId !== userId) {
+            return res.status(403).json({ message: 'Không có quyền sửa bài viết này' });
+        }
+
+        const updatedPost = await prisma.post.update({
+            where: { id: Number(id) },
+            data: { content },
+            include: {
+                author: {
+                    select: { id: true, username: true, fullName: true, avatar: true },
+                },
+                likes: { select: { userId: true } },
+                comments: true,
+                _count: { select: { likes: true, comments: true } },
+            },
+        });
+
+        res.json(updatedPost);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi cập nhật bài viết', error });
+    }
+};
+

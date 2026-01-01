@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { Home, MessageCircle, User, PlusSquare, Bell, LogOut, Search, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getAvatarUrl } from '../../utils/avatarUtils';
 
 import { useState, useEffect } from 'react';
 import { getLeaderboard } from '../../services/api';
@@ -123,7 +124,7 @@ export default function Layout() {
                                 }`}>
                                 {index + 1}
                             </div>
-                            <img src={u.avatar || `https://ui-avatars.com/api/?name=${u.username}&background=random`} alt="Avatar" className="w-8 h-8 rounded-full border border-white dark:border-slate-700 shadow-sm" />
+                            <img src={getAvatarUrl(u.avatar, u.username)} alt="Avatar" className="w-8 h-8 rounded-full border border-white dark:border-slate-700 shadow-sm" />
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{u.fullName}</p>
                                 <p className="text-xs text-yellow-600 dark:text-yellow-500 font-bold">{u.coins} xu</p>
@@ -144,7 +145,7 @@ export default function Layout() {
 
                 <div className="px-6 pb-4 border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/50 mb-4 pt-4">
                     <div className="flex items-center space-x-3 mb-3">
-                        <img src={user?.avatar || "https://ui-avatars.com/api/?name=User&background=random"} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" />
+                        <img src={getAvatarUrl(user?.avatar, user?.username)} alt="Avatar" className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" />
                         <div className="flex-1 overflow-hidden">
                             <p className="font-bold text-slate-800 dark:text-slate-200 truncate text-sm">{user?.fullName || "User"}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">@{user?.username || "username"}</p>
