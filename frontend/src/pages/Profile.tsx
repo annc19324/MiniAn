@@ -1,9 +1,8 @@
 // src/pages/Profile.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProfile, getUserPosts, followUser, updateUserProfile } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare } from 'lucide-react';
+import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, X, Send } from 'lucide-react';
+import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost } from '../services/api';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -32,9 +31,17 @@ interface Post {
     content: string;
     image?: string;
     createdAt: string;
+    likes: { userId: number }[];
+    comments: any[];
     _count: {
         likes: number;
         comments: number;
+    };
+    author?: { // Optional because in profile we know the author
+        id: number;
+        username: string;
+        fullName: string;
+        avatar?: string;
     };
 }
 
@@ -144,6 +151,11 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [showEdit, setShowEdit] = useState(false);
 
+    // Interactive State
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
+    const [commentText, setCommentText] = useState('');
+
     useEffect(() => {
         const fetchData = async () => {
             console.log("Fetching profile data for ID:", id);
@@ -198,6 +210,48 @@ export default function Profile() {
     const handleMessage = () => {
         if (!profile) return;
         navigate('/chat', { state: { targetUserId: profile.id } });
+    };
+
+    const handleLike = async (postId: number) => {
+        try {
+            await likePost(postId);
+            setPosts(posts.map(p => {
+                if (p.id === postId) {
+                    const isLiked = p.likes.some(l => l.userId === currentUser?.id);
+                    return {
+                        ...p,
+                        likes: isLiked ? p.likes.filter(l => l.userId !== currentUser?.id) : [...p.likes, { userId: currentUser!.id }],
+                        _count: {
+                            ...p._count,
+                            likes: isLiked ? p._count.likes - 1 : p._count.likes + 1
+                        }
+                    };
+                }
+                return p;
+            }));
+        } catch (error) {
+            console.error('Lỗi like', error);
+        }
+    };
+
+    const handleCommentSubmit = async (postId: number) => {
+        if (!commentText.trim()) return;
+        try {
+            const res = await commentPost(postId, commentText);
+            setPosts(posts.map(p => {
+                if (p.id === postId) {
+                    return {
+                        ...p,
+                        comments: [res.data.comment, ...p.comments],
+                        _count: { ...p._count, comments: p._count.comments + 1 }
+                    };
+                }
+                return p;
+            }));
+            setCommentText('');
+        } catch (error) {
+            alert('Lỗi bình luận');
+        }
     };
 
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải hồ sơ...</div>;
@@ -322,25 +376,131 @@ export default function Profile() {
             {/* Content Tabs (For now just Posts) */}
             <h3 className="text-lg font-bold text-slate-800 px-2">Bài viết</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-6">
                 {posts.length === 0 ? (
                     <div className="col-span-full text-center py-10 text-slate-400">Người dùng chưa có bài viết nào.</div>
                 ) : (
-                    posts.map(post => (
-                        <div key={post.id} className="glass-card p-4 hover:bg-white/80 transition-all cursor-pointer">
-                            <p className="mb-3 text-slate-800 line-clamp-3 leading-relaxed">{post.content}</p>
-                            {post.image && (
-                                <img src={post.image} className="w-full h-48 object-cover rounded-xl mb-3" alt="Post" />
-                            )}
-                            <div className="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-3 mt-auto">
-                                <span className="flex items-center gap-1"><Heart size={14} /> {post._count.likes}</span>
-                                <span className="flex items-center gap-1"><MessageSquare size={14} /> {post._count.comments}</span>
-                                <span>{formatDistanceToNow(new Date(post.createdAt), { locale: vi })}</span>
+                    posts.map(post => {
+                        const isLiked = post.likes?.some(l => l.userId === currentUser?.id);
+                        return (
+                            <div key={post.id} className="glass-card p-4 animate-slide-up">
+                                <p className="mb-3 text-slate-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                                {post.image && (
+                                    <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-slate-50">
+                                        <img
+                                            src={post.image}
+                                            className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                                            alt="Post"
+                                            onClick={() => setSelectedImage(post.image!)}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center text-sm text-slate-500 border-t border-slate-100 pt-3 mt-auto">
+                                    <div className='flex gap-4'>
+                                        <button
+                                            onClick={() => handleLike(post.id)}
+                                            className={`flex items-center gap-1 transition-colors ${isLiked ? 'text-red-500' : 'hover:text-red-500'}`}
+                                        >
+                                            <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
+                                            <span>{post._count.likes}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)}
+                                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                                        >
+                                            <MessageSquare size={18} />
+                                            <span>{post._count.comments}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const url = window.location.origin + '/post/' + post.id;
+                                                navigator.clipboard.writeText(url);
+                                                alert('Đã sao chép liên kết bài viết!');
+                                            }}
+                                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                                        >
+                                            <Share2 size={18} />
+                                        </button>
+                                    </div>
+                                    <span className='text-xs'>{formatDistanceToNow(new Date(post.createdAt), { locale: vi, addSuffix: true })}</span>
+                                </div>
+
+                                {activeCommentId === post.id && (
+                                    <div className="mt-4 pt-4 border-t border-slate-50 animate-fade-in">
+                                        <div className="flex gap-2 mb-4">
+                                            <img src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${currentUser?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
+                                            <div className="flex-1 relative">
+                                                <input
+                                                    type="text"
+                                                    value={commentText}
+                                                    onChange={(e) => setCommentText(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
+                                                    placeholder="Viết bình luận..."
+                                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                                                />
+                                                <button
+                                                    onClick={() => handleCommentSubmit(post.id)}
+                                                    className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600 p-1"
+                                                >
+                                                    <Send size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                                            {post.comments && post.comments.map((comment: any) => (
+                                                <div key={comment.id} className="flex gap-2 items-start">
+                                                    {/* Link to commenter profile, handle edge case if author is missing for some reason */}
+                                                    <img
+                                                        src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username || 'User'}`}
+                                                        className="w-7 h-7 rounded-full cursor-pointer"
+                                                        alt="CommenterAvatar"
+                                                        onClick={() => navigate(`/profile/${comment.authorId}`)}
+                                                    />
+                                                    <div className="bg-slate-50 p-2.5 rounded-2xl rounded-tl-none">
+                                                        <div
+                                                            className="font-bold text-xs text-slate-900 block mb-0.5 cursor-pointer hover:underline"
+                                                            onClick={() => navigate(`/profile/${comment.authorId}`)}
+                                                        >
+                                                            {comment.author?.fullName || 'Người dùng'}
+                                                        </div>
+                                                        <p className="text-sm text-slate-700">{comment.content}</p>
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
+                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
+
+            {/* Image Preview Modal */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button
+                        onClick={() => setSelectedImage(null)}
+                        className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
+                    >
+                        <X size={32} />
+                    </button>
+                    <img
+                        src={selectedImage}
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
+                        alt="Full preview"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
             {/* Edit Modal */}
             {showEdit && profile && (
