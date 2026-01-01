@@ -393,9 +393,9 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="flex h-[calc(100vh-220px)] md:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="flex h-[calc(100vh-220px)] lg:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
-            <div className={`w-full md:w-80 border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`w-full lg:w-80 border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-indigo-50 dark:border-slate-800 space-y-3">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
                     <div className="relative">
