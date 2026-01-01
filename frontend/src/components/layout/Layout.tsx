@@ -88,7 +88,7 @@ export default function Layout() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
             {/* Leaderboard Sidebar (Left Side) */}
-            <aside className="hidden lg:flex w-64 flex-col bg-white/60 backdrop-blur-xl border-r border-white/50 min-h-screen fixed left-0 top-0 z-40 p-6 overscroll-y-auto">
+            <aside className="hidden lg:flex w-64 flex-col bg-white/60 backdrop-blur-xl border-r border-white/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto">
                 <div className="flex items-center gap-2 mb-6 text-yellow-600">
                     <Award size={24} />
                     <h2 className="text-xl font-bold">Bảng Xếp Hạng</h2>
