@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon, Bell } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell, Volume2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { requestNotificationPermission } from '../utils/notificationUtils';
 
@@ -19,9 +19,16 @@ export default function Settings() {
         fullName: user?.fullName || ''
     });
     const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+    const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('notificationSound') !== 'false');
 
     const toggleSection = (section: string) => {
         setActiveSection(activeSection === section ? null : section);
+    };
+
+    const toggleSound = () => {
+        const newState = !soundEnabled;
+        setSoundEnabled(newState);
+        localStorage.setItem('notificationSound', String(newState));
     };
 
     const handleInfoSubmit = async (e: React.FormEvent) => {
@@ -118,7 +125,7 @@ export default function Settings() {
                         </div>
                         <div>
                             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Thông báo</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Cài đặt thông báo hệ thống</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">Âm thanh & Thông báo đẩy</p>
                         </div>
                     </div>
                     <span className={`transform transition-transform text-slate-500 dark:text-slate-400 ${activeSection === 'notifications' ? 'rotate-180' : ''}`}>
@@ -127,18 +134,38 @@ export default function Settings() {
                 </button>
 
                 {activeSection === 'notifications' && (
-                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down">
+                    <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down space-y-6">
+                        {/* Browser Notifications */}
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới ngay cả khi ẩn tab.</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới.</p>
                             </div>
                             <button
                                 onClick={handleEnableNotifications}
                                 disabled={notificationPermission === 'granted'}
                                 className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                             >
-                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật thông báo'}
+                                {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
+                            </button>
+                        </div>
+
+                        {/* Sound Toggle */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 text-slate-600 rounded-lg dark:bg-slate-800 dark:text-slate-400">
+                                    <Volume2 size={20} />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Âm thanh thông báo</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Phát âm thanh khi có thông báo mới</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={toggleSound}
+                                className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${soundEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                            >
+                                <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
                             </button>
                         </div>
                     </div>
