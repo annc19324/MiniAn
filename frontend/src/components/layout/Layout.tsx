@@ -8,7 +8,7 @@ import { Award } from 'lucide-react';
 import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { getConversations } from '../../services/api';
-import { sendSystemNotification } from '../../utils/notificationUtils';
+import { sendSystemNotification, playNotificationSound } from '../../utils/notificationUtils';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -36,6 +36,9 @@ export default function Layout() {
 
         socket.on('receive_message', (data) => {
             if (window.location.pathname !== '/chat') {
+                const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+                if (soundEnabled) playNotificationSound();
+
                 toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
                     icon: '📩',
                     style: { borderRadius: '10px', background: '#333', color: '#fff' },
@@ -45,6 +48,9 @@ export default function Layout() {
         });
 
         socket.on('new_notification', (data) => {
+            const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
+            if (soundEnabled) playNotificationSound();
+
             toast(data.content, { icon: '🔔' });
             setUnreadNotificationsCount(prev => prev + 1);
             sendSystemNotification('Thông báo mới', data.content);
