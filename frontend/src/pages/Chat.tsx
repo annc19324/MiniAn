@@ -537,11 +537,11 @@ export default function Chat() {
                                 return (
                                     <div
                                         key={msg.id}
-                                        className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2 relative`}
+                                        className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-start gap-2 relative`}
                                         onMouseLeave={() => setMsgMenuId(null)}
                                     >
                                         {!isMe && (
-                                            <div className="w-8 flex-shrink-0">
+                                            <div className={`w-8 flex-shrink-0 ${activeConversation?.isGroup ? 'mt-5' : ''}`}>
                                                 {showAvatar && (
                                                     <Link to={`/profile/${msg.senderId}`}>
                                                         <img
