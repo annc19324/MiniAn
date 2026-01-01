@@ -15,6 +15,7 @@ export const sendSystemNotification = (title: string, body?: string, icon?: stri
             const notification = new Notification(title, {
                 body,
                 icon: icon || '/minian.ico',
+                // @ts-ignore
                 vibrate: [200, 100, 200]
             });
             notification.onclick = function () {
