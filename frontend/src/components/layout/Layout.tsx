@@ -37,14 +37,18 @@ export default function Layout() {
         socket.on('receive_message', (data) => {
             console.log("Socket: receive_message", data);
 
-            // Logic: Always play sound and notify if enabled
+            // GLOBAL LOGIC: Always play sound variable check
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-            if (soundEnabled) playNotificationSound();
+            console.log("Global Sound Check (Msg):", soundEnabled);
 
+            if (soundEnabled) {
+                playNotificationSound();
+            }
+
+            // Always try to send system notification
             sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
 
-            // Only show in-app toast if NOT on chat page to avoid clutter, 
-            // OR if the window is hidden/blurred (user won't see the chat UI)
+            // Toast logic: Only show if NOT on chat page or hidden
             if (window.location.pathname !== '/chat' || document.hidden) {
                 toast(`💬 ${data.messageData.sender.username}: ${data.messageData.content}`, {
                     icon: '📩',
@@ -55,11 +59,18 @@ export default function Layout() {
 
         socket.on('new_notification', (data) => {
             console.log("Socket: new_notification", data);
+
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
-            if (soundEnabled) playNotificationSound();
+            console.log("Global Sound Check (Notif):", soundEnabled);
+
+            if (soundEnabled) {
+                playNotificationSound();
+            }
 
             toast(data.content, { icon: '🔔' });
             setUnreadNotificationsCount(prev => prev + 1);
+
+            // SYSTEM NOTIFICATION FOR ALL TYPES
             sendSystemNotification('Thông báo mới', data.content);
         });
 
