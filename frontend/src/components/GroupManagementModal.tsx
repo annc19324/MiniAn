@@ -22,6 +22,7 @@ interface GroupManagementModalProps {
     members: Member[];
     createdBy?: number;
     onUpdate: () => void;
+    onDelete?: () => void;
 }
 
 interface User {
@@ -39,7 +40,8 @@ export default function GroupManagementModal({
     groupAvatar,
     members,
     createdBy,
-    onUpdate
+    onUpdate,
+    onDelete
 }: GroupManagementModalProps) {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
@@ -134,6 +136,7 @@ export default function GroupManagementModal({
         try {
             await leaveGroup(roomId);
             toast.success('Đã rời khỏi nhóm');
+            onDelete?.(); // Clear activeRoomId
             onClose();
             onUpdate();
         } catch (error: any) {
@@ -146,6 +149,7 @@ export default function GroupManagementModal({
         try {
             await deleteConversation(roomId);
             toast.success('Đã xóa nhóm');
+            onDelete?.(); // Clear activeRoomId
             onClose();
             onUpdate();
         } catch (error: any) {

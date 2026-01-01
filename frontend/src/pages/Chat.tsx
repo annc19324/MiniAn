@@ -718,6 +718,10 @@ export default function Chat() {
                         const res = await getConversations();
                         setConversations(res.data);
                     }}
+                    onDelete={() => {
+                        setActiveRoomId(null);
+                        setMessages([]);
+                    }}
                 />
             )}
         </div >
