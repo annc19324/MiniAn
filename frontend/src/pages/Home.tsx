@@ -174,7 +174,9 @@ export default function Home() {
       <div className="glass-card mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-            Xin chào, {user?.fullName}!
+            Xin chào
+            <br />
+            {user?.fullName}!
           </h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Coins: <span className="font-bold text-yellow-500">{user?.coins}</span> 🪙</p>
         </div>
@@ -182,7 +184,7 @@ export default function Home() {
           onClick={handleCheckIn}
           className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all font-bold text-sm"
         >
-          📅 Điểm danh
+          Điểm danh
         </button>
       </div>
 

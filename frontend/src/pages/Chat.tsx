@@ -459,7 +459,7 @@ export default function Chat() {
             </div>
 
             {/* Chat Box */}
-            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 ${!activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
+            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 min-w-0 ${!activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 {activeRoomId ? (
                     <>
                         {/* Chat Header */}
@@ -479,7 +479,7 @@ export default function Chat() {
                                             alt="Avatar"
                                         />
                                         <div>
-                                            <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
+                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{activeConversation?.name}</h4>
                                             <span className="text-xs text-slate-500 dark:text-slate-400">{activeConversation.memberCount} thành viên</span>
                                         </div>
                                     </button>
@@ -491,7 +491,7 @@ export default function Chat() {
                                             alt="Avatar"
                                         />
                                         <div>
-                                            <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
+                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{activeConversation?.name}</h4>
                                             <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
                                         </div>
                                     </Link>
