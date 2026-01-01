@@ -128,10 +128,10 @@ export default function Home() {
     <div className="space-y-6">
       <div className="glass-card mb-6 flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
+          <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
             Xin chào, {user?.fullName}!
           </h2>
-          <p className="text-slate-500 text-sm">Coins: <span className="font-bold text-yellow-500">{user?.coins}</span> 🪙</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">Coins: <span className="font-bold text-yellow-500">{user?.coins}</span> 🪙</p>
         </div>
         <button
           onClick={handleCheckIn}
@@ -142,7 +142,7 @@ export default function Home() {
       </div>
 
       <div className="glass-card p-4 flex gap-4 items-start">
-        <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+        <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
         <div className="flex-1">
           <textarea
             value={content}
@@ -154,13 +154,13 @@ export default function Home() {
 
           {image && (
             <div className="mt-2 relative inline-block">
-              <img src={URL.createObjectURL(image)} alt="Preview" className="h-20 w-auto rounded-lg border border-slate-200" />
+              <img src={URL.createObjectURL(image)} alt="Preview" className="h-20 w-auto rounded-lg border border-slate-200 dark:border-slate-700" />
               <button onClick={() => setImage(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">×</button>
             </div>
           )}
 
           <div className="flex justify-between items-center mt-3">
-            <label className="cursor-pointer text-indigo-500 hover:bg-indigo-50 p-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium">
+            <label className="cursor-pointer text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 p-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium">
               <ImageIcon size={18} />
               <span>Ảnh</span>
               <input type="file" hidden accept="image/*" onChange={(e) => setImage(e.target.files?.[0] || null)} />
@@ -187,18 +187,18 @@ export default function Home() {
             <div key={post.id} className="glass-card animate-slide-up">
               <div className="flex items-center gap-3 mb-4">
                 <Link to={`/profile/${post.author.id}`}>
-                  <img src={post.author.avatar || `https://ui-avatars.com/api/?name=${post.author.username}`} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="Avatar" />
+                  <img src={post.author.avatar || `https://ui-avatars.com/api/?name=${post.author.username}`} className="w-10 h-10 rounded-full border-2 border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
                 </Link>
                 <div>
-                  <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 hover:underline">{post.author.fullName}</Link>
-                  <p className="text-xs text-slate-500">{new Date(post.createdAt).toLocaleDateString('vi-VN')} {new Date(post.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <Link to={`/profile/${post.author.id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">{post.author.fullName}</Link>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString('vi-VN')} {new Date(post.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
               </div>
 
-              <p className="text-slate-700 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+              <p className="text-slate-700 dark:text-slate-200 mb-4 leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
               {post.image && (
-                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-slate-50">
+                <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
                   <img
                     src={post.image}
                     alt="Post content"
@@ -208,17 +208,17 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 mb-2">
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 mb-2">
                 <button
                   onClick={() => handleLike(post.id)}
-                  className={`flex items-center gap-2 transition-colors ${isLiked ? 'text-red-500' : 'text-slate-500 hover:text-red-500'}`}
+                  className={`flex items-center gap-2 transition-colors ${isLiked ? 'text-red-500' : 'text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400'}`}
                 >
                   <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
                   <span>{post._count.likes}</span>
                 </button>
                 <button
                   onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)}
-                  className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors"
+                  className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                 >
                   <MessageCircle size={20} />
                   <span>{post._count.comments}</span>
@@ -229,14 +229,14 @@ export default function Home() {
                     navigator.clipboard.writeText(url);
                     alert('Đã sao chép liên kết bài viết!');
                   }}
-                  className="flex items-center gap-2 text-slate-500 hover:text-indigo-500 transition-colors"
+                  className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                 >
                   <Share2 size={20} />
                 </button>
               </div>
 
               {activeCommentId === post.id && (
-                <div className="mt-4 pt-4 border-t border-slate-50 animate-fade-in">
+                <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 animate-fade-in">
                   <div className="flex gap-2 mb-4">
                     <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
                     <div className="flex-1 relative">
@@ -246,7 +246,7 @@ export default function Home() {
                         onChange={(e) => setCommentText(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
                         placeholder="Viết bình luận..."
-                        className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200"
                       />
                       <button
                         onClick={() => handleCommentSubmit(post.id)}
@@ -263,11 +263,11 @@ export default function Home() {
                         <Link to={`/profile/${comment.authorId}`}>
                           <img src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username}`} className="w-7 h-7 rounded-full" alt="CommenterAvatar" />
                         </Link>
-                        <div className="bg-slate-50 p-2.5 rounded-2xl rounded-tl-none">
-                          <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs text-slate-900 block mb-0.5">
+                        <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none">
+                          <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5">
                             {comment.author?.fullName}
                           </Link>
-                          <p className="text-sm text-slate-700">{comment.content}</p>
+                          <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
                         </div>
                         <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
                           {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}

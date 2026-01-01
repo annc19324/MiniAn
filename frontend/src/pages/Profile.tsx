@@ -265,7 +265,7 @@ export default function Profile() {
             {/* Header Card */}
             <div className="glass-card overflow-hidden">
                 {/* Cover Image (Placeholder for now) */}
-                <div className="h-48 bg-gradient-to-r from-indigo-400 to-purple-400 relative">
+                <div className="h-48 bg-gradient-to-r from-indigo-400 to-purple-400 dark:from-indigo-600 dark:to-purple-800 relative">
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
                         {isMe ? (
@@ -290,7 +290,7 @@ export default function Profile() {
                     <div className="-mt-16 mb-4 flex justify-between items-end">
                         <img
                             src={profile.avatar || `https://ui-avatars.com/api/?name=${profile.username}&background=random`}
-                            className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover bg-white"
+                            className="w-32 h-32 rounded-full border-4 border-white dark:border-slate-800 shadow-lg object-cover bg-white"
                             alt="Avatar"
                         />
 
@@ -299,14 +299,14 @@ export default function Profile() {
                                 <>
                                     <button
                                         onClick={handleMessage}
-                                        className="p-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                                        className="p-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-xl transition-colors"
                                     >
                                         <MessageCircle size={20} />
                                     </button>
                                     <button
                                         onClick={handleFollow}
                                         className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg ${profile.isFollowing
-                                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                            ? 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
                                             : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-500/30'
                                             }`}
                                     >
@@ -336,15 +336,15 @@ export default function Profile() {
                     {/* Info */}
                     <div>
                         <div className="flex items-center gap-2">
-                            <h1 className="text-2xl font-bold text-slate-900">{profile.fullName}</h1>
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{profile.fullName}</h1>
                             {profile.isVip && <span className="text-yellow-500 text-lg">👑</span>}
-                            {profile.role === 'ADMIN' && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">ADMIN</span>}
+                            {profile.role === 'ADMIN' && <span className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full font-bold">ADMIN</span>}
                         </div>
-                        <p className="text-slate-500 font-medium">@{profile.username}</p>
+                        <p className="text-slate-500 dark:text-slate-400 font-medium">@{profile.username}</p>
 
-                        {profile.bio && <p className="mt-3 text-slate-700 leading-relaxed max-w-2xl">{profile.bio}</p>}
+                        {profile.bio && <p className="mt-3 text-slate-700 dark:text-slate-300 leading-relaxed max-w-2xl">{profile.bio}</p>}
 
-                        <div className="flex flex-wrap gap-4 mt-4 text-sm text-slate-500">
+                        <div className="flex flex-wrap gap-4 mt-4 text-sm text-slate-500 dark:text-slate-400">
                             <div className="flex items-center gap-1">
                                 <Calendar size={16} />
                                 <span>Đã tham gia {formatDistanceToNow(new Date(profile.createdAt), { locale: vi, addSuffix: true })}</span>
@@ -356,18 +356,18 @@ export default function Profile() {
                         </div>
 
                         {/* Stats */}
-                        <div className="flex gap-6 mt-6 border-t border-slate-100 pt-6">
+                        <div className="flex gap-6 mt-6 border-t border-slate-100 dark:border-slate-800 pt-6">
                             <div className="text-center">
-                                <span className="block text-xl font-black text-slate-800">{profile._count.posts}</span>
-                                <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">Bài viết</span>
+                                <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.posts}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Bài viết</span>
                             </div>
                             <div className="text-center">
-                                <span className="block text-xl font-black text-slate-800">{profile._count.followers}</span>
-                                <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">Người theo dõi</span>
+                                <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.followers}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Người theo dõi</span>
                             </div>
                             <div className="text-center">
-                                <span className="block text-xl font-black text-slate-800">{profile._count.following}</span>
-                                <span className="text-xs text-slate-500 font-medium uppercase tracking-wide">Đang theo dõi</span>
+                                <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.following}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Đang theo dõi</span>
                             </div>
                         </div>
                     </div>
@@ -375,7 +375,7 @@ export default function Profile() {
             </div>
 
             {/* Content Tabs (For now just Posts) */}
-            <h3 className="text-lg font-bold text-slate-800 px-2">Bài viết</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white px-2">Bài viết</h3>
 
             <div className="space-y-6">
                 {posts.length === 0 ? (
@@ -385,9 +385,9 @@ export default function Profile() {
                         const isLiked = post.likes?.some(l => l.userId === currentUser?.id);
                         return (
                             <div key={post.id} className="glass-card p-4 animate-slide-up">
-                                <p className="mb-3 text-slate-800 leading-relaxed whitespace-pre-wrap">{post.content}</p>
+                                <p className="mb-3 text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">{post.content}</p>
                                 {post.image && (
-                                    <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-slate-50">
+                                    <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
                                         <img
                                             src={post.image}
                                             className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
@@ -397,18 +397,18 @@ export default function Profile() {
                                     </div>
                                 )}
 
-                                <div className="flex justify-between items-center text-sm text-slate-500 border-t border-slate-100 pt-3 mt-auto">
+                                <div className="flex justify-between items-center text-sm text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3 mt-auto">
                                     <div className='flex gap-4'>
                                         <button
                                             onClick={() => handleLike(post.id)}
-                                            className={`flex items-center gap-1 transition-colors ${isLiked ? 'text-red-500' : 'hover:text-red-500'}`}
+                                            className={`flex items-center gap-1 transition-colors ${isLiked ? 'text-red-500' : 'hover:text-red-500 dark:hover:text-red-400'}`}
                                         >
                                             <Heart size={18} fill={isLiked ? "currentColor" : "none"} />
                                             <span>{post._count.likes}</span>
                                         </button>
                                         <button
                                             onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)}
-                                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                                            className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                                         >
                                             <MessageSquare size={18} />
                                             <span>{post._count.comments}</span>
@@ -419,7 +419,7 @@ export default function Profile() {
                                                 navigator.clipboard.writeText(url);
                                                 alert('Đã sao chép liên kết bài viết!');
                                             }}
-                                            className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                                            className="flex items-center gap-1 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                                         >
                                             <Share2 size={18} />
                                         </button>
@@ -428,7 +428,7 @@ export default function Profile() {
                                 </div>
 
                                 {activeCommentId === post.id && (
-                                    <div className="mt-4 pt-4 border-t border-slate-50 animate-fade-in">
+                                    <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 animate-fade-in">
                                         <div className="flex gap-2 mb-4">
                                             <img src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${currentUser?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
                                             <div className="flex-1 relative">
@@ -438,7 +438,7 @@ export default function Profile() {
                                                     onChange={(e) => setCommentText(e.target.value)}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
                                                     placeholder="Viết bình luận..."
-                                                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200"
                                                 />
                                                 <button
                                                     onClick={() => handleCommentSubmit(post.id)}
@@ -459,14 +459,14 @@ export default function Profile() {
                                                         alt="CommenterAvatar"
                                                         onClick={() => navigate(`/profile/${comment.authorId}`)}
                                                     />
-                                                    <div className="bg-slate-50 p-2.5 rounded-2xl rounded-tl-none">
+                                                    <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none">
                                                         <div
-                                                            className="font-bold text-xs text-slate-900 block mb-0.5 cursor-pointer hover:underline"
+                                                            className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
                                                             onClick={() => navigate(`/profile/${comment.authorId}`)}
                                                         >
                                                             {comment.author?.fullName || 'Người dùng'}
                                                         </div>
-                                                        <p className="text-sm text-slate-700">{comment.content}</p>
+                                                        <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
                                                     </div>
                                                     <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
                                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}

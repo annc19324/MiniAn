@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -8,10 +9,15 @@
   }
 
   body {
-    @apply antialiased text-slate-800 bg-slate-50;
+    @apply antialiased text-slate-800 bg-slate-50 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300;
     font-family: 'Inter', system-ui, sans-serif;
-    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
     min-height: 100vh;
+  }
+
+  /* Dark mode background override if gradient is undesirable in dark mode */
+  .dark body {
+    background: #020617;
+    /* Slate 950 */
   }
 
   /* Custom Scrollbar */
@@ -25,7 +31,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-indigo-200 rounded-full hover:bg-indigo-300 transition-colors;
+    @apply bg-indigo-200 rounded-full hover:bg-indigo-300 transition-colors dark:bg-slate-700 dark:hover:bg-slate-600;
   }
 }
 
@@ -33,19 +39,19 @@
 
   /* Glassmorphism Utilities */
   .glass {
-    @apply bg-white/70 backdrop-blur-lg border border-white/50 shadow-xl;
+    @apply bg-white/70 backdrop-blur-lg border border-white/50 shadow-xl dark:bg-slate-900/80 dark:border-slate-800 dark:shadow-none;
   }
 
   .glass-card {
-    @apply bg-white/70 backdrop-blur-lg border border-white/50 shadow-xl rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1;
+    @apply bg-white/70 backdrop-blur-lg border border-white/50 shadow-xl rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 dark:bg-slate-900 dark:border-slate-800 dark:shadow-none;
   }
 
   .glass-input {
-    @apply bg-white/50 backdrop-blur-md border border-white/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/80 transition-all;
+    @apply bg-white/50 backdrop-blur-md border border-white/60 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/80 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white dark:focus:bg-slate-800;
   }
 
   .glass-btn {
-    @apply bg-indigo-600/90 text-white backdrop-blur-sm px-6 py-3 rounded-xl font-medium shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:shadow-indigo-500/40 active:scale-95 transition-all duration-200;
+    @apply bg-indigo-600/90 text-white backdrop-blur-sm px-6 py-3 rounded-xl font-medium shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:shadow-indigo-500/40 active:scale-95 transition-all duration-200 dark:shadow-none;
   }
 
   /* Animations */

@@ -228,9 +228,9 @@ export default function Chat() {
     return (
         <div className="flex h-[calc(100vh-120px)] md:h-[calc(100vh-80px)] glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
-            <div className={`w-full md:w-80 border-r border-indigo-50 flex flex-col ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
-                <div className="p-4 border-b border-indigo-50">
-                    <h2 className="text-xl font-bold text-slate-800">Tin nhắn</h2>
+            <div className={`w-full md:w-80 border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden md:flex' : 'flex'}`}>
+                <div className="p-4 border-b border-indigo-50 dark:border-slate-800">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white">Tin nhắn</h2>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {conversations.length === 0 ? (
@@ -240,22 +240,22 @@ export default function Chat() {
                             <div
                                 key={c.id}
                                 onClick={() => setActiveRoomId(c.id)}
-                                className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-white/50 transition-colors ${activeRoomId === c.id ? 'bg-indigo-50/80' : ''}`}
+                                className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors ${activeRoomId === c.id ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
                             >
                                 <img
                                     src={c.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=random&color=fff&length=1`}
-                                    className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
+                                    className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm object-cover"
                                     alt="Avatar"
                                 />
                                 <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-slate-800 truncate">{c.name}</h4>
-                                    <p className={`text-sm truncate ${activeRoomId === c.id ? 'text-indigo-600' : 'text-slate-500'}`}>
-                                        {c.unreadCount ? <span className="font-bold text-slate-900">{c.lastMessage?.content}</span> : (c.lastMessage?.content || <span className="italic text-slate-400">Bắt đầu trò chuyện</span>)}
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 truncate">{c.name}</h4>
+                                    <p className={`text-sm truncate ${activeRoomId === c.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        {c.unreadCount ? <span className="font-bold text-slate-900 dark:text-white">{c.lastMessage?.content}</span> : (c.lastMessage?.content || <span className="italic text-slate-400 dark:text-slate-500">Bắt đầu trò chuyện</span>)}
                                     </p>
                                 </div>
                                 <div className="flex flex-col items-end">
                                     {c.lastMessage && (
-                                        <span className="text-[10px] text-slate-400 whitespace-nowrap mb-1">
+                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap mb-1">
                                             {formatDistanceToNow(new Date(c.lastMessage.createdAt), { locale: vi, addSuffix: false })}
                                         </span>
                                     )}
@@ -272,28 +272,28 @@ export default function Chat() {
             </div>
 
             {/* Chat Box */}
-            <div className={`flex-1 flex-col bg-white/30 ${!activeRoomId ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 ${!activeRoomId ? 'hidden md:flex' : 'flex'}`}>
                 {activeRoomId ? (
                     <>
                         {/* Chat Header */}
-                        <div className="p-4 border-b border-indigo-50 bg-white/60 backdrop-blur-sm flex justify-between items-center z-10">
+                        <div className="p-4 border-b border-indigo-50 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex justify-between items-center z-10">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveRoomId(null)} className="md:hidden text-slate-500 hover:text-indigo-600">
+                                <button onClick={() => setActiveRoomId(null)} className="md:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
                                     ←
                                 </button>
                                 <img
                                     src={activeConversation?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeConversation?.name || '')}&background=random&color=fff&length=1`}
-                                    className="w-10 h-10 rounded-full border border-white shadow-sm object-cover"
+                                    className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
                                     alt="Avatar"
                                 />
                                 <div>
-                                    <h4 className="font-bold text-slate-800">{activeConversation?.name}</h4>
+                                    <h4 className="font-bold text-slate-800 dark:text-white">{activeConversation?.name}</h4>
                                     <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
                                 </div>
                             </div>
-                            <div className="flex gap-2 text-slate-400">
-                                <Phone size={20} className="hover:text-indigo-600 cursor-pointer" />
-                                <MoreVertical size={20} className="hover:text-indigo-600 cursor-pointer" />
+                            <div className="flex gap-2 text-slate-400 dark:text-slate-500">
+                                <Phone size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
+                                <MoreVertical size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
                             </div>
                         </div>
 
@@ -322,20 +322,20 @@ export default function Chat() {
 
                                         <div className={`relative max-w-[70%]`}>
                                             {/* Timestamp Tooltip/Display */}
-                                            <div className={`text-[10px] text-slate-400 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                                            <div className={`text-[10px] text-slate-400 dark:text-slate-500 mb-1 ${isMe ? 'text-right' : 'text-left'} opacity-0 group-hover:opacity-100 transition-opacity`}>
                                                 {format(new Date(msg.createdAt), "HH:mm EE dd/MM/yyyy", { locale: vi })}
                                             </div>
 
                                             <div
                                                 className={`px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative ${isMe
                                                     ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
-                                                    : 'bg-white text-slate-800 rounded-bl-none'
+                                                    : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
                                                     }`}
                                             >
                                                 {msg.content}
                                             </div>
                                             {isMe && (
-                                                <div className="text-[10px] text-slate-400 text-right mt-1">
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-1">
                                                     {msg.isRead ? "Đã xem" : "Đã gửi"}
                                                 </div>
                                             )}
@@ -347,14 +347,14 @@ export default function Chat() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-white/60 backdrop-blur-sm border-t border-indigo-50">
+                        <div className="p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
                             <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                                 <input
                                     type="text"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Nhập tin nhắn..."
-                                    className="flex-1 bg-white border border-indigo-100 text-slate-800 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400"
+                                    className="flex-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 />
                                 <button
                                     type="submit"
@@ -367,9 +367,9 @@ export default function Chat() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-slate-300">
-                        <MessageCircle size={64} className="mb-4 text-indigo-100" />
-                        <p className="text-lg font-medium text-slate-400">Chọn một cuộc trò chuyện để bắt đầu</p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-300 dark:text-slate-700">
+                        <MessageCircle size={64} className="mb-4 text-indigo-100 dark:text-indigo-900/20" />
+                        <p className="text-lg font-medium text-slate-400 dark:text-slate-600">Chọn một cuộc trò chuyện để bắt đầu</p>
                     </div>
                 )}
             </div>
