@@ -55,7 +55,7 @@ export const subscribePush = (subscription: PushSubscription) => api.post('/noti
 export const getConversations = () => api.get('/chat/conversations');
 export const startConversation = (targetUserId: number) => api.post('/chat/conversation/start', { targetUserId });
 export const deleteConversation = (id: number) => api.delete(`/chat/conversation/${id}`);
-export const getMessages = (roomId: number, cursor?: number) => api.get(`/chat/${roomId}/messages`, { params: { cursor, limit: 5 } });
+export const getMessages = (roomId: number, cursor?: number) => api.get(`/chat/${roomId}/messages`, { params: { cursor, limit: 10 } });
 export const sendMessage = (roomId: number, content: string) => api.post(`/chat/${roomId}/messages`, { content });
 export const markMessagesRead = (roomId: number) => api.put(`/chat/read/${roomId}`);
 export const deleteMessage = (id: number, type: 'recall' | 'me') => api.delete(`/chat/message/${id}`, { data: { type } });

@@ -145,7 +145,7 @@ export default function Chat() {
             try {
                 const res = await getMessages(activeRoomId);
                 setMessages(res.data);
-                setHasMore(res.data.length === 5); // If < 5 returned, no more
+                setHasMore(res.data.length === 10); // If < 10 returned, no more
                 scrollToBottom();
 
                 // Reset unread count locally
@@ -263,7 +263,7 @@ export default function Chat() {
                             scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight - currentScrollHeight;
                         }
                     }, 0);
-                    if (res.data.length < 5) setHasMore(false);
+                    if (res.data.length < 10) setHasMore(false);
                 } else {
                     setHasMore(false);
                 }
