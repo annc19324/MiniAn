@@ -1,8 +1,7 @@
-# 🌟 MiniAn - Mạng Xã Hội Hiện Đại / Modern Social Network
+# 🌟 MiniAn - Mạng Xã Hội / Social Network
 
-![MiniAn Banner](https://via.placeholder.com/800x200.png?text=MiniAn+Project)
 
-**MiniAn** là một nền tảng mạng xã hội đa nền tảng, tích hợp đầy đủ các tính năng tương tác thời gian thực, bảng xếp hạng thi đua và hệ thống quản trị mạnh mẽ. Dự án được xây dựng với mục tiêu mang lại trải nghiệm người dùng mượt mà, giao diện hiện đại và khả năng mở rộng cao.
+**MiniAn** là một nền tảng mạng xã hội đa nền tảng, tích hợp các tính năng tương tác thời gian thực, bảng xếp hạng thi đua. Dự án được xây dựng với mục tiêu mang lại trải nghiệm người dùng mượt mà, giao diện hiện đại và khả năng mở rộng cao.
 
 ---
 
@@ -35,7 +34,7 @@
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng / Tech Stack
+## 🛠️ Công Nghệ Sử Dụng
 
 ### Frontend
 - **Framework:** [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
@@ -58,7 +57,7 @@
 ## 📦 Cài Đặt & Chạy Dự Án / Installation
 
 ### Yêu cầu tiên quyết
-- Node.js (v18 trở lên)
+- Node.js (v20 trở lên)
 - PostgreSQL
 - Tài khoản Cloudinary (để lưu ảnh)
 

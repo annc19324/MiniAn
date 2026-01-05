@@ -246,7 +246,8 @@ export default function Chat() {
     // Scroll Listener for History
     const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
         const { scrollTop } = e.currentTarget;
-        if (scrollTop === 0 && hasMore && !loadingMore && messages.length > 0) {
+        // Increase threshold to 10px to easily trigger on mobile touch
+        if (scrollTop <= 10 && hasMore && !loadingMore && messages.length > 0) {
             setLoadingMore(true);
             const currentScrollHeight = e.currentTarget.scrollHeight;
 
@@ -570,7 +571,8 @@ export default function Chat() {
 
                         {/* Messages Area */}
                         <div
-                            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar"
+                            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar overscroll-contain"
+                            style={{ WebkitOverflowScrolling: 'touch' }} // iOS smooth scrolling
                             ref={scrollContainerRef}
                             onScroll={handleScroll}
                         >
