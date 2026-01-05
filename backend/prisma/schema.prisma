@@ -131,6 +131,7 @@ model Message {
   isRead     Boolean  @default(false)
   deletedBy  Int[]    @default([])
   isRecalled Boolean  @default(false)
+  isEdited   Boolean  @default(false)
   receiver   User?    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: SetNull)
   room       Room     @relation(fields: [roomId], references: [id])
   sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)

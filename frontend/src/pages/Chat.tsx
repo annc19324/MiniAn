@@ -28,6 +28,7 @@ interface Message {
     isRead?: boolean;
     deletedBy: number[];
     isRecalled: boolean;
+    isEdited?: boolean;
 }
 
 interface ConfirmModalState {
@@ -72,6 +73,11 @@ export default function Chat() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
     const [showGroupManagement, setShowGroupManagement] = useState(false);
+
+    // Pagination
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Edit/Delete State
     const [editingMsgId, setEditingMsgId] = useState<number | null>(null);
@@ -139,6 +145,7 @@ export default function Chat() {
             try {
                 const res = await getMessages(activeRoomId);
                 setMessages(res.data);
+                setHasMore(res.data.length === 5); // If < 5 returned, no more
                 scrollToBottom();
 
                 // Reset unread count locally
@@ -235,6 +242,37 @@ export default function Chat() {
             socket.off('message_updated', handleMessageUpdated);
         };
     }, [activeRoomId, socket /* Remove messages from dependencies to avoid re-registering */]);
+
+    // Scroll Listener for History
+    const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop } = e.currentTarget;
+        if (scrollTop === 0 && hasMore && !loadingMore && messages.length > 0) {
+            setLoadingMore(true);
+            const currentScrollHeight = e.currentTarget.scrollHeight;
+
+            try {
+                const oldestMsgId = messages[0].id;
+                const res = await getMessages(activeRoomId!, oldestMsgId);
+
+                if (res.data.length > 0) {
+                    setMessages(prev => [...res.data, ...prev]);
+                    // Adjust scroll position to maintain view
+                    setTimeout(() => {
+                        if (scrollContainerRef.current) {
+                            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight - currentScrollHeight;
+                        }
+                    }, 0);
+                    if (res.data.length < 5) setHasMore(false);
+                } else {
+                    setHasMore(false);
+                }
+            } catch (error) {
+                console.error("Lỗi tải tin nhắn cũ", error);
+            } finally {
+                setLoadingMore(false);
+            }
+        }
+    };
 
     // Click outside to close menus
     useEffect(() => {
@@ -531,7 +569,12 @@ export default function Chat() {
                         </div>
 
                         {/* Messages Area */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                        <div
+                            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar"
+                            ref={scrollContainerRef}
+                            onScroll={handleScroll}
+                        >
+                            {loadingMore && <div className="text-center text-xs text-slate-400 py-2">Đang tải tin cũ...</div>}
                             {messages.map((msg, idx) => {
                                 const isMe = msg.senderId === user?.id;
                                 const showAvatar = !isMe && (idx === 0 || messages[idx - 1].senderId !== msg.senderId);
@@ -563,7 +606,7 @@ export default function Chat() {
                                             <div className="relative self-center mr-2 order-first">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setMsgMenuId(msgMenuId === msg.id ? null : msg.id); }}
-                                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700"
+                                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     <MoreHorizontal size={16} />
                                                 </button>
@@ -627,7 +670,7 @@ export default function Chat() {
                                                         }`}
                                                 >
                                                     {msg.content}
-                                                    {msg.updatedAt && msg.createdAt && msg.updatedAt !== msg.createdAt && (
+                                                    {msg.isEdited && (
                                                         <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1 italic block text-right">đã sửa</span>
                                                     )}
                                                 </div>

@@ -1,7 +1,7 @@
 // src/pages/PostDetails.tsx
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getPost, likePost, commentPost, deletePost, updatePost } from '../services/api';
+import { getPost, likePost, commentPost, deletePost, updatePost, getComments } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -33,6 +33,10 @@ export default function PostDetails() {
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
 
+    // Pagination State
+    const [loadingMoreComments, setLoadingMoreComments] = useState(false);
+    const [hasMoreComments, setHasMoreComments] = useState(true);
+
     // Edit State
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState('');
@@ -46,10 +50,36 @@ export default function PostDetails() {
         try {
             const res = await getPost(Number(id));
             setPost(res.data);
+            if (res.data.comments && res.data.comments.length < 3) {
+                setHasMoreComments(false);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMoreComments = async () => {
+        if (!post || !hasMoreComments) return;
+        setLoadingMoreComments(true);
+        try {
+            const lastCommentId = post.comments[post.comments.length - 1].id;
+            const res = await getComments(post.id, lastCommentId); // Adjusted to default limit 5 or need to verify api
+
+            if (res.data.length > 0) {
+                setPost(prev => prev ? ({
+                    ...prev,
+                    comments: [...prev.comments, ...res.data]
+                }) : null);
+                if (res.data.length < 5) setHasMoreComments(false);
+            } else {
+                setHasMoreComments(false);
+            }
+        } catch (error) {
+            console.error('Lỗi tải bình luận', error);
+        } finally {
+            setLoadingMoreComments(false);
         }
     };
 
@@ -257,6 +287,16 @@ export default function PostDetails() {
                                 </div>
                             </div>
                         ))}
+
+                        {hasMoreComments && (
+                            <button
+                                onClick={loadMoreComments}
+                                disabled={loadingMoreComments}
+                                className="w-full text-center py-2 text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline"
+                            >
+                                {loadingMoreComments ? 'Đang tải...' : 'Xem thêm bình luận'}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

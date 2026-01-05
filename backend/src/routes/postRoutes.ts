@@ -1,7 +1,7 @@
 // src/routes/postRoutes.ts
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { createPost, getFeed, toggleLike, createComment, getUserPosts, getPostById, deletePost, updatePost } from '../controllers/postController';
+import { createPost, getFeed, toggleLike, createComment, getUserPosts, getPostById, deletePost, updatePost, getComments } from '../controllers/postController';
 import multer from 'multer';
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.post('/:postId/comment', protect, createComment);
 router.get('/:id', protect, getPostById);
 router.delete('/:id', protect, deletePost);
 router.put('/:id', protect, updatePost);
+router.get('/:postId/comments', protect, getComments);
 
 export default router;

@@ -24,6 +24,7 @@ export const getUserPosts = (userId: number) => api.get(`/posts/user/${userId}`)
 export const getPost = (id: number) => api.get(`/posts/${id}`);
 export const deletePost = (id: number) => api.delete(`/posts/${id}`);
 export const updatePost = (id: number, content: string) => api.put(`/posts/${id}`, { content });
+export const getComments = (postId: number, cursor?: number) => api.get(`/posts/${postId}/comments`, { params: { cursor, limit: 5 } });
 
 // ==== User Services ====
 export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
@@ -53,7 +54,7 @@ export const markAllRead = () => api.put('/notifications/read-all');
 export const getConversations = () => api.get('/chat/conversations');
 export const startConversation = (targetUserId: number) => api.post('/chat/conversation/start', { targetUserId });
 export const deleteConversation = (id: number) => api.delete(`/chat/conversation/${id}`);
-export const getMessages = (roomId: number) => api.get(`/chat/${roomId}/messages`);
+export const getMessages = (roomId: number, cursor?: number) => api.get(`/chat/${roomId}/messages`, { params: { cursor, limit: 5 } });
 export const sendMessage = (roomId: number, content: string) => api.post(`/chat/${roomId}/messages`, { content });
 export const markMessagesRead = (roomId: number) => api.put(`/chat/read/${roomId}`);
 export const deleteMessage = (id: number, type: 'recall' | 'me') => api.delete(`/chat/message/${id}`, { data: { type } });

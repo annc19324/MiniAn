@@ -210,6 +210,7 @@ export const getPostById = async (req: AuthRequest, res: Response) => {
                         author: { select: { username: true, fullName: true, avatar: true } },
                     },
                     orderBy: { createdAt: 'desc' },
+                    take: 3, // Initial load limit
                 },
                 _count: { select: { likes: true, comments: true } },
             },
@@ -224,7 +225,9 @@ export const getPostById = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: 'Lỗi lấy bài viết', error });
     }
 };
-// Xóa bài viết
+
+// ... (keep other functions like deletePost, updatePost)
+
 export const deletePost = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -283,6 +286,29 @@ export const updatePost = async (req: AuthRequest, res: Response) => {
         res.json(updatedPost);
     } catch (error) {
         res.status(500).json({ message: 'Lỗi cập nhật bài viết', error });
+    }
+};
+
+// Lấy danh sách bình luận (Phân trang)
+export const getComments = async (req: AuthRequest, res: Response) => {
+    const { postId } = req.params;
+    const { cursor, limit = 10 } = req.query;
+
+    try {
+        const comments = await prisma.comment.findMany({
+            where: { postId: Number(postId) },
+            include: {
+                author: { select: { username: true, fullName: true, avatar: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: Number(limit),
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: Number(cursor) } : undefined,
+        });
+
+        res.json(comments);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi lấy bình luận', error });
     }
 };
 

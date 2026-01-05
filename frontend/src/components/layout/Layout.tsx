@@ -109,13 +109,13 @@ export default function Layout() {
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row transition-colors duration-300">
             {/* Leaderboard Sidebar (Left Side) */}
-            <aside className="hidden lg:flex w-56 xl:w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 min-h-screen fixed left-0 top-0 z-40 p-6 overflow-y-auto transition-colors duration-300">
-                <div className="flex items-center gap-2 mb-6 text-yellow-600 dark:text-yellow-500">
+            <aside className="hidden lg:flex w-56 xl:w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 h-screen fixed left-0 top-0 z-40 p-6 transition-colors duration-300">
+                <div className="flex items-center gap-2 mb-6 text-yellow-600 dark:text-yellow-500 flex-shrink-0">
                     <Award size={24} />
                     <h2 className="text-xl font-bold">Bảng Xếp Hạng</h2>
                 </div>
 
-                <div className="space-y-4">
+                <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
                     {leaderboard.map((u, index) => (
                         <NavLink key={u.id} to={`/profile/${u.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all border border-transparent hover:border-indigo-50 dark:hover:border-indigo-500/30 group">
                             <div className={`w-6 h-6 flex items-center justify-center rounded-full font-bold text-xs ${index === 0 ? 'bg-yellow-400 text-white' :
@@ -137,9 +137,11 @@ export default function Layout() {
             {/* Desktop Sidebar (Right Side) */}
             <aside className="hidden lg:flex w-64 xl:w-72 flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-l border-white/50 dark:border-slate-800/50 min-h-screen fixed right-0 top-0 z-50 shadow-[0_0_40px_-10px_rgba(0,0,0,0.05)] dark:shadow-none overflow-y-auto transition-colors duration-300">
                 <div className="p-6">
-                    <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tighter">
-                        MiniAn
-                    </h1>
+                    <NavLink to="/">
+                        <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 tracking-tighter">
+                            MiniAn
+                        </h1>
+                    </NavLink>
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">Social Network</p>
                 </div>
 
@@ -176,7 +178,9 @@ export default function Layout() {
 
             {/* Mobile Header */}
             <header className="lg:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 py-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300">
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">MiniAn</h1>
+                <NavLink to="/">
+                    <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">MiniAn</h1>
+                </NavLink>
                 <div className="flex items-center gap-3">
                     <NavLink to="/leaderboard" className="p-2 text-yellow-600 dark:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-full">
                         <Award size={24} />

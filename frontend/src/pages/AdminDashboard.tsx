@@ -161,57 +161,63 @@ export default function AdminDashboard() {
     if (loading) return <div className="text-center p-10">Đang tải dữ liệu...</div>;
 
     return (
-        <div className="md:px-4 space-y-6">
-            <h1 className="text-3xl font-extrabold heading-gradient">Quản trị viên</h1>
+        <div className="md:px-4">
+            <div className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md pb-6 pt-1 space-y-6 -mx-4 px-4 md:mx-0 md:px-0">
+                <h1 className="text-3xl font-extrabold heading-gradient">Quản trị viên</h1>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-blue-100 text-blue-600 rounded-xl dark:bg-blue-900/30 dark:text-blue-400"><Users size={24} /></div>
-                    <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Tổng User</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p></div>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="glass-card p-4 flex items-center gap-3">
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl dark:bg-blue-900/30 dark:text-blue-400"><Users size={24} /></div>
+                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Tổng User</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p></div>
+                    </div>
+                    <div className="glass-card p-4 flex items-center gap-3">
+                        <div className="p-3 bg-green-100 text-green-600 rounded-xl dark:bg-green-900/30 dark:text-green-400"><Users size={24} /></div>
+                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Hoạt động</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.active}</p></div>
+                    </div>
+                    <div className="glass-card p-4 flex items-center gap-3">
+                        <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl dark:bg-yellow-900/30 dark:text-yellow-400"><Crown size={24} /></div>
+                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">VIP</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.vip}</p></div>
+                    </div>
+                    <div className="glass-card p-4 flex items-center gap-3">
+                        <div className="p-3 bg-purple-100 text-purple-600 rounded-xl dark:bg-purple-900/30 dark:text-purple-400"><Shield size={24} /></div>
+                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Admin</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.admins}</p></div>
+                    </div>
                 </div>
-                <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-green-100 text-green-600 rounded-xl dark:bg-green-900/30 dark:text-green-400"><Users size={24} /></div>
-                    <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Hoạt động</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.active}</p></div>
+
+                {/* Search & Actions */}
+                <div className="glass-card p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Tìm kiếm người dùng..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 outline-none transition-all dark:text-slate-200"
+                        />
+                    </div>
+                    <button
+                        onClick={() => setCreateModal({ ...createModal, isOpen: true })}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30"
+                    >
+                        <UserPlus size={18} />
+                        Thêm thành viên
+                    </button>
                 </div>
-                <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl dark:bg-yellow-900/30 dark:text-yellow-400"><Crown size={24} /></div>
-                    <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">VIP</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.vip}</p></div>
-                </div>
-                <div className="glass-card p-4 flex items-center gap-3">
-                    <div className="p-3 bg-purple-100 text-purple-600 rounded-xl dark:bg-purple-900/30 dark:text-purple-400"><Shield size={24} /></div>
-                    <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Admin</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.admins}</p></div>
+
+                {/* Table Header Row Moved Here for Sticky Effect */}
+                <div className="glass-card !p-0 overflow-hidden">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+                        <h2 className="font-bold text-lg text-slate-800 dark:text-white">Danh sách người dùng</h2>
+                    </div>
                 </div>
             </div>
 
-            {/* Search & Actions */}
-            <div className="glass-card p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                        type="text"
-                        placeholder="Tìm kiếm người dùng..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 outline-none transition-all dark:text-slate-200"
-                    />
-                </div>
-                <button
-                    onClick={() => setCreateModal({ ...createModal, isOpen: true })}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30"
-                >
-                    <UserPlus size={18} />
-                    Thêm thành viên
-                </button>
-            </div>
-
-            <div className="glass-card overflow-hidden">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800">
-                    <h2 className="font-bold text-lg text-slate-800 dark:text-white">Danh sách người dùng</h2>
-                </div>
+            <div className="glass-card overflow-hidden !mt-0 !pt-0 rounded-t-none border-t-0">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-                        <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 uppercase font-bold text-xs text-slate-500 dark:text-slate-400">
+                        <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 uppercase font-bold text-xs text-slate-500 dark:text-slate-400 shadow-sm">
                             <tr>
                                 <th className="p-4">User</th>
                                 <th className="p-4">Thông tin</th>

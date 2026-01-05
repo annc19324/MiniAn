@@ -98,10 +98,11 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
     }
 };
 
-// Lấy tin nhắn của một Room
+// Lấy tin nhắn của một Room (có phân trang)
 export const getMessages = async (req: AuthRequest, res: Response) => {
     const { roomId } = req.params;
     const userId = req.user!.id;
+    const { cursor, limit = 20 } = req.query; // cursor is the ID of the last message
 
     try {
         const messages = await prisma.message.findMany({
@@ -111,18 +112,19 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
                     deletedBy: { has: userId }
                 }
             },
+            take: Number(limit),
+            skip: cursor ? 1 : 0,
+            cursor: cursor ? { id: Number(cursor) } : undefined,
             include: {
                 sender: {
                     select: { id: true, username: true, avatar: true }
                 }
             },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { createdAt: 'desc' } // Get latest first
         });
 
-        // Debug logging
-        // console.log("Fetched messages sample:", messages.slice(-1)); 
-
-        res.json(messages);
+        // Reverse to show in chronological order
+        res.json(messages.reverse());
     } catch (error) {
         console.error("Error fetching messages:", error);
         res.status(500).json({ message: 'Lỗi lấy tin nhắn' });
@@ -343,7 +345,10 @@ export const updateMessage = async (req: AuthRequest, res: Response) => {
 
         const updatedMessage = await prisma.message.update({
             where: { id: Number(id) },
-            data: { content },
+            data: {
+                content,
+                isEdited: true
+            },
             include: {
                 sender: { select: { id: true, username: true, avatar: true } }
             }
