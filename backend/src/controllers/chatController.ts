@@ -2,6 +2,7 @@
 import { Response } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { sendPushNotification } from './pushController';
 import { uploadImage } from '../utils/upload';
 
 // Lấy danh sách cuộc trò chuyện (Rooms)
@@ -200,10 +201,21 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         });
 
         if (room) {
-            const receiverFn = room.users.find(u => u.userId !== userId);
-            if (receiverFn) {
-                const io = req.app.get('io');
-                io.to(receiverFn.userId.toString()).emit('new_message_alert', { roomId: Number(roomId) });
+            const io = req.app.get('io');
+            const receivers = room.users.filter(u => u.userId !== userId);
+
+            // Loop through all receivers (relevant for group chat too)
+            for (const receiver of receivers) {
+                // Socket Emit
+                io.to(receiver.userId.toString()).emit('new_message_alert', { roomId: Number(roomId) });
+
+                // Push Notification
+                // Ensure import { sendPushNotification } from './pushController'; at top
+                sendPushNotification(receiver.userId, {
+                    title: `Tin nhắn mới từ ${req.user!.username}`,
+                    body: content.length > 50 ? content.substring(0, 50) + '...' : content,
+                    url: `/chat` // Open Chat page on click
+                });
             }
         }
 

@@ -48,6 +48,7 @@ export const getNotifications = () => api.get('/notifications');
 export const getUnreadNotificationsCount = () => api.get('/notifications/unread-count');
 export const markRead = (id: number) => api.put(`/notifications/${id}/read`);
 export const markAllRead = () => api.put('/notifications/read-all');
+export const subscribePush = (subscription: PushSubscription) => api.post('/notifications/subscribe', subscription);
 
 // ==== Chat Services ====
 // ==== Chat Services ====

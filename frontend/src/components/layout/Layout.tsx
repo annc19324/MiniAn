@@ -103,7 +103,38 @@ export default function Layout() {
     };
 
     useEffect(() => {
-        if (user) fetchUnread();
+        if (user) {
+            fetchUnread();
+
+            // Register SW and Subscribe to Push
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(async (registration) => {
+                        // console.log('SW Registered', registration);
+
+                        // Request Permission
+                        const permission = await Notification.requestPermission();
+                        if (permission === 'granted') {
+                            // Subscribe
+                            const subscribeOptions = {
+                                userVisibleOnly: true,
+                                applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY
+                            };
+
+                            try {
+                                const subscription = await registration.pushManager.subscribe(subscribeOptions);
+                                // Send to backend
+                                const { subscribePush } = await import('../../services/api');
+                                await subscribePush(subscription);
+                                // console.log('Push Subscribed');
+                            } catch (err) {
+                                console.error('Failed to subscribe push', err);
+                            }
+                        }
+                    })
+                    .catch(err => console.error('SW Register Error', err));
+            }
+        }
     }, [user, window.location.pathname]); // Refresh when navigating too
 
     return (
