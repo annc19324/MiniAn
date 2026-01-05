@@ -571,8 +571,8 @@ export default function Chat() {
 
                         {/* Messages Area */}
                         <div
-                            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar overscroll-contain"
-                            style={{ WebkitOverflowScrolling: 'touch' }} // iOS smooth scrolling
+                            className="flex-1 overflow-y-auto p-4 space-y-6 no-scrollbar overscroll-y-contain"
+                            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }} // Prevent pull-to-refresh
                             ref={scrollContainerRef}
                             onScroll={handleScroll}
                         >
