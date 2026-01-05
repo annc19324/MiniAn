@@ -18,19 +18,56 @@ interface LoginBody {
 
 // Đăng ký
 export const register = async (req: Request<{}, {}, RegisterBody>, res: Response) => {
-    const { username, email, password, fullName } = req.body;
+    let { username, email, password, fullName } = req.body;
 
     if (!username || !email || !password) {
         return res.status(400).json({ message: 'Vui lòng điền đầy đủ username, email và password' });
     }
 
+    // 1. Normalize Input
+    username = username.trim(); // No lowercase forcing here, store as provided
+    email = email.trim();
+    fullName = fullName ? fullName.trim() : '';
+
+    // 2. Validate Username
+    // 6-50 chars, a-z A-Z 0-9 .
+    const usernameRegex = /^[a-zA-Z0-9.]{6,50}$/;
+    if (!usernameRegex.test(username)) {
+        return res.status(400).json({ message: 'Username phải từ 6-50 ký tự, chỉ gồm chữ, số và dấu chấm, không chứa dấu cách' });
+    }
+
+    // 3. Validate FullName
+    // 2-50 chars, a-z A-Z 0-9 (allowing spaces for readability)
+    if (fullName) {
+        if (fullName.length < 2 || fullName.length > 50) {
+            return res.status(400).json({ message: 'Họ tên phải từ 2-50 ký tự' });
+        }
+        // User requested a-z A-Z 0-9. Assuming spaces allowed for names.
+        // If strictly no spaces: /^[a-zA-Z0-9]{2,50}$/
+        // I will allow spaces: /^[a-zA-Z0-9\s]{2,50}$/
+        const fullNameRegex = /^[a-zA-Z0-9\s]+$/;
+        if (!fullNameRegex.test(fullName)) {
+            return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số (không dấu)' });
+        }
+    }
+
+    // 4. Validate Password
+    // 8-50 chars, 1 Uppercase, 1 Lowercase, 1 Number, 1 Special
+    if (password.length < 8 || password.length > 50) {
+        return res.status(400).json({ message: 'Mật khẩu phải từ 8-50 ký tự' });
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/;
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({ message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt' });
+    }
+
     try {
-        // Kiểm tra trùng username hoặc email
+        // Kiểm tra trùng username hoặc email (Case Insensitive)
         const existingUser = await prisma.user.findFirst({
             where: {
                 OR: [
-                    { username },
-                    { email },
+                    { username: { equals: username, mode: 'insensitive' } },
+                    { email: { equals: email, mode: 'insensitive' } },
                 ],
             },
         });
@@ -45,11 +82,11 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
         // Tạo user mới
         const user = await prisma.user.create({
             data: {
-                username,
+                username, // Store exact casing
                 email,
                 password: hashedPassword,
                 fullName: fullName || username,
-                coins: 10, // Tặng coin khởi đầu
+                coins: 10,
             },
             select: {
                 id: true,
@@ -77,19 +114,22 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
 
 // Đăng nhập
 export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
-    const { emailOrUsername, password } = req.body;
+    let { emailOrUsername, password } = req.body;
 
     if (!emailOrUsername || !password) {
         return res.status(400).json({ message: 'Vui lòng nhập email/username và mật khẩu' });
     }
 
+    // Auto trim input
+    emailOrUsername = emailOrUsername.trim();
+
     try {
-        // Tìm user bằng email hoặc username
+        // Tìm user bằng email hoặc username (Case Insensitive)
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
-                    { email: emailOrUsername },
-                    { username: emailOrUsername },
+                    { email: { equals: emailOrUsername, mode: 'insensitive' } },
+                    { username: { equals: emailOrUsername, mode: 'insensitive' } },
                 ],
             },
             select: {

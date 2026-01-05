@@ -161,70 +161,74 @@ export default function AdminDashboard() {
     if (loading) return <div className="text-center p-10">Đang tải dữ liệu...</div>;
 
     return (
-        <div className="md:px-4">
-            <div className="sticky top-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md pb-6 pt-1 space-y-6 -mx-4 px-4 md:mx-0 md:px-0">
-                <h1 className="text-3xl font-extrabold heading-gradient">Quản trị viên</h1>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="glass-card p-4 flex items-center gap-3">
-                        <div className="p-3 bg-blue-100 text-blue-600 rounded-xl dark:bg-blue-900/30 dark:text-blue-400"><Users size={24} /></div>
-                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Tổng User</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.total}</p></div>
-                    </div>
-                    <div className="glass-card p-4 flex items-center gap-3">
-                        <div className="p-3 bg-green-100 text-green-600 rounded-xl dark:bg-green-900/30 dark:text-green-400"><Users size={24} /></div>
-                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Hoạt động</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.active}</p></div>
-                    </div>
-                    <div className="glass-card p-4 flex items-center gap-3">
-                        <div className="p-3 bg-yellow-100 text-yellow-600 rounded-xl dark:bg-yellow-900/30 dark:text-yellow-400"><Crown size={24} /></div>
-                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">VIP</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.vip}</p></div>
-                    </div>
-                    <div className="glass-card p-4 flex items-center gap-3">
-                        <div className="p-3 bg-purple-100 text-purple-600 rounded-xl dark:bg-purple-900/30 dark:text-purple-400"><Shield size={24} /></div>
-                        <div><p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Admin</p><p className="text-2xl font-bold text-slate-800 dark:text-white">{stats.admins}</p></div>
+        <div className="md:px-4 h-[calc(100vh-80px)] flex flex-col">
+            {/* Creates a fixed non-scrolling header area */}
+            <div className="shrink-0 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-md pb-2 pt-1 space-y-2 -mx-4 px-4 md:mx-0 md:px-0 border-b border-slate-200 dark:border-slate-800 z-30">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-xl font-extrabold heading-gradient">Quản trị viên</h1>
+                    {/* Compact Stats */}
+                    <div className="hidden md:flex gap-4 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <span>Total: <b className="text-slate-800 dark:text-white">{stats.total}</b></span>
+                        <span>Active: <b className="text-green-600">{stats.active}</b></span>
+                        <span>VIP: <b className="text-yellow-600">{stats.vip}</b></span>
+                        <span>Admin: <b className="text-purple-600">{stats.admins}</b></span>
                     </div>
                 </div>
 
-                {/* Search & Actions */}
-                <div className="glass-card p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                {/* Mobile Stats (only visible on small screens) */}
+                <div className="grid grid-cols-4 gap-2 md:hidden">
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg text-center shadow-sm">
+                        <p className="text-[10px] text-slate-500">Total</p>
+                        <p className="font-bold text-sm dark:text-white">{stats.total}</p>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg text-center shadow-sm">
+                        <p className="text-[10px] text-green-500">Active</p>
+                        <p className="font-bold text-sm dark:text-white">{stats.active}</p>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg text-center shadow-sm">
+                        <p className="text-[10px] text-yellow-500">VIP</p>
+                        <p className="font-bold text-sm dark:text-white">{stats.vip}</p>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg text-center shadow-sm">
+                        <p className="text-[10px] text-purple-500">Admin</p>
+                        <p className="font-bold text-sm dark:text-white">{stats.admins}</p>
+                    </div>
+                </div>
+
+                {/* Search & Actions - Compact */}
+                <div className="flex gap-2">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input
                             type="text"
-                            placeholder="Tìm kiếm người dùng..."
+                            placeholder="Tìm kiếm..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 outline-none transition-all dark:text-slate-200"
+                            className="w-full pl-8 pr-3 py-1.5 text-sm bg-white dark:bg-slate-800 border-none rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none transition-all dark:text-slate-200 shadow-sm"
                         />
                     </div>
                     <button
                         onClick={() => setCreateModal({ ...createModal, isOpen: true })}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/30"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md whitespace-nowrap"
                     >
-                        <UserPlus size={18} />
-                        Thêm thành viên
+                        <UserPlus size={14} />
+                        <span className="hidden sm:inline">Thêm</span>
                     </button>
-                </div>
-
-                {/* Table Header Row Moved Here for Sticky Effect */}
-                <div className="glass-card !p-0 overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
-                        <h2 className="font-bold text-lg text-slate-800 dark:text-white">Danh sách người dùng</h2>
-                    </div>
                 </div>
             </div>
 
-            <div className="glass-card overflow-hidden !mt-0 !pt-0 rounded-t-none border-t-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+            {/* Scrollable Table Area */}
+            <div className="glass-card overflow-hidden mt-4 flex-1 flex flex-col min-h-0">
+                <div className="overflow-auto flex-1 no-scrollbar">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 relative">
                         <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 uppercase font-bold text-xs text-slate-500 dark:text-slate-400 shadow-sm">
                             <tr>
-                                <th className="p-4">User</th>
-                                <th className="p-4">Thông tin</th>
-                                <th className="p-4">Coins</th>
-                                <th className="p-4">Vai trò</th>
-                                <th className="p-4">Trạng thái</th>
-                                <th className="p-4">Hành động</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">User</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">Thông tin</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">Coins</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">Vai trò</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">Trạng thái</th>
+                                <th className="p-4 bg-slate-50 dark:bg-slate-900">Hành động</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

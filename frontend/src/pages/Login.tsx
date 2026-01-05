@@ -17,7 +17,10 @@ export default function Login() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await api.post('/auth/login', { emailOrUsername, password });
+            const res = await api.post('/auth/login', {
+                emailOrUsername: emailOrUsername.trim(),
+                password
+            });
             login(res.data.token, res.data.user);
             toast.success('Đăng nhập thành công!');
             navigate('/');

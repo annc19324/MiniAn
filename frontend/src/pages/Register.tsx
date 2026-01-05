@@ -28,19 +28,39 @@ export default function Register() {
             return;
         }
 
-        if (password.length < 6) {
-            setError('Mật khẩu phải ít nhất 6 ký tự');
-            toast.error('Mật khẩu phải ít nhất 6 ký tự');
+        // Username Validation
+        const usernameRegex = /^[a-zA-Z0-9.]{6,50}$/;
+        if (!usernameRegex.test(username.trim())) {
+            setError('Tên đăng nhập 6-50 ký tự, gồm chữ, số và dấu chấm');
+            toast.error('Tên đăng nhập không hợp lệ');
+            setLoading(false);
+            return;
+        }
+
+        // FullName Validation
+        if (fullName.length < 2 || fullName.length > 50) {
+            setError('Họ tên phải từ 2-50 ký tự');
+            toast.error('Họ tên không hợp lệ');
+            setLoading(false);
+            return;
+        }
+
+        // Password Validation
+        // 8 chars, 1 upper, 1 lower, 1 number, 1 special
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,50}$/;
+        if (!passwordRegex.test(password)) {
+            setError('Mật khẩu yếu: Cần 8-50 ký tự, có chữ Hoa, thường, số và ký tự đặc biệt');
+            toast.error('Mật khẩu không đạt yêu cầu');
             setLoading(false);
             return;
         }
 
         try {
             const res = await api.post('/auth/register', {
-                username,
-                email,
+                username: username.trim(),
+                email: email.trim(),
                 password,
-                fullName,
+                fullName: fullName.trim(),
             });
 
             login(res.data.token, res.data.user);
@@ -72,12 +92,13 @@ export default function Register() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="text"
-                        placeholder="Tên đăng nhập (username)"
+                        placeholder="Tên đăng nhập (a-z, 0-9, .)"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className="glass-input w-full"
                         required
-                        minLength={3}
+                        minLength={6}
+                        maxLength={50}
                     />
 
                     <input
@@ -91,21 +112,24 @@ export default function Register() {
 
                     <input
                         type="text"
-                        placeholder="Họ và tên"
+                        placeholder="Họ và tên (2-50 ký tự)"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="glass-input w-full"
                         required
+                        minLength={2}
+                        maxLength={50}
                     />
 
                     <input
                         type="password"
-                        placeholder="Mật khẩu (ít nhất 6 ký tự)"
+                        placeholder="Mật khẩu (8+ ký tự, đủ mạnh)"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="glass-input w-full"
                         required
-                        minLength={6}
+                        minLength={8}
+                        maxLength={50}
                     />
 
                     <input
@@ -115,6 +139,8 @@ export default function Register() {
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className="glass-input w-full"
                         required
+                        minLength={8}
+                        maxLength={50}
                     />
 
                     <button

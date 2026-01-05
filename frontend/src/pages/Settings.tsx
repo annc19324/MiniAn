@@ -34,11 +34,26 @@ export default function Settings() {
     const handleInfoSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+
+        // Validation
+        const usernameRegex = /^[a-zA-Z0-9.]{6,50}$/;
+        if (!usernameRegex.test(formData.username.trim())) {
+            alert('Tên đăng nhập 6-50 ký tự, gồm chữ, số và dấu chấm');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.fullName.trim().length < 2 || formData.fullName.trim().length > 50) {
+            alert('Họ tên phải từ 2-50 ký tự');
+            setLoading(false);
+            return;
+        }
+
         try {
             const data = new FormData();
-            data.append('fullName', formData.fullName);
-            data.append('username', formData.username);
-            data.append('email', formData.email);
+            data.append('fullName', formData.fullName.trim());
+            data.append('username', formData.username.trim());
+            data.append('email', formData.email.trim());
 
             const res = await updateUserProfile(data);
             // @ts-ignore
@@ -54,6 +69,12 @@ export default function Settings() {
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (passwordData.newPassword !== passwordData.confirmPassword) return alert("Mật khẩu mới không khớp");
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,50}$/;
+        if (!passwordRegex.test(passwordData.newPassword)) {
+            alert('Mật khẩu yếu: Cần 8-50 ký tự, có chữ Hoa, thường, số và ký tự đặc biệt');
+            return;
+        }
 
         try {
             await api.put('/users/profile/change-password', {

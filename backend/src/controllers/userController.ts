@@ -326,16 +326,28 @@ export const followUser = async (req: AuthRequest, res: Response) => {
 // Cập nhật Profile (User tự cập nhật)
 // Cập nhật Profile (User tự cập nhật)
 // Cập nhật Profile (User tự cập nhật)
+// Cập nhật Profile (User tự cập nhật)
 export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
-    const { fullName, bio, username, email } = req.body;
+    let { fullName, bio, username, email } = req.body;
     const file = req.file;
+
+    // Normalize
+    if (username) username = username.trim();
+    if (email) email = email.trim();
+    if (fullName) fullName = fullName.trim();
 
     try {
         console.log("Update Body:", req.body);
 
         // Validation: Unique username
         if (username) {
+            // Validation Regex
+            const usernameRegex = /^[a-zA-Z0-9.]{6,50}$/;
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({ message: 'Username phải từ 6-50 ký tự, chỉ gồm chữ, số và dấu chấm' });
+            }
+
             const userWithUsername = await prisma.user.findFirst({
                 where: {
                     username: { equals: username, mode: 'insensitive' },
@@ -357,6 +369,17 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
             });
             if (userWithEmail) {
                 return res.status(400).json({ message: 'Email đã tồn tại' });
+            }
+        }
+
+        // Validation: FullName
+        if (fullName) {
+            if (fullName.length < 2 || fullName.length > 50) {
+                return res.status(400).json({ message: 'Họ tên phải từ 2-50 ký tự' });
+            }
+            const fullNameRegex = /^[a-zA-Z0-9\s]+$/;
+            if (!fullNameRegex.test(fullName)) {
+                return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số (không dấu)' });
             }
         }
 
@@ -399,6 +422,15 @@ import bcrypt from 'bcryptjs';
 export const changePassword = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
     const { currentPassword, newPassword } = req.body;
+
+    // Pasword Validation
+    if (newPassword.length < 8 || newPassword.length > 50) {
+        return res.status(400).json({ message: 'Mật khẩu mới phải từ 8-50 ký tự' });
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({ message: 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt' });
+    }
 
     try {
         const user = await prisma.user.findUnique({ where: { id: userId } });
