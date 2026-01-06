@@ -1,9 +1,8 @@
-// src/pages/PostDetails.tsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPost, likePost, commentPost, deletePost, updatePost, getComments } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X, Image as ImageIcon } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -37,6 +36,12 @@ export default function PostDetails() {
     const [commentPreviewUrl, setCommentPreviewUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Comment Features State
+    const [replyingTo, setReplyingTo] = useState<{ commentId: number, username: string } | null>(null);
+    const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+    const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
     // Pagination State
     const [loadingMoreComments, setLoadingMoreComments] = useState(false);
@@ -131,15 +136,34 @@ export default function PostDetails() {
     const handleCommentSubmit = async () => {
         if ((!commentText.trim() && !commentFile) || !post) return;
         try {
-            const res = await commentPost(post.id, commentText, commentFile || undefined);
-            setPost({
-                ...post,
-                comments: [res.data.comment, ...post.comments],
-                _count: { ...post._count, comments: post._count.comments + 1 }
-            });
+            const res = await commentPost(post.id, commentText, commentFile || undefined, replyingTo?.commentId);
+            const newComment = {
+                ...res.data,
+                content: commentText,
+                author: user,
+                parentId: replyingTo?.commentId || null,
+                createdAt: new Date().toISOString()
+            };
+            setPost(prev => prev ? ({
+                ...prev,
+                comments: [newComment, ...(prev.comments || [])],
+                _count: { ...prev._count, comments: prev._count.comments + 1 }
+            }) : null);
             setCommentText('');
             clearCommentFile();
+
+            // Auto expand thread if replying
+            if (replyingTo?.commentId) {
+                setExpandedReplies(prev => {
+                    const newSet = new Set(prev);
+                    newSet.add(replyingTo.commentId);
+                    return newSet;
+                });
+            }
+            setReplyingTo(null);
+
         } catch (error) {
+            console.error(error);
             toast.error('Lỗi bình luận');
         }
     };
@@ -275,6 +299,23 @@ export default function PostDetails() {
                     </button>
                 </div>
 
+                <div className="flex justify-between items-center mb-2 px-1">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Bình luận</span>
+                    <button
+                        onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                        className="text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1 transition-colors"
+                    >
+                        {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'} <ChevronDown size={14} />
+                    </button>
+                </div>
+
+                {replyingTo && (
+                    <div className="flex items-center justify-between text-xs text-indigo-600 bg-indigo-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-t-xl mb-2 border-b border-indigo-100 dark:border-slate-700">
+                        <span>Đang trả lời <b>{replyingTo.username}</b></span>
+                        <button onClick={() => setReplyingTo(null)} className="text-red-500 hover:underline">Hủy</button>
+                    </div>
+                )}
+
                 <div className="pt-4 border-t border-slate-50 dark:border-slate-800">
                     <div className="flex gap-3 mb-6">
                         <img src={getAvatarUrl(user?.avatar, user?.username)} className="w-10 h-10 rounded-full" alt="MyAvatar" />
@@ -294,10 +335,11 @@ export default function PostDetails() {
                             <div className="relative">
                                 <input
                                     type="text"
+                                    ref={inputRef}
                                     value={commentText}
                                     onChange={(e) => setCommentText(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
-                                    placeholder="Viết bình luận..."
+                                    placeholder={replyingTo ? `Trả lời ${replyingTo.username}...` : "Viết bình luận..."}
                                     className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-5 py-3 pr-20 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-slate-800 dark:text-slate-200"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -328,32 +370,102 @@ export default function PostDetails() {
                     </div>
 
                     <div className="space-y-4">
-                        {post.comments.map((comment: any) => (
-                            <div key={comment.id} className="flex gap-3 items-start animate-slide-up">
-                                <Link to={`/profile/${comment.authorId}`}>
-                                    <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-10 h-10 rounded-full" alt="CommenterAvatar" />
-                                </Link>
-                                <div className="flex-1">
-                                    <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none inline-block min-w-[200px]">
-                                        <Link to={`/profile/${comment.authorId}`} className="font-bold text-slate-900 dark:text-white block mb-1 hover:underline">
-                                            {comment.author?.fullName}
+                        {(() => {
+                            const allComments = post.comments || [];
+                            const repliesMap = new Map<number, any[]>();
+                            allComments.forEach((c: any) => {
+                                if (c.parentId) {
+                                    const list = repliesMap.get(c.parentId) || [];
+                                    list.push(c);
+                                    repliesMap.set(c.parentId, list);
+                                }
+                            });
+                            repliesMap.forEach(list => list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
+                            const roots = allComments.filter((c: any) => !c.parentId);
+                            roots.sort((a, b) => {
+                                const tA = new Date(a.createdAt).getTime();
+                                const tB = new Date(b.createdAt).getTime();
+                                return sortOrder === 'newest' ? tB - tA : tA - tB;
+                            });
+
+                            // In PostDetails, maybe we show ALL roots by default? Or paginate?
+                            // The existing logic used loadMoreComments. Let's show all loaded roots.
+
+                            const handleReplyClick = (commentId: number, username: string) => {
+                                setReplyingTo({ commentId, username });
+                                inputRef.current?.focus();
+                            };
+
+                            const toggleReplies = (commentId: number) => {
+                                setExpandedReplies(prev => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(commentId)) newSet.delete(commentId); else newSet.add(commentId);
+                                    return newSet;
+                                });
+                            };
+
+                            return roots.map((comment: any) => {
+                                const replies = repliesMap.get(comment.id) || [];
+                                const visibleReplies = expandedReplies.has(comment.id) ? replies : replies.slice(0, 3);
+
+                                return (
+                                    <div key={comment.id} className="flex gap-3 items-start animate-slide-up group">
+                                        <Link to={`/profile/${comment.authorId}`}>
+                                            <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-10 h-10 rounded-full" alt="Avatar" />
                                         </Link>
-                                        {comment.content && <p className="text-slate-800 dark:text-slate-300">{comment.content}</p>}
-                                        {comment.image && (
-                                            <img
-                                                src={comment.image}
-                                                alt="Comment"
-                                                className="mt-2 rounded-lg max-h-[200px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95 transition-opacity"
-                                                onClick={() => setViewingImage(comment.image)}
-                                            />
-                                        )}
+                                        <div className="flex-1">
+                                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none inline-block min-w-[200px]">
+                                                <Link to={`/profile/${comment.authorId}`} className="font-bold text-slate-900 dark:text-white block mb-1 hover:underline">
+                                                    {comment.author?.fullName}
+                                                </Link>
+                                                {comment.content && <p className="text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{comment.content}</p>}
+                                                {comment.image && (
+                                                    <img src={comment.image} alt="Cmt" className="mt-2 rounded-lg max-h-[200px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95" onClick={() => setViewingImage(comment.image)} />
+                                                )}
+                                                {comment.imageUrl && !comment.image && (
+                                                    <img src={comment.imageUrl} alt="Cmt" className="mt-2 rounded-lg max-h-[200px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95" onClick={() => setViewingImage(comment.imageUrl)} />
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-slate-400 mt-1 ml-2 flex items-center gap-3">
+                                                <span>{(() => { try { return comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi }) : 'Vừa xong'; } catch { return 'Vừa xong'; } })()}</span>
+                                                <button className="font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 hover:underline" onClick={() => handleReplyClick(comment.id, comment.author?.username)}>Trả lời</button>
+                                            </div>
+
+                                            {/* Replies */}
+                                            {replies.length > 0 && (
+                                                <div className="mt-2 space-y-3 pl-4 border-l-2 border-slate-100 dark:border-slate-800">
+                                                    {visibleReplies.map((reply: any) => (
+                                                        <div key={reply.id} className="flex gap-2 animate-fade-in">
+                                                            <Link to={`/profile/${reply.authorId}`}>
+                                                                <img src={getAvatarUrl(reply.author?.avatar, reply.author?.username)} className="w-8 h-8 rounded-full" alt="Avatar" />
+                                                            </Link>
+                                                            <div className="flex-1">
+                                                                <div className="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-2xl inline-block">
+                                                                    <Link to={`/profile/${reply.authorId}`} className="font-bold text-xs text-slate-900 dark:text-white block mb-0.5">{reply.author?.fullName}</Link>
+                                                                    <p className="text-xs text-slate-800 dark:text-slate-300">{reply.content}</p>
+                                                                    {(reply.image || reply.imageUrl) && (
+                                                                        <img src={reply.image || reply.imageUrl} alt="Rep" className="mt-1 max-h-32 rounded-lg cursor-pointer" onClick={() => setViewingImage(reply.image || reply.imageUrl)} />
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400 mt-1 ml-2 flex gap-2">
+                                                                    <span>{(() => { try { return reply.createdAt ? formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: vi }) : 'Vừa xong'; } catch { return 'Vừa xong'; } })()}</span>
+                                                                    <button className="font-bold hover:underline" onClick={() => handleReplyClick(comment.id, reply.author?.username)}>Trả lời</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {replies.length > visibleReplies.length && (
+                                                        <button onClick={() => toggleReplies(comment.id)} className="text-xs font-semibold text-indigo-500 hover:underline flex items-center gap-1 ml-2">
+                                                            Xem thêm {replies.length - visibleReplies.length} phản hồi
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-slate-400 mt-1 ml-2">
-                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            });
+                        })()}
 
                         {hasMoreComments && (
                             <button

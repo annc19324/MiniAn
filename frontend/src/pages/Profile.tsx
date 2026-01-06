@@ -1,7 +1,7 @@
 // src/pages/Profile.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, Send, Trash2, Edit2 } from 'lucide-react';
+import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, Send, Trash2, Edit2, ChevronDown, X, Image as ImageIcon } from 'lucide-react';
 import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost, deletePost } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
@@ -163,6 +163,11 @@ export default function Profile() {
     const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
     const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
     const [replyingTo, setReplyingTo] = useState<{ commentId: number; username: string; postId: number } | null>(null);
+    const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+    const [activeSortPostId, setActiveSortPostId] = useState<number | null>(null);
+    const [commentFile, setCommentFile] = useState<File | null>(null);
+    const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+    const inputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
     const toggleComments = (postId: number) => {
         setExpandedPosts(prev => {
@@ -255,24 +260,45 @@ export default function Profile() {
     };
 
     const handleCommentSubmit = async (postId: number) => {
-        if (!commentText.trim()) return;
+        if (!commentText.trim() && !commentFile) return;
         try {
-            const parentId = replyingTo?.postId === postId ? replyingTo.commentId : undefined;
-            const res = await commentPost(postId, commentText, undefined, parentId);
+            const res = await commentPost(postId, commentText, commentFile || undefined, replyingTo?.commentId);
+            const newComment = {
+                ...res.data,
+                content: commentText,
+                author: currentUser,
+                parentId: replyingTo?.commentId || null,
+                createdAt: new Date().toISOString()
+            };
             setPosts(posts.map(p => {
                 if (p.id === postId) {
                     return {
                         ...p,
-                        comments: [res.data.comment, ...p.comments],
-                        _count: { ...p._count, comments: p._count.comments + 1 }
+                        comments: [newComment, ...(p.comments || [])],
+                        _count: {
+                            ...p._count,
+                            comments: (p._count?.comments || 0) + 1
+                        }
                     };
                 }
                 return p;
             }));
             setCommentText('');
+            setCommentFile(null);
+
+            // Auto expand the thread if we replied to a comment
+            if (replyingTo?.commentId) {
+                setExpandedReplies(prev => {
+                    const newSet = new Set(prev);
+                    newSet.add(replyingTo.commentId);
+                    return newSet;
+                });
+            }
+
             setReplyingTo(null);
         } catch (error) {
-            toast.error('Lỗi bình luận');
+            console.error('Lỗi comment', error);
+            toast.error('Gửi bình luận thất bại');
         }
     };
 
@@ -478,11 +504,44 @@ export default function Profile() {
 
                                 {activeCommentId === post.id && (
                                     <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 animate-fade-in">
+                                        <div className="flex items-center justify-between mb-3 px-1">
+                                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                Bình luận ({post.comments?.length || 0})
+                                            </span>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setActiveSortPostId(activeSortPostId === post.id ? null : post.id)}
+                                                    className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                                >
+                                                    {sortOrder === 'newest' ? 'Mới nhất' : 'Cũ nhất'}
+                                                    <ChevronDown size={14} className={`transform transition-transform ${activeSortPostId === post.id ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                {activeSortPostId === post.id && (
+                                                    <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-20 overflow-hidden animate-scale-in origin-top-right">
+                                                        <button
+                                                            onClick={() => { setSortOrder('newest'); setActiveSortPostId(null); }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${sortOrder === 'newest' ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-slate-700 dark:text-slate-300'}`}
+                                                        >
+                                                            Mới nhất
+                                                            {sortOrder === 'newest' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></div>}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setSortOrder('oldest'); setActiveSortPostId(null); }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${sortOrder === 'oldest' ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-slate-700 dark:text-slate-300'}`}
+                                                        >
+                                                            Cũ nhất
+                                                            {sortOrder === 'oldest' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></div>}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                         <div className="flex gap-2 mb-4">
                                             <img src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${currentUser?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
                                             <div className="flex-1 relative">
                                                 {replyingTo?.postId === post.id && (
-                                                    <div className="flex items-center justify-between text-xs text-indigo-600 bg-indigo-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-t-xl mb-1 border-b border-indigo-100 dark:border-slate-700">
+                                                    <div className="flex items-center justify-between text-xs text-indigo-600 bg-indigo-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-t-xl mb-2 border-b border-indigo-100 dark:border-slate-700">
                                                         <span>Đang trả lời <b>{replyingTo.username}</b></span>
                                                         <button
                                                             onClick={() => setReplyingTo(null)}
@@ -492,28 +551,61 @@ export default function Profile() {
                                                         </button>
                                                     </div>
                                                 )}
-                                                <input
-                                                    type="text"
-                                                    value={commentText}
-                                                    onChange={(e) => setCommentText(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
-                                                    placeholder="Viết bình luận..."
-                                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2 pr-10 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200"
-                                                />
-                                                <button
-                                                    onClick={() => handleCommentSubmit(post.id)}
-                                                    className="absolute right-2 top-1.5 text-indigo-500 hover:text-indigo-600 p-1"
-                                                >
-                                                    <Send size={16} />
-                                                </button>
+
+                                                {/* Image Preview */}
+                                                {commentFile && (
+                                                    <div className="mb-2 relative inline-block">
+                                                        <img src={URL.createObjectURL(commentFile)} alt="Preview" className="h-16 w-auto rounded-lg border border-slate-200 dark:border-slate-700" />
+                                                        <button
+                                                            onClick={() => setCommentFile(null)}
+                                                            className="absolute -top-2 -right-2 bg-slate-500 text-white rounded-full p-1 shadow-sm hover:bg-slate-600"
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        // Bind ref
+                                                        ref={el => { inputRefs.current[post.id] = el; }}
+                                                        value={commentText}
+                                                        onChange={(e) => setCommentText(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post.id)}
+                                                        placeholder={replyingTo?.postId === post.id ? `Trả lời ${replyingTo.username}...` : "Viết bình luận..."}
+                                                        className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-4 py-2.5 pr-20 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-sm dark:text-slate-200 shadow-inner"
+                                                    />
+                                                    <div className="absolute right-2 top-1.5 flex items-center gap-1">
+                                                        <label className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                                            <ImageIcon size={16} />
+                                                            <input
+                                                                type="file"
+                                                                className="hidden"
+                                                                accept="image/*"
+                                                                onChange={(e) => {
+                                                                    if (e.target.files?.[0]) setCommentFile(e.target.files[0]);
+                                                                }}
+                                                            />
+                                                        </label>
+                                                        <button
+                                                            onClick={() => handleCommentSubmit(post.id)}
+                                                            disabled={!commentText.trim() && !commentFile}
+                                                            className="p-1.5 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        >
+                                                            <Send size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
                                             {(() => {
                                                 const allComments = post.comments || [];
-                                                const roots = allComments.filter((c: any) => !c.parentId);
                                                 const repliesMap = new Map<number, any[]>();
+
+                                                // Group replies
                                                 allComments.forEach((c: any) => {
                                                     if (c.parentId) {
                                                         const list = repliesMap.get(c.parentId) || [];
@@ -522,104 +614,144 @@ export default function Profile() {
                                                     }
                                                 });
 
+                                                // Sort Replies: Oldest First (ASC)
+                                                repliesMap.forEach((list) => {
+                                                    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                                                });
+
+                                                // Filter Roots
+                                                const roots = allComments.filter((c: any) => !c.parentId);
+
+                                                // Sort Roots: Based on User Selection
+                                                roots.sort((a, b) => {
+                                                    const tA = new Date(a.createdAt).getTime();
+                                                    const tB = new Date(b.createdAt).getTime();
+                                                    return sortOrder === 'newest' ? tB - tA : tA - tB;
+                                                });
+
                                                 const displayRoots = expandedPosts.has(post.id) ? roots : roots.slice(0, 3);
 
-                                                return displayRoots.map((comment: any) => (
-                                                    <div key={comment.id} className="mb-3">
-                                                        {/* Root Comment */}
-                                                        <div className="flex gap-2 items-start">
-                                                            <img
-                                                                src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username || 'User'}`}
-                                                                className="w-7 h-7 rounded-full cursor-pointer mt-1"
-                                                                alt="Avatar"
-                                                                onClick={() => navigate(`/profile/${comment.authorId}`)}
-                                                            />
+                                                const handleReplyClick = (commentId: number, username: string) => {
+                                                    setReplyingTo({ commentId, username, postId: post.id });
+                                                    setTimeout(() => {
+                                                        const inputEl = inputRefs.current[post.id];
+                                                        if (inputEl) inputEl.focus();
+                                                    }, 50);
+                                                };
+
+                                                const toggleReplies = (commentId: number) => {
+                                                    setExpandedReplies(prev => {
+                                                        const newSet = new Set(prev);
+                                                        if (newSet.has(commentId)) newSet.delete(commentId);
+                                                        else newSet.add(commentId);
+                                                        return newSet;
+                                                    });
+                                                };
+
+                                                return displayRoots.map((comment: any) => {
+                                                    const replies = repliesMap.get(comment.id) || [];
+                                                    const visibleReplies = expandedReplies.has(comment.id) ? replies : replies.slice(0, 3);
+
+                                                    return (
+                                                        <div key={comment.id} className="flex gap-2 animate-fade-in group pb-2">
+                                                            <Link to={`/profile/${comment.authorId}`}>
+                                                                <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-8 h-8 rounded-full shadow-sm hover:opacity-80 transition-opacity" alt="Avatar" />
+                                                            </Link>
                                                             <div className="flex-1">
-                                                                <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none inline-block min-w-[150px]">
-                                                                    <div
-                                                                        className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
-                                                                        onClick={() => navigate(`/profile/${comment.authorId}`)}
-                                                                    >
-                                                                        {comment.author?.fullName || 'Người dùng'}
-                                                                    </div>
-                                                                    <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
-                                                                    {comment.image && (
+                                                                <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl md:rounded-3xl px-3 py-2 md:px-4 md:py-2.5 inline-block shadow-sm relative group/content">
+                                                                    <Link to={`/profile/${comment.authorId}`} className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                                        {comment.author?.fullName || comment.author?.username}
+                                                                    </Link>
+                                                                    <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
+                                                                    {comment.imageUrl && (
                                                                         <img
-                                                                            src={comment.image}
-                                                                            alt="Comment"
-                                                                            className="mt-2 rounded-lg max-h-[150px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
-                                                                            onClick={() => setViewingImage(comment.image)}
+                                                                            src={comment.imageUrl}
+                                                                            alt="Attachment"
+                                                                            className="mt-2 max-h-40 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                                            onClick={() => setViewingImage(comment.imageUrl)}
                                                                         />
                                                                     )}
                                                                 </div>
-                                                                <div className="flex gap-4 mt-1 ml-1 items-center">
-                                                                    <span className="text-[10px] text-slate-400">
-                                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
+                                                                <div className="flex items-center gap-3 mt-1 ml-2">
+                                                                    <span className="text-[10px] md:text-xs text-slate-400 font-medium cursor-default">
+                                                                        {(() => { try { return comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { locale: vi, addSuffix: true }) : 'Vừa xong'; } catch { return 'Vừa xong'; } })()}
                                                                     </span>
                                                                     <button
-                                                                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer transition-colors"
-                                                                        onClick={() => setReplyingTo({ commentId: comment.id, username: comment.author?.fullName || 'User', postId: post.id })}
+                                                                        className="text-[10px] md:text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
+                                                                        onClick={() => handleReplyClick(comment.id, comment.author?.username)}
                                                                     >
                                                                         Trả lời
                                                                     </button>
                                                                 </div>
-                                                            </div>
-                                                        </div>
 
-                                                        {/* Replies */}
-                                                        {repliesMap.get(comment.id)?.map((reply: any) => (
-                                                            <div key={reply.id} className="flex gap-2 items-start ml-9 mt-2">
-                                                                <img
-                                                                    src={reply.author?.avatar || `https://ui-avatars.com/api/?name=${reply.author?.username || 'User'}`}
-                                                                    className="w-6 h-6 rounded-full cursor-pointer mt-1"
-                                                                    alt="Avatar"
-                                                                    onClick={() => navigate(`/profile/${reply.authorId}`)}
-                                                                />
-                                                                <div className="flex-1">
-                                                                    <div className="bg-slate-50/50 dark:bg-slate-800/50 p-2 rounded-2xl rounded-tl-none inline-block min-w-[120px]">
-                                                                        <div
-                                                                            className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
-                                                                            onClick={() => navigate(`/profile/${reply.authorId}`)}
-                                                                        >
-                                                                            {reply.author?.fullName || 'Người dùng'}
-                                                                        </div>
-                                                                        <p className="text-sm text-slate-700 dark:text-slate-300">{reply.content}</p>
-                                                                        {reply.image && (
-                                                                            <img
-                                                                                src={reply.image}
-                                                                                alt="Reply"
-                                                                                className="mt-2 rounded-lg max-h-[100px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
-                                                                                onClick={() => setViewingImage(reply.image)}
-                                                                            />
+                                                                {/* Replies Rendering */}
+                                                                {replies.length > 0 && (
+                                                                    <div className="mt-2 space-y-3 pl-3 md:pl-4 border-l-2 border-slate-100 dark:border-slate-800">
+                                                                        {visibleReplies.map((reply: any) => (
+                                                                            <div key={reply.id} className="flex gap-2 animate-fade-in">
+                                                                                <Link to={`/profile/${reply.authorId}`}>
+                                                                                    <img src={getAvatarUrl(reply.author?.avatar, reply.author?.username)} className="w-6 h-6 rounded-full shadow-sm hover:opacity-80 transition-opacity" alt="Avatar" />
+                                                                                </Link>
+                                                                                <div className="flex-1">
+                                                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-3 py-2 inline-block shadow-sm">
+                                                                                        <Link to={`/profile/${reply.authorId}`} className="font-bold text-xs text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                                                                            {reply.author?.fullName || reply.author?.username}
+                                                                                        </Link>
+                                                                                        <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{reply.content}</p>
+                                                                                        {reply.imageUrl && (
+                                                                                            <img
+                                                                                                src={reply.imageUrl}
+                                                                                                alt="Reply Attachment"
+                                                                                                className="mt-1 max-h-32 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                                                                onClick={() => setViewingImage(reply.imageUrl)}
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="flex items-center gap-3 mt-1 ml-2">
+                                                                                        <span className="text-[10px] text-slate-400">
+                                                                                            {(() => { try { return reply.createdAt ? formatDistanceToNow(new Date(reply.createdAt), { locale: vi, addSuffix: true }) : 'Vừa xong'; } catch { return 'Vừa xong'; } })()}
+                                                                                        </span>
+                                                                                        <button
+                                                                                            className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors"
+                                                                                            onClick={() => handleReplyClick(comment.id, reply.author?.username)}
+                                                                                        >
+                                                                                            Trả lời
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+
+                                                                        {/* Replies Pagination Button */}
+                                                                        {replies.length > visibleReplies.length && (
+                                                                            <button
+                                                                                onClick={() => toggleReplies(comment.id)}
+                                                                                className="text-xs font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 flex items-center gap-1 ml-2"
+                                                                            >
+                                                                                <div className="w-4 h-0.5 bg-indigo-500/50 rounded-full mr-1"></div>
+                                                                                Xem thêm {replies.length - visibleReplies.length} phản hồi
+                                                                            </button>
                                                                         )}
                                                                     </div>
-                                                                    <div className="flex gap-4 mt-1 ml-1 items-center">
-                                                                        <span className="text-[10px] text-slate-400">
-                                                                            {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: vi })}
-                                                                        </span>
-                                                                        <button
-                                                                            className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer transition-colors"
-                                                                            onClick={() => setReplyingTo({ commentId: comment.id, username: reply.author?.fullName || 'User', postId: post.id })}
-                                                                        >
-                                                                            Trả lời
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
+                                                                )}
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                ));
+                                                        </div>
+                                                    );
+                                                });
                                             })()}
+
+                                            {/* Root Comments View More */}
                                             {(() => {
                                                 const roots = (post.comments || []).filter((c: any) => !c.parentId);
-                                                return roots.length > 3 && !expandedPosts.has(post.id) ? (
+                                                return !expandedPosts.has(post.id) && roots.length > 3 && (
                                                     <button
                                                         onClick={() => toggleComments(post.id)}
-                                                        className="text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 font-medium pl-2 mt-2"
+                                                        className="w-full py-2 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors flex items-center justify-center gap-2 mt-2"
                                                     >
-                                                        Xem thêm {roots.length - 3} bình luận...
+                                                        Xem thêm {roots.length - 3} bình luận
+                                                        <ChevronDown size={14} />
                                                     </button>
-                                                ) : null;
+                                                );
                                             })()}
                                         </div>
                                     </div>
@@ -632,7 +764,7 @@ export default function Profile() {
 
             {/* Content Tabs (For now just Posts) */}
 
-            <ImageModal
+            < ImageModal
                 src={viewingImage}
                 onClose={() => setViewingImage(null)}
             />

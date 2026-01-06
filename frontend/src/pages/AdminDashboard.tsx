@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllUsers, updateUserStatus, updateUserCoins, deleteUser, adminCreateUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Coins, X, UserPlus, Trash2 } from 'lucide-react';
+import { Search, Coins, X, UserPlus, Trash2, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -36,6 +36,7 @@ export default function AdminDashboard() {
     const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, userId: number | null, username: string }>({
         isOpen: false, userId: null, username: ''
     });
+    const [activeRoleMenuId, setActiveRoleMenuId] = useState<number | null>(null);
 
     useEffect(() => {
         if (user && user.role !== 'ADMIN') {
@@ -255,14 +256,37 @@ export default function AdminDashboard() {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <select
-                                                value={u.role}
-                                                onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                                className={`border-none text-xs rounded-lg p-1.5 font-bold focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none cursor-pointer ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}`}
-                                            >
-                                                <option value="USER">Member</option>
-                                                <option value="ADMIN">Admin</option>
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setActiveRoleMenuId(activeRoleMenuId === u.id ? null : u.id)}
+                                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${u.role === 'ADMIN'
+                                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800'
+                                                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700'
+                                                        }`}
+                                                >
+                                                    {u.role === 'ADMIN' ? 'Admin' : 'Member'}
+                                                    <ChevronDown size={14} className={`transition-transform ${activeRoleMenuId === u.id ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                {activeRoleMenuId === u.id && (
+                                                    <div className="absolute left-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden animate-scale-in">
+                                                        <button
+                                                            onClick={() => { handleRoleChange(u.id, 'USER'); setActiveRoleMenuId(null); }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${u.role === 'USER' ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/10' : 'text-slate-700 dark:text-slate-300'}`}
+                                                        >
+                                                            Member
+                                                            {u.role === 'USER' && <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></div>}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { handleRoleChange(u.id, 'ADMIN'); setActiveRoleMenuId(null); }}
+                                                            className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${u.role === 'ADMIN' ? 'text-purple-600 dark:text-purple-400 bg-purple-50/50 dark:bg-purple-900/10' : 'text-slate-700 dark:text-slate-300'}`}
+                                                        >
+                                                            Admin
+                                                            {u.role === 'ADMIN' && <div className="w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400"></div>}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="p-4">
                                             <div className="flex flex-col gap-2 items-start">
