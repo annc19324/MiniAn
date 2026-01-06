@@ -450,7 +450,13 @@ export default function Home() {
 
                         const handleReplyClick = (commentId: number, username: string) => {
                           setReplyingTo({ commentId, username, postId: post.id });
-                          setTimeout(() => inputRefs.current[post.id]?.focus(), 50);
+                          setTimeout(() => {
+                            const input = inputRefs.current[post.id];
+                            if (input) {
+                              input.focus();
+                              input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                          }, 100);
                         };
 
                         const toggleReplies = (commentId: number) => {

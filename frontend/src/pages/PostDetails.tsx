@@ -393,7 +393,12 @@ export default function PostDetails() {
 
                             const handleReplyClick = (commentId: number, username: string) => {
                                 setReplyingTo({ commentId, username });
-                                inputRef.current?.focus();
+                                setTimeout(() => {
+                                    if (inputRef.current) {
+                                        inputRef.current.focus();
+                                        inputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }
+                                }, 100);
                             };
 
                             const toggleReplies = (commentId: number) => {

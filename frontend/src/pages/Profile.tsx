@@ -635,8 +635,11 @@ export default function Profile() {
                                                     setReplyingTo({ commentId, username, postId: post.id });
                                                     setTimeout(() => {
                                                         const inputEl = inputRefs.current[post.id];
-                                                        if (inputEl) inputEl.focus();
-                                                    }, 50);
+                                                        if (inputEl) {
+                                                            inputEl.focus();
+                                                            inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                        }
+                                                    }, 100);
                                                 };
 
                                                 const toggleReplies = (commentId: number) => {
