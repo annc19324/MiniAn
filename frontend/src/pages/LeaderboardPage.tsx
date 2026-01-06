@@ -42,17 +42,17 @@ export default function LeaderboardPage() {
             </h1>
 
             <div className="glass-card overflow-hidden">
-                <div className="p-4 border-b border-indigo-50 ">
-                    <p className="text-slate-600">Top những thành viên nhiều xu trong cộng đồng.</p>
+                <div className="p-4 border-b border-indigo-50 dark:border-slate-800">
+                    <p className="text-slate-600 dark:text-slate-300">Top những thành viên nhiều xu trong cộng đồng.</p>
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                     {users.map((u, index) => (
-                        <div key={u.id} className="flex items-center gap-4 p-4 hover:bg-white/80 transition-colors">
-                            <div className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full font-black text-lg shadow-sm ${index === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white ring-4 ring-yellow-100' :
+                        <div key={u.id} className="flex items-center gap-4 p-4 hover:bg-white/80 dark:hover:bg-slate-800/50 transition-colors">
+                            <div className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full font-black text-lg shadow-sm ${index === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-500 text-white ring-4 ring-yellow-100 dark:ring-yellow-900/30' :
                                 index === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white' :
                                     index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white' :
-                                        'bg-slate-100 text-slate-500'
+                                        'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                                 }`}>
                                 {index + 1}
                             </div>
@@ -60,18 +60,18 @@ export default function LeaderboardPage() {
                             <Link to={`/profile/${u.id}`} className="flex-shrink-0">
                                 <img
                                     src={getAvatarUrl(u.avatar, u.username)}
-                                    className="w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover"
+                                    className="w-12 h-12 rounded-full border-2 border-white dark:border-slate-700 shadow-sm object-cover"
                                     alt="Avatar"
                                 />
                             </Link>
 
                             <div className="flex-1 min-w-0">
-                                <Link to={`/profile/${u.id}`} className="font-bold text-slate-900 text-lg hover:text-indigo-600 truncate block">
+                                <Link to={`/profile/${u.id}`} className="font-bold text-slate-900 dark:text-white text-lg hover:text-indigo-600 dark:hover:text-indigo-400 truncate block">
                                     {u.fullName}
                                 </Link>
-                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                     <span className="truncate max-w-[100px] md:max-w-[200px]">@{u.username}</span>
-                                    {u.isVip && <span className="bg-yellow-100 text-yellow-700 text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0">VIP</span>}
+                                    {u.isVip && <span className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-[10px] px-1.5 py-0.5 rounded font-bold flex-shrink-0">VIP</span>}
                                 </div>
                             </div>
 
