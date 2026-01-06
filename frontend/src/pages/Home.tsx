@@ -189,7 +189,7 @@ export default function Home() {
   const handleUpdatePost = async (postId: number) => {
     if (!editPostContent.trim()) return;
     try {
-      const res = await import('../services/api').then(m => m.updatePost(postId, editPostContent));
+      const res = await updatePost(postId, editPostContent);
       setPosts(posts.map(p => p.id === postId ? { ...p, content: res.data.content } : p)); // Assuming API returns updated post
       setEditingPostId(null);
       toast.success('Đã cập nhật bài viết');
