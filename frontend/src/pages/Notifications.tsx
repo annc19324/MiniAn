@@ -13,6 +13,7 @@ interface Notification {
     read: boolean;
     createdAt: string;
     postId?: number;
+    commentId?: number; // Added
     sender?: {
         id: number;
         username: string;
@@ -87,7 +88,8 @@ export default function Notifications() {
                                 if (n.type === 'follow' && n.sender?.id) {
                                     navigate(`/profile/${n.sender.id}`);
                                 } else if (n.postId) {
-                                    navigate(`/post/${n.postId}`);
+                                    // Navigate to post with hash if commentId exists
+                                    navigate(`/post/${n.postId}${n.commentId ? `#comment-${n.commentId}` : ''}`);
                                 }
                             }}
                             className={`glass-card flex items-center gap-4 cursor-pointer hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all ${!n.read ? 'border-indigo-200 bg-indigo-50/50 dark:bg-indigo-900/30' : 'opacity-75'}`}

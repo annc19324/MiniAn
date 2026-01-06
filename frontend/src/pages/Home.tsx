@@ -120,8 +120,9 @@ export default function Home() {
     try {
       // Correct order: postId, content, file, parentId
       const res = await commentPost(postId, commentText, commentFile || undefined, replyingTo?.commentId);
+      const { comment } = res.data;
       const newComment = {
-        ...res.data,
+        ...comment,
         content: commentText,
         author: user,
         parentId: replyingTo?.commentId || null,

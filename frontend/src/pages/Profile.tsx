@@ -263,8 +263,9 @@ export default function Profile() {
         if (!commentText.trim() && !commentFile) return;
         try {
             const res = await commentPost(postId, commentText, commentFile || undefined, replyingTo?.commentId);
+            const { comment } = res.data;
             const newComment = {
-                ...res.data,
+                ...comment,
                 content: commentText,
                 author: currentUser,
                 parentId: replyingTo?.commentId || null,

@@ -241,17 +241,15 @@ export default function Layout() {
             </main>
 
             {/* Mobile Bottom Nav */}
-            {!isChatPage && (
-                <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-none pb-safe transition-colors duration-300">
-                    <MobileNavItem to="/" icon={<Home size={24} />} />
-                    <MobileNavItem to="/search" icon={<Search size={24} />} />
-                    <NavLink to="/create" className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white p-3.5 rounded-2xl -mt-8 shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all border-4 border-slate-50 dark:border-slate-950">
-                        <PlusSquare size={26} />
-                    </NavLink>
-                    <MobileNavItem to="/notifications" icon={<Bell size={24} />} count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
-                    <MobileNavItem to={`/profile/${user?.id}`} icon={<User size={24} />} />
-                </nav>
-            )}
+            <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-none pb-safe transition-colors duration-300">
+                <MobileNavItem to="/" icon={<Home size={24} />} />
+                <MobileNavItem to="/search" icon={<Search size={24} />} />
+                <NavLink to="/create" className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white p-3.5 rounded-2xl -mt-8 shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all border-4 border-slate-50 dark:border-slate-950">
+                    <PlusSquare size={26} />
+                </NavLink>
+                <MobileNavItem to="/notifications" icon={<Bell size={24} />} count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
+                <MobileNavItem to={`/profile/${user?.id}`} icon={<User size={24} />} />
+            </nav>
         </div>
     );
 }

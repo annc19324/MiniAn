@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { getPost, likePost, commentPost, deletePost, updatePost, getComments } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X, Image as ImageIcon, ChevronDown } from 'lucide-react';
@@ -28,12 +28,29 @@ interface Post {
 export default function PostDetails() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
     const { user } = useAuth();
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
     const [commentFile, setCommentFile] = useState<File | null>(null);
     const [commentPreviewUrl, setCommentPreviewUrl] = useState<string | null>(null);
+    // Scroll to comment handler
+    useEffect(() => {
+        if (location.hash && post) {
+            const id = location.hash.replace('#', '');
+            const element = document.getElementById(id);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50/50');
+                    setTimeout(() => element.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50/50'), 3000);
+                }, 500);
+            }
+        }
+    }, [location.hash, post]);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -137,8 +154,9 @@ export default function PostDetails() {
         if ((!commentText.trim() && !commentFile) || !post) return;
         try {
             const res = await commentPost(post.id, commentText, commentFile || undefined, replyingTo?.commentId);
+            const { comment } = res.data;
             const newComment = {
-                ...res.data,
+                ...comment,
                 content: commentText,
                 author: user,
                 parentId: replyingTo?.commentId || null,
@@ -414,7 +432,7 @@ export default function PostDetails() {
                                 const visibleReplies = expandedReplies.has(comment.id) ? replies : replies.slice(0, 3);
 
                                 return (
-                                    <div key={comment.id} className="flex gap-3 items-start animate-slide-up group">
+                                    <div key={comment.id} id={`comment-${comment.id}`} className="flex gap-3 items-start animate-slide-up group">
                                         <Link to={`/profile/${comment.authorId}`}>
                                             <img src={getAvatarUrl(comment.author?.avatar, comment.author?.username)} className="w-10 h-10 rounded-full" alt="Avatar" />
                                         </Link>
@@ -440,7 +458,7 @@ export default function PostDetails() {
                                             {replies.length > 0 && (
                                                 <div className="mt-2 space-y-3 pl-4 border-l-2 border-slate-100 dark:border-slate-800">
                                                     {visibleReplies.map((reply: any) => (
-                                                        <div key={reply.id} className="flex gap-2 animate-fade-in">
+                                                        <div key={reply.id} id={`comment-${reply.id}`} className="flex gap-2 animate-fade-in">
                                                             <Link to={`/profile/${reply.authorId}`}>
                                                                 <img src={getAvatarUrl(reply.author?.avatar, reply.author?.username)} className="w-8 h-8 rounded-full" alt="Avatar" />
                                                             </Link>
