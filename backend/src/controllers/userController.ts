@@ -92,8 +92,14 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
 // Điểm danh hàng ngày
 export const dailyCheckIn = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+
+
+    // Calculate Start of Day in Vietnam Time (UTC+7)
+    const now = new Date();
+    const vnOffset = 7 * 60 * 60 * 1000;
+    const vnTime = new Date(now.getTime() + vnOffset);
+    vnTime.setUTCHours(0, 0, 0, 0);
+    const startOfVNDay = new Date(vnTime.getTime() - vnOffset);
 
     try {
         // Kiểm tra xem hôm nay đã nhận chưa
@@ -101,7 +107,7 @@ export const dailyCheckIn = async (req: AuthRequest, res: Response) => {
             where: {
                 userId,
                 reason: 'Daily Check-in',
-                createdAt: { gte: today }
+                createdAt: { gte: startOfVNDay }
             }
         });
 
