@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllUsers, updateUserStatus, updateUserCoins, deleteUser, adminCreateUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, Shield, Crown, Coins, X, UserPlus, Trash2 } from 'lucide-react';
+import { Search, Coins, X, UserPlus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface User {
