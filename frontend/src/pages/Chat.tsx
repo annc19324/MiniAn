@@ -763,7 +763,7 @@ export default function Chat() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
+                        <div className="pl-4 pr-5 py-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
                             {previewUrl && (
                                 <div className="mb-2 relative inline-block">
                                     {selectedFile?.type.startsWith('image/') ? (

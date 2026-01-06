@@ -7,6 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
+import ImageModal from '../components/ImageModal';
+
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -155,10 +157,23 @@ export default function Profile() {
     const [showEdit, setShowEdit] = useState(false);
 
     // Interactive State
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
     const [commentText, setCommentText] = useState('');
     const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
+    const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
+
+    const toggleComments = (postId: number) => {
+        setExpandedPosts(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(postId)) {
+                newSet.delete(postId);
+            } else {
+                newSet.add(postId);
+            }
+            return newSet;
+        });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -423,7 +438,7 @@ export default function Profile() {
                                             src={post.image}
                                             className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                                             alt="Post"
-                                            onClick={() => setSelectedImage(post.image!)}
+                                            onClick={() => setViewingImage(post.image!)}
                                         />
                                     </div>
                                 )}
@@ -481,7 +496,7 @@ export default function Profile() {
                                         </div>
 
                                         <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
-                                            {post.comments && post.comments.map((comment: any) => (
+                                            {(expandedPosts.has(post.id) ? post.comments : post.comments.slice(0, 3)).map((comment: any) => (
                                                 <div key={comment.id} className="flex gap-2 items-start">
                                                     {/* Link to commenter profile, handle edge case if author is missing for some reason */}
                                                     <img
@@ -498,12 +513,28 @@ export default function Profile() {
                                                             {comment.author?.fullName || 'Người dùng'}
                                                         </div>
                                                         <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                                                        {comment.image && (
+                                                            <img
+                                                                src={comment.image}
+                                                                alt="Comment"
+                                                                className="mt-2 rounded-lg max-h-[150px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
+                                                                onClick={() => setViewingImage(comment.image)}
+                                                            />
+                                                        )}
                                                     </div>
                                                     <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
                                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
                                                     </span>
                                                 </div>
                                             ))}
+                                            {post.comments.length > 3 && !expandedPosts.has(post.id) && (
+                                                <button
+                                                    onClick={() => toggleComments(post.id)}
+                                                    className="text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 font-medium pl-2"
+                                                >
+                                                    Xem thêm {post.comments.length - 3} bình luận...
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -513,26 +544,12 @@ export default function Profile() {
                 )}
             </div>
 
-            {/* Image Preview Modal */}
-            {selectedImage && (
-                <div
-                    className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
-                    onClick={() => setSelectedImage(null)}
-                >
-                    <button
-                        onClick={() => setSelectedImage(null)}
-                        className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
-                    >
-                        <X size={32} />
-                    </button>
-                    <img
-                        src={selectedImage}
-                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
-                        alt="Full preview"
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
-            )}
+            {/* Content Tabs (For now just Posts) */}
+
+            <ImageModal
+                src={viewingImage}
+                onClose={() => setViewingImage(null)}
+            />
 
             {/* Edit Modal */}
             {showEdit && profile && (

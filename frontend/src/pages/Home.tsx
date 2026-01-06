@@ -6,6 +6,7 @@ import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send, Search, More
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import ImageModal from '../components/ImageModal';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
@@ -32,7 +33,7 @@ export default function Home() {
   const [image, setImage] = useState<File | null>(null);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
   const [commentText, setCommentText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -307,7 +308,7 @@ export default function Home() {
                     <img
                       src={post.image}
                       alt="Post content"
-                      onClick={() => setSelectedImage(post.image!)}
+                      onClick={() => setViewingImage(post.image!)}
                       className="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                     />
                   </div>
@@ -375,6 +376,14 @@ export default function Home() {
                               {comment.author?.fullName}
                             </Link>
                             <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                            {comment.image && (
+                              <img
+                                src={comment.image}
+                                alt="Comment"
+                                className="mt-2 rounded-lg max-h-[150px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
+                                onClick={() => setViewingImage(comment.image)}
+                              />
+                            )}
                           </div>
                           <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
                             {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
@@ -390,27 +399,10 @@ export default function Home() {
         })
       )}
 
-      {
-        selectedImage && (
-          <div
-            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in cursor-zoom-out"
-            onClick={() => setSelectedImage(null)}
-          >
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute top-4 right-4 text-white/70 hover:text-white bg-white/10 p-2 rounded-full backdrop-blur-sm transition-colors"
-            >
-              <X size={32} />
-            </button>
-            <img
-              src={selectedImage}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl animate-zoom-in"
-              alt="Full preview"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-        )
-      }
+      <ImageModal
+        src={viewingImage}
+        onClose={() => setViewingImage(null)}
+      />
     </div >
   );
 }
