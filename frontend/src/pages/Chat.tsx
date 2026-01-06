@@ -136,6 +136,12 @@ export default function Chat() {
         });
     }, [location.state]); // Depend on location.state so it runs when navigating with state
 
+    // Clear messages when switching rooms
+    useEffect(() => {
+        setMessages([]);
+        setHasMore(true);
+    }, [activeRoomId]);
+
     // Handle Active Room
     useEffect(() => {
         if (!activeRoomId || !socket) return;
@@ -146,7 +152,11 @@ export default function Chat() {
                 const res = await getMessages(activeRoomId);
                 setMessages(res.data);
                 setHasMore(res.data.length === 10); // If < 10 returned, no more
-                scrollToBottom();
+
+                // Use instant scroll for initial load
+                setTimeout(() => {
+                    scrollToBottom(false);
+                }, 100);
 
                 // Reset unread count locally
                 setConversations(prev => prev.map(c =>
@@ -168,7 +178,7 @@ export default function Chat() {
         const handleReceiveMessage = (data: any) => {
             if (Number(data.roomId) === activeRoomId) {
                 setMessages((prev) => [...prev, data.messageData]);
-                scrollToBottom();
+                scrollToBottom(true); // Smooth scroll for new messages
 
                 // Update conversation list last message without incrementing unread
                 setConversations(prev => prev.map(c =>
@@ -194,6 +204,8 @@ export default function Chat() {
             }
         };
 
+        // ... rest of listeners ...
+
         const handleMessagesRead = (data: any) => {
             console.log("RX: messages_read event", data);
 
@@ -212,11 +224,8 @@ export default function Chat() {
         const handleMessageDeleted = (data: any) => {
             if (Number(data.roomId) === activeRoomId) {
                 setMessages((prev) => prev.filter(m => m.id !== Number(data.messageId)));
-                // Also update last message in conversation list if needed
                 setConversations(prev => prev.map(c => {
                     if (c.id === activeRoomId && c.lastMessage?.content && messages.length > 0) {
-                        // This is tricky without fetching again. Let's simplistically just leave it or fetch con-vos.
-                        // For now simplified:
                         return c;
                     }
                     return c;
@@ -241,7 +250,7 @@ export default function Chat() {
             socket.off('message_deleted', handleMessageDeleted);
             socket.off('message_updated', handleMessageUpdated);
         };
-    }, [activeRoomId, socket /* Remove messages from dependencies to avoid re-registering */]);
+    }, [activeRoomId, socket]);
 
     // Scroll Listener for History
     const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
@@ -292,12 +301,8 @@ export default function Chat() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // ... (UseEffect for join_room is fine)
-
-    const scrollToBottom = () => {
-        setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
+    const scrollToBottom = (smooth = true) => {
+        messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
@@ -321,7 +326,7 @@ export default function Chat() {
                 messageData: savedMessage // Send full message object
             });
 
-            scrollToBottom();
+            scrollToBottom(true);
 
             // Update conversation list
             // Update conversation list
