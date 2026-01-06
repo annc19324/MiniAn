@@ -64,6 +64,8 @@ interface Conversation {
         username: string;
         fullName: string;
         avatar?: string;
+        isOnline?: boolean;
+        showActivityStatus?: boolean;
     }>;
     createdBy?: number;
     isOnline?: boolean;
@@ -194,7 +196,7 @@ export default function Chat() {
         const handleReceiveMessage = (data: any) => {
             if (Number(data.roomId) === activeRoomId) {
                 setMessages((prev) => [...prev, data.messageData]);
-                scrollToBottom(true); // Smooth scroll for new messages
+                setTimeout(() => scrollToBottom(true), 100); // Delayed scroll for incoming message
 
                 // Update conversation list last message without incrementing unread
                 setConversations(prev => prev.map(c =>
@@ -373,7 +375,7 @@ export default function Chat() {
                 messageData: savedMessage // Send full message object
             });
 
-            scrollToBottom(true);
+            setTimeout(() => scrollToBottom(true), 100);
 
             // Update conversation list
             let displayContent = tempContent;
@@ -573,16 +575,27 @@ export default function Chat() {
                                 {activeConversation?.isGroup ? (
                                     <button
                                         onClick={() => setShowGroupManagement(true)}
-                                        className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                                        className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
                                     >
-                                        <img
-                                            src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
-                                            className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                            alt="Avatar"
-                                        />
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{activeConversation?.name}</h4>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">{activeConversation.memberCount} thành viên</span>
+                                        <div className="relative">
+                                            <img
+                                                src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
+                                                className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
+                                                alt="Avatar"
+                                            />
+                                            {activeConversation.members?.some(m => m.id !== user?.id && m.showActivityStatus && m.isOnline) && (
+                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
+                                            )}
+                                        </div>
+                                        <div className="text-left">
+                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-[200px]" title={activeConversation?.name}>
+                                                {activeConversation?.name}
+                                            </h4>
+                                            {activeConversation.members?.some(m => m.id !== user?.id && m.showActivityStatus && m.isOnline) ? (
+                                                <span className="text-xs text-green-500 font-medium block">● Đang hoạt động</span>
+                                            ) : (
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 block">{activeConversation.memberCount} thành viên</span>
+                                            )}
                                         </div>
                                     </button>
                                 ) : (
@@ -672,7 +685,15 @@ export default function Chat() {
                                         {isMe && !isEditing && (
                                             <div className="relative self-center mr-2 order-first">
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); setMsgMenuId(msgMenuId === msg.id ? null : msg.id); }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const isOpen = msgMenuId !== msg.id;
+                                                        setMsgMenuId(isOpen ? msg.id : null);
+                                                        // If opening menu on the last message, scroll to bottom to show it
+                                                        if (isOpen && idx === messages.length - 1) {
+                                                            setTimeout(() => scrollToBottom(true), 100);
+                                                        }
+                                                    }}
                                                     className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-opacity"
                                                 >
                                                     <MoreHorizontal size={16} />

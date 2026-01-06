@@ -29,7 +29,7 @@ export const commentPost = (postId: number, content: string, file?: File, parent
     });
 };
 export const getUserPosts = (userId: number) => api.get(`/posts/user/${userId}`);
-export const getPost = (id: number) => api.get(`/posts/${id}`);
+export const getPost = (id: number, commentId?: number) => api.get(`/posts/${id}`, { params: { commentId } });
 export const deletePost = (id: number) => api.delete(`/posts/${id}`);
 export const updatePost = (id: number, content: string) => api.put(`/posts/${id}`, { content });
 export const getComments = (postId: number, cursor?: number) => api.get(`/posts/${postId}/comments`, { params: { cursor, limit: 5 } });

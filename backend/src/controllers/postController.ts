@@ -211,8 +211,24 @@ export const getUserPosts = async (req: AuthRequest, res: Response) => {
 // Lấy chi tiết một bài viết
 export const getPostById = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
+    const { commentId } = req.query;
 
     try {
+        const commentsQuery: any = {
+            include: {
+                author: { select: { username: true, fullName: true, avatar: true } },
+            },
+        };
+
+        if (commentId) {
+            // Focus mode: Chỉ lấy comment được chỉ định
+            commentsQuery.where = { id: Number(commentId) };
+        } else {
+            // Default mode: Lấy 3 comment mới nhất
+            commentsQuery.orderBy = { createdAt: 'desc' };
+            commentsQuery.take = 3;
+        }
+
         const post = await prisma.post.findUnique({
             where: { id: Number(id) },
             include: {
@@ -220,13 +236,7 @@ export const getPostById = async (req: AuthRequest, res: Response) => {
                     select: { id: true, username: true, fullName: true, avatar: true },
                 },
                 likes: { select: { userId: true } },
-                comments: {
-                    include: {
-                        author: { select: { username: true, fullName: true, avatar: true } },
-                    },
-                    orderBy: { createdAt: 'desc' },
-                    take: 3, // Initial load limit
-                },
+                comments: commentsQuery,
                 _count: { select: { likes: true, comments: true } },
             },
         });

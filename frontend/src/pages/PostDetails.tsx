@@ -36,12 +36,23 @@ export default function PostDetails() {
     const [commentText, setCommentText] = useState('');
     const [commentFile, setCommentFile] = useState<File | null>(null);
     const [commentPreviewUrl, setCommentPreviewUrl] = useState<string | null>(null);
+    const lastHighlightedHash = useRef<string | null>(null);
+
     // Scroll to comment handler
     useEffect(() => {
-        if (location.hash && post) {
+        // Reset tracker if hash is cleared (e.g. clicking 'View all')
+        if (!location.hash) {
+            lastHighlightedHash.current = null;
+            return;
+        }
+
+        if (post && location.hash !== lastHighlightedHash.current) {
             const id = location.hash.replace('#', '');
             const element = document.getElementById(id);
             if (element) {
+                // Mark as highlighted to prevent re-run on post updates
+                lastHighlightedHash.current = location.hash;
+
                 setTimeout(() => {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     element.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-500/20', 'transition-all', 'duration-500');
@@ -69,16 +80,33 @@ export default function PostDetails() {
     const [editContent, setEditContent] = useState('');
     const [showMenu, setShowMenu] = useState(false);
 
+    const [focusedCommentId, setFocusedCommentId] = useState<number | null>(null);
+
     useEffect(() => {
         if (id) fetchPost();
-    }, [id]);
+    }, [id, location.hash]); // Listen to hash change
 
     const fetchPost = async () => {
         try {
-            const res = await getPost(Number(id));
+            const hash = location.hash;
+            const commentId = hash.startsWith('#comment-') ? Number(hash.replace('#comment-', '')) : undefined;
+
+            if (commentId) setFocusedCommentId(commentId);
+            else setFocusedCommentId(null);
+
+            const res = await getPost(Number(id), commentId);
             setPost(res.data);
-            if (res.data.comments && res.data.comments.length < 3) {
-                setHasMoreComments(false);
+
+            // Logic check load more
+            // If focused, we likely have more if total > 1
+            if (commentId) {
+                setHasMoreComments(res.data._count.comments > 1);
+            } else {
+                if (res.data.comments && res.data.comments.length < 3) {
+                    setHasMoreComments(false);
+                } else {
+                    setHasMoreComments(true);
+                }
             }
         } catch (error) {
             console.error(error);
@@ -108,6 +136,11 @@ export default function PostDetails() {
         } finally {
             setLoadingMoreComments(false);
         }
+    };
+
+    const loadNewerComments = () => {
+        // Clear hash and reload standard view
+        navigate(`/post/${id}`, { replace: true });
     };
 
     const handleLike = async () => {
@@ -318,7 +351,17 @@ export default function PostDetails() {
                 </div>
 
                 <div className="flex justify-between items-center mb-2 px-1">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Bình luận</span>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Bình luận
+                        {focusedCommentId && (
+                            <button
+                                onClick={loadNewerComments}
+                                className="ml-4 text-xs font-normal text-indigo-600 hover:underline"
+                            >
+                                (Xem tất cả)
+                            </button>
+                        )}
+                    </span>
                     <button
                         onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
                         className="text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex items-center gap-1 transition-colors"
@@ -399,7 +442,11 @@ export default function PostDetails() {
                                 }
                             });
                             repliesMap.forEach(list => list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()));
-                            const roots = allComments.filter((c: any) => !c.parentId);
+
+                            // Determine roots: explicit roots OR replies whose parents are missing (e.g. single comment view)
+                            const commentIds = new Set(allComments.map((c: any) => c.id));
+                            const roots = allComments.filter((c: any) => !c.parentId || !commentIds.has(c.parentId));
+
                             roots.sort((a, b) => {
                                 const tA = new Date(a.createdAt).getTime();
                                 const tB = new Date(b.createdAt).getTime();

@@ -5,12 +5,16 @@ import { addGroupMember, removeGroupMember, leaveGroup, deleteConversation, sear
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { useAuth } from '../context/AuthContext';
+import { getUserStatusText, getUserStatusColor } from '../utils/statusUtils';
 
 interface Member {
     id: number;
     username: string;
     fullName: string;
     avatar?: string;
+    isOnline?: boolean;
+    lastSeen?: string;
+    showActivityStatus?: boolean;
 }
 
 interface GroupManagementModalProps {
@@ -171,7 +175,7 @@ export default function GroupManagementModal({
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     {/* Group Name */}
                     <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Tên nhóm</label>
@@ -195,7 +199,7 @@ export default function GroupManagementModal({
                             <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900 rounded-lg px-3 py-2">
                                 <span className="font-medium text-slate-800 dark:text-slate-200">{groupName}</span>
                                 {isAdmin && (
-                                    <button onClick={() => setEditingName(true)} className="text-indigo-500 hover:text-indigo-600">
+                                    <button onClick={() => setEditingName(true)} className="text-indigo-500 hover:text-indigo-600 p-1">
                                         <Edit2 size={14} />
                                     </button>
                                 )}
@@ -203,18 +207,19 @@ export default function GroupManagementModal({
                         )}
                     </div>
 
-                    {/* Group Avatar (Admin Only) */}
-                    {isAdmin && (
-                        <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Ảnh đại diện nhóm</label>
-                            <div className="relative w-20 h-20 mx-auto group">
-                                <img
-                                    src={getAvatarUrl(groupAvatar, groupName)}
-                                    className="w-20 h-20 rounded-full border-4 border-white dark:border-slate-700 shadow-md object-cover"
-                                    alt="Group avatar"
-                                />
-                                <label className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center">
-                                    <Camera className="text-white" size={20} />
+                    {/* Group Avatar */}
+                    <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Ảnh nhóm</label>
+                        <div className="flex items-center gap-4">
+                            <img
+                                src={getAvatarUrl(groupAvatar, groupName)}
+                                className="w-12 h-12 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm object-cover"
+                                alt="Group avatar"
+                            />
+                            {isAdmin && (
+                                <label className="cursor-pointer bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-2">
+                                    <Camera size={14} />
+                                    Đổi ảnh
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -226,14 +231,9 @@ export default function GroupManagementModal({
                                         disabled={uploading}
                                     />
                                 </label>
-                                {uploading && (
-                                    <div className="absolute inset-0 rounded-full bg-black/70 flex items-center justify-center">
-                                        <div className="text-white text-xs">Đang tải...</div>
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </div>
-                    )}
+                    </div>
 
                     {/* Add Member (Admin Only) */}
                     {isAdmin && (
@@ -278,31 +278,39 @@ export default function GroupManagementModal({
                     {/* Members List */}
                     <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Thành viên ({members.length})</label>
-                        <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                            {members.map(member => (
-                                <div key={member.id} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                                    <img src={getAvatarUrl(member.avatar, member.username)} className="w-8 h-8 rounded-full border border-white dark:border-slate-700" alt={member.fullName} />
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-xs text-slate-800 dark:text-slate-200 truncate">
-                                            {member.fullName}
-                                            {member.id === createdBy && (
-                                                <span className="ml-1.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">
-                                                    Admin
-                                                </span>
-                                            )}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400">@{member.username}</p>
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                            {members.map(member => {
+                                const isOnline = member.showActivityStatus ? member.isOnline : false;
+                                return (
+                                    <div key={member.id} className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                                        <div className="relative">
+                                            <img src={getAvatarUrl(member.avatar, member.username)} className="w-8 h-8 rounded-full border border-white dark:border-slate-700" alt={member.fullName} />
+                                            {isOnline && <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-slate-900"></div>}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-xs text-slate-800 dark:text-slate-200 truncate">
+                                                {member.fullName}
+                                                {member.id === createdBy && (
+                                                    <span className="ml-1.5 text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">
+                                                        Admin
+                                                    </span>
+                                                )}
+                                            </p>
+                                            <p className={`text-[10px] ${getUserStatusColor(isOnline)}`}>
+                                                {getUserStatusText(isOnline, member.showActivityStatus ? member.lastSeen : undefined)}
+                                            </p>
+                                        </div>
+                                        {isAdmin && member.id !== createdBy && (
+                                            <button
+                                                onClick={() => handleRemoveMember(member.id)}
+                                                className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
+                                            >
+                                                <UserMinus size={14} />
+                                            </button>
+                                        )}
                                     </div>
-                                    {isAdmin && member.id !== createdBy && (
-                                        <button
-                                            onClick={() => handleRemoveMember(member.id)}
-                                            className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors flex-shrink-0"
-                                        >
-                                            <UserMinus size={14} />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
