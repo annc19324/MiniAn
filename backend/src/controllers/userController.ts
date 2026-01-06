@@ -57,7 +57,21 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
         const isFriend = !!following && !!follower;
 
         console.log(`[getUserProfile] Success for ID: ${id}`);
-        res.json({ ...user, isFollowing: !!following, isFollowedBy: !!follower, isFriend });
+        // Schema naming is inverted:
+        // user.followers = people I follow (Following)
+        // user.following = people following me (Followers)
+        const responseData = {
+            ...user,
+            _count: {
+                ...user!._count,
+                followers: user!._count.following,
+                following: user!._count.followers
+            },
+            isFollowing: !!following,
+            isFollowedBy: !!follower,
+            isFriend
+        };
+        res.json(responseData);
     } catch (error) {
         console.error('[getUserProfile] Error:', error);
         res.status(500).json({ message: 'Server error', error: String(error) });
@@ -474,7 +488,7 @@ export const getFollowers = async (req: AuthRequest, res: Response) => {
         const user = await prisma.user.findUnique({
             where: { id: Number(id) },
             select: {
-                followers: {
+                following: { // Inverted Schema: 'following' relation = Followers list
                     select: {
                         follower: {
                             select: { id: true, username: true, fullName: true, avatar: true, isVip: true }
@@ -486,7 +500,7 @@ export const getFollowers = async (req: AuthRequest, res: Response) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const followers = user.followers.map(f => f.follower);
+        const followers = user.following.map(f => f.follower);
         res.json(followers);
     } catch (error) {
         console.error(error);
@@ -501,7 +515,7 @@ export const getFollowing = async (req: AuthRequest, res: Response) => {
         const user = await prisma.user.findUnique({
             where: { id: Number(id) },
             select: {
-                following: {
+                followers: { // Inverted Schema: 'followers' relation = Following list
                     select: {
                         following: {
                             select: { id: true, username: true, fullName: true, avatar: true, isVip: true }
@@ -513,7 +527,7 @@ export const getFollowing = async (req: AuthRequest, res: Response) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const following = user.following.map(f => f.following);
+        const following = user.followers.map(f => f.following);
         res.json(following);
     } catch (error) {
         console.error(error);
