@@ -23,6 +23,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
             select: {
                 id: true, username: true, fullName: true, avatar: true, bio: true,
                 coins: true, role: true, isVip: true, createdAt: true,
+                isOnline: true, lastSeen: true, showActivityStatus: true,
                 _count: {
                     select: { followers: true, following: true, posts: true }
                 }
@@ -56,20 +57,30 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
 
         const isFriend = !!following && !!follower;
 
+        // Count Friends (Mutual)
+        const myFollowings = await prisma.follow.findMany({ where: { followerId: Number(id) }, select: { followingId: true } });
+        const myFollowers = await prisma.follow.findMany({ where: { followingId: Number(id) }, select: { followerId: true } });
+        const followingSet = new Set(myFollowings.map(f => f.followingId));
+        const friendsCount = myFollowers.filter(f => followingSet.has(f.followerId)).length;
+
         console.log(`[getUserProfile] Success for ID: ${id}`);
         // Schema naming is inverted:
         // user.followers = people I follow (Following)
         // user.following = people following me (Followers)
         const responseData = {
             ...user,
+            isOnline: user.showActivityStatus ? user.isOnline : false,
+            lastSeen: user.showActivityStatus ? user.lastSeen : null,
             _count: {
-                ...user!._count,
-                followers: user!._count.following,
-                following: user!._count.followers
+                ...user._count,
+                followers: user._count.following,
+                following: user._count.followers,
+                friends: friendsCount
             },
             isFollowing: !!following,
             isFollowedBy: !!follower,
-            isFriend
+            isFriend,
+            friendsCount
         };
         res.json(responseData);
     } catch (error) {
@@ -343,16 +354,22 @@ export const followUser = async (req: AuthRequest, res: Response) => {
 // Cập nhật Profile (User tự cập nhật)
 export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
-    let { fullName, bio, username, email } = req.body;
+    let { fullName, bio, username, email, showActivityStatus } = req.body;
     const file = req.file;
 
     // Normalize
     if (username) username = username.trim();
     if (email) email = email.trim();
     if (fullName) fullName = fullName.trim();
+    if (showActivityStatus !== undefined) {
+        if (typeof showActivityStatus === 'string') showActivityStatus = showActivityStatus === 'true';
+    }
 
     try {
         console.log("Update Body:", req.body);
+
+        // ... (validations remain same)
+
 
         // Validation: Unique username
         if (username) {
@@ -414,6 +431,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         if (bio !== undefined) dataToUpdate.bio = bio;
         if (username) dataToUpdate.username = username;
         if (email) dataToUpdate.email = email;
+        if (showActivityStatus !== undefined) dataToUpdate.showActivityStatus = showActivityStatus;
         if (imageUrl) dataToUpdate.avatar = imageUrl;
 
         console.log("Final dataToUpdate:", dataToUpdate);
@@ -421,7 +439,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: dataToUpdate,
-            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true }
+            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true, showActivityStatus: true }
         });
 
         res.json({ message: 'Cập nhật thành công', user: updatedUser });
@@ -529,6 +547,36 @@ export const getFollowing = async (req: AuthRequest, res: Response) => {
 
         const following = user.followers.map(f => f.following);
         res.json(following);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Logic for getting friends (Mutual Follow)
+export const getFriends = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+    const userId = Number(id);
+    try {
+        const myFollowings = await prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } });
+        const myFollowers = await prisma.follow.findMany({ where: { followingId: userId }, select: { followerId: true } });
+
+        const followingIds = new Set(myFollowings.map(f => f.followingId));
+        const friendIds = myFollowers.map(f => f.followerId).filter(id => followingIds.has(id));
+
+        const friends = await prisma.user.findMany({
+            where: { id: { in: friendIds } },
+            select: { id: true, username: true, fullName: true, avatar: true, isOnline: true, lastSeen: true, showActivityStatus: true }
+        });
+
+        // Hide status if disabled
+        const safeFriends = friends.map(f => ({
+            ...f,
+            isOnline: f.showActivityStatus ? f.isOnline : false,
+            lastSeen: f.showActivityStatus ? f.lastSeen : null
+        }));
+
+        res.json(safeFriends);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

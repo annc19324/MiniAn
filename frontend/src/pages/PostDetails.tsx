@@ -44,8 +44,8 @@ export default function PostDetails() {
             if (element) {
                 setTimeout(() => {
                     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    element.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-50/50');
-                    setTimeout(() => element.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-50/50'), 3000);
+                    element.classList.add('ring-2', 'ring-indigo-500', 'bg-indigo-500/20', 'transition-all', 'duration-500');
+                    setTimeout(() => element.classList.remove('ring-2', 'ring-indigo-500', 'bg-indigo-500/20'), 3000);
                 }, 500);
             }
         }

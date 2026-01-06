@@ -91,12 +91,60 @@ export const io = new Server(httpServer, {
 });
 app.set('io', io); // Make io accessible in controllers via req.app.get('io')
 
+// Map UserId -> Set<SocketId>
+const userSocketMap = new Map<number, Set<string>>();
+
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
     socket.on("join_room", (roomId) => {
         socket.join(String(roomId));
-        console.log(`User ${socket.id} joined room ${String(roomId)}`);
+    });
+
+    // Online Status Tracking
+    socket.on('user_connected', async (userId: number) => {
+        try {
+            const uid = Number(userId);
+            if (!userSocketMap.has(uid)) {
+                userSocketMap.set(uid, new Set());
+            }
+            userSocketMap.get(uid)!.add(socket.id);
+            (socket as any).userId = uid;
+
+            // Update DB if first connection
+            if (userSocketMap.get(uid)!.size === 1) {
+                await prisma.user.update({
+                    where: { id: uid },
+                    data: { isOnline: true }
+                });
+                socket.broadcast.emit('user_status_change', { userId: uid, isOnline: true });
+            }
+        } catch (e) {
+            console.error("Error updating online status:", e);
+        }
+    });
+
+    socket.on('disconnect', async () => {
+        const userId = (socket as any).userId;
+        if (userId) {
+            const uid = Number(userId);
+            if (userSocketMap.has(uid)) {
+                userSocketMap.get(uid)!.delete(socket.id);
+                if (userSocketMap.get(uid)!.size === 0) {
+                    userSocketMap.delete(uid);
+                    try {
+                        const now = new Date();
+                        await prisma.user.update({
+                            where: { id: uid },
+                            data: { isOnline: false, lastSeen: now }
+                        });
+                        socket.broadcast.emit('user_status_change', { userId: uid, isOnline: false, lastSeen: now });
+                    } catch (e) {
+                        console.error("Error updating offline status:", e);
+                    }
+                }
+            }
+        }
     });
 
     socket.on("send_message", (data) => {

@@ -43,6 +43,10 @@ interface ConfirmModalState {
     type: 'danger' | 'info';
 }
 
+// Imports
+import { getUserStatusText, getUserStatusColor } from '../utils/statusUtils';
+
+// Update Interface
 interface Conversation {
     id: number;
     name: string;
@@ -62,7 +66,11 @@ interface Conversation {
         avatar?: string;
     }>;
     createdBy?: number;
+    isOnline?: boolean;
+    lastSeen?: string;
 }
+
+
 
 export default function Chat() {
     const { user } = useAuth();
@@ -247,16 +255,27 @@ export default function Chat() {
             }
         };
 
+        const handleUserStatusChange = (data: { userId: number, isOnline: boolean, lastSeen?: string }) => {
+            setConversations(prev => prev.map(c => {
+                if (!c.isGroup && c.otherMemberId === data.userId) {
+                    return { ...c, isOnline: data.isOnline, lastSeen: data.lastSeen };
+                }
+                return c;
+            }));
+        };
+
         socket.on('receive_message', handleReceiveMessage);
         socket.on('messages_read', handleMessagesRead);
         socket.on('message_deleted', handleMessageDeleted);
         socket.on('message_updated', handleMessageUpdated);
+        socket.on('user_status_change', handleUserStatusChange);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
             socket.off('messages_read', handleMessagesRead);
             socket.off('message_deleted', handleMessageDeleted);
             socket.off('message_updated', handleMessageUpdated);
+            socket.off('user_status_change', handleUserStatusChange);
         };
     }, [activeRoomId, socket]);
 
@@ -509,11 +528,14 @@ export default function Chat() {
                                 onClick={() => setActiveRoomId(c.id)}
                                 className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-white/50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800/50 ${activeRoomId === c.id ? 'bg-indigo-50/80 dark:bg-indigo-900/20' : ''}`}
                             >
-                                <img
-                                    src={getAvatarUrl(c.avatar, c.name)}
-                                    className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                    alt="Avatar"
-                                />
+                                <div className="relative">
+                                    <img
+                                        src={getAvatarUrl(c.avatar, c.name)}
+                                        className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
+                                        alt="Avatar"
+                                    />
+                                    {c.isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>}
+                                </div>
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold text-slate-800 dark:text-slate-200 truncate text-sm">{c.name}</h4>
                                     <p className={`text-xs truncate ${activeRoomId === c.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -572,7 +594,9 @@ export default function Chat() {
                                         />
                                         <div>
                                             <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{activeConversation?.name}</h4>
-                                            <span className="text-xs text-green-500 flex items-center gap-1">● Đang hoạt động</span>
+                                            <span className={`text-xs ${getUserStatusColor(activeConversation?.isOnline)}`}>
+                                                {getUserStatusText(activeConversation?.isOnline, activeConversation?.lastSeen)}
+                                            </span>
                                         </div>
                                     </Link>
                                 )}

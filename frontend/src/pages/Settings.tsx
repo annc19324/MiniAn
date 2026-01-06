@@ -5,6 +5,7 @@ import api from '../services/api';
 import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { requestNotificationPermission, sendSystemNotification, playNotificationSound } from '../utils/notificationUtils';
+import { toast } from 'react-hot-toast'; // New import
 
 export default function Settings() {
     const { user, logout, updateUser } = useAuth();
@@ -269,6 +270,30 @@ export default function Settings() {
                                     <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Active Status */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl mt-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-800 dark:text-white">Trạng thái hoạt động</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Hiển thị khi bạn đang online</p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" className="sr-only peer" checked={user?.showActivityStatus ?? true} onChange={(e) => {
+                                    const formData = new FormData();
+                                    formData.append('showActivityStatus', e.target.checked.toString());
+                                    updateUserProfile(formData).then(() => {
+                                        updateUser({ ...user!, showActivityStatus: e.target.checked });
+                                        toast.success('Đã cập nhật trạng thái');
+                                    });
+                                }} />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            </label>
                         </div>
                     </div>
                 )}

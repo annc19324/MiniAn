@@ -13,6 +13,7 @@ interface User {
     coins: number;
     role: string;
     isVip: boolean;
+    showActivityStatus?: boolean;
 }
 
 interface AuthContextType {

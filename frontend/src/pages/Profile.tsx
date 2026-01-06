@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { UserPlus, UserCheck, MessageCircle, MoreHorizontal, MapPin, Calendar, Heart, MessageSquare, Share2, Send, Trash2, Edit2, ChevronDown, X, Image as ImageIcon } from 'lucide-react';
-import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost, deletePost } from '../services/api';
+import { getProfile, getUserPosts, followUser, updateUserProfile, likePost, commentPost, deletePost, getFollowers, getFollowing, getFriends } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
@@ -12,6 +12,7 @@ import UserListModal from '../components/UserListModal';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { getUserStatusText, getUserStatusColor } from '../utils/statusUtils';
 
 interface UserProfile {
     id: number;
@@ -30,6 +31,10 @@ interface UserProfile {
     isFollowing: boolean;
     isFollowedBy?: boolean;
     isFriend?: boolean;
+    friendsCount?: number;
+    isOnline?: boolean;
+    lastSeen?: string;
+    showActivityStatus?: boolean;
 }
 
 interface Post {
@@ -211,16 +216,20 @@ export default function Profile() {
         isOpen: false, title: '', users: [], loading: false
     });
 
-    const handleOpenFollowList = async (type: 'followers' | 'following') => {
+    const handleOpenFollowList = async (type: 'followers' | 'following' | 'friends') => {
         if (!profile) return;
-        const title = type === 'followers' ? 'Người theo dõi' : 'Đang theo dõi';
+        const title = type === 'followers' ? 'Người theo dõi' : type === 'following' ? 'Đang theo dõi' : 'Bạn bè';
         setUserListModal({ isOpen: true, title, users: [], loading: true });
 
         try {
-            const { getFollowers, getFollowing } = await import('../services/api');
-            const fn = type === 'followers' ? getFollowers : getFollowing;
-            const res = await fn(profile.id);
-            setUserListModal(prev => ({ ...prev, users: res.data, loading: false }));
+            let res;
+            if (type === 'followers') res = await getFollowers(profile.id);
+            else if (type === 'following') res = await getFollowing(profile.id);
+            else if (type === 'friends') res = await getFriends(profile.id);
+
+            if (res) {
+                setUserListModal(prev => ({ ...prev, users: res.data, loading: false }));
+            }
         } catch (error) {
             setUserListModal(prev => ({ ...prev, loading: false }));
             toast.error('Lỗi tải danh sách');
@@ -242,6 +251,7 @@ export default function Profile() {
                     ...prev,
                     isFollowing: newIsFollowing,
                     isFriend: newIsFriend,
+                    friendsCount: (prev.friendsCount || 0) + (newIsFriend && !prev.isFriend ? 1 : (!newIsFriend && prev.isFriend ? -1 : 0)),
                     _count: {
                         ...prev._count,
                         followers: newIsFollowing ? prev._count.followers + 1 : prev._count.followers - 1
@@ -340,11 +350,14 @@ export default function Profile() {
 
     const isMe = currentUser?.id === profile.id;
 
+    const statusText = getUserStatusText(profile.isOnline, profile.lastSeen);
+    const statusColor = getUserStatusColor(profile.isOnline);
+
     return (
         <div className="space-y-6">
             {/* Header Card */}
             <div className="glass-card overflow-hidden">
-                {/* Cover Image (Placeholder for now) */}
+                {/* Cover Image */}
                 <div className="h-48 bg-gradient-to-r from-indigo-400 to-purple-400 dark:from-indigo-600 dark:to-purple-800 relative">
                     {/* Actions */}
                     <div className="absolute top-4 right-4 flex gap-2">
@@ -421,6 +434,11 @@ export default function Profile() {
                             {profile.role === 'ADMIN' && <span className="text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full font-bold">ADMIN</span>}
                         </div>
                         <p className="text-slate-500 dark:text-slate-400 font-medium">@{profile.username}</p>
+                        {statusText && (
+                            <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${statusColor}`}>
+                                ● {statusText}
+                            </p>
+                        )}
 
                         {profile.bio && <p className="mt-3 text-slate-700 dark:text-slate-300 leading-relaxed max-w-2xl">{profile.bio}</p>}
 
@@ -448,6 +466,10 @@ export default function Profile() {
                             <div className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl transition-all" onClick={() => handleOpenFollowList('following')}>
                                 <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.following}</span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Đang theo dõi</span>
+                            </div>
+                            <div className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl transition-all" onClick={() => handleOpenFollowList('friends')}>
+                                <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile.friendsCount || 0}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Bạn bè</span>
                             </div>
                         </div>
                     </div>

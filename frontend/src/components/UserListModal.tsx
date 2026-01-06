@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import { getUserStatusText, getUserStatusColor } from '../utils/statusUtils';
 
 interface User {
     id: number;
@@ -8,6 +9,8 @@ interface User {
     fullName: string;
     avatar?: string;
     isVip?: boolean;
+    isOnline?: boolean;
+    lastSeen?: string | null;
 }
 
 interface UserListModalProps {
@@ -41,12 +44,18 @@ export default function UserListModal({ isOpen, onClose, title, users, loading }
                     ) : (
                         users.map(u => (
                             <Link key={u.id} to={`/profile/${u.id}`} onClick={onClose} className="flex items-center gap-3 p-3 hover:bg-indigo-50/50 dark:hover:bg-slate-800/50 rounded-xl transition-all group">
-                                <img src={getAvatarUrl(u.avatar, u.username)} className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
+                                <div className="relative">
+                                    <img src={getAvatarUrl(u.avatar, u.username)} className="w-12 h-12 rounded-full border border-white dark:border-slate-700 shadow-sm" alt="Avatar" />
+                                    {u.isOnline && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>}
+                                </div>
                                 <div className="flex-1">
                                     <h3 className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                         {u.fullName}
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">@{u.username}</p>
+                                    <p className={`text-xs mt-0.5 ${getUserStatusColor(u.isOnline)}`}>
+                                        {getUserStatusText(u.isOnline, u.lastSeen)}
+                                    </p>
                                 </div>
                             </Link>
                         ))

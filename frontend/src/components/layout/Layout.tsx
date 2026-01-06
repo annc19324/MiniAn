@@ -35,7 +35,11 @@ export default function Layout() {
         if (!user) return;
         const socket = io(import.meta.env.VITE_SOCKET_URL);
 
-        socket.emit('join_room', user.id);
+        socket.on('connect', () => {
+            socket.emit('user_connected', user.id);
+            // Also join personal room for notifications if needed
+            socket.emit('join_room', user.id);
+        });
 
         socket.on('receive_message', (data) => {
             // GLOBAL LOGIC: Always play sound (simplified for reliability)

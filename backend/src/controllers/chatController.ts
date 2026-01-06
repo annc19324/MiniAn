@@ -20,7 +20,7 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                 users: {
                     include: {
                         user: {
-                            select: { id: true, username: true, fullName: true, avatar: true }
+                            select: { id: true, username: true, fullName: true, avatar: true, isOnline: true, lastSeen: true, showActivityStatus: true }
                         }
                     }
                 },
@@ -80,6 +80,8 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                     avatar: otherMember?.avatar,
                     isGroup: false,
                     otherMemberId: otherMember?.id,
+                    isOnline: otherMember?.showActivityStatus ? otherMember?.isOnline : false,
+                    lastSeen: otherMember?.showActivityStatus ? otherMember?.lastSeen : null,
                     lastMessage: room.messages[0],
                     unreadCount
                 };

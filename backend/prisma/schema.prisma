@@ -20,6 +20,9 @@ model User {
   vipExpiresAt     DateTime?
   role             Role              @default(USER)
   isActive         Boolean           @default(true)
+  lastSeen         DateTime          @default(now())
+  isOnline         Boolean           @default(false)
+  showActivityStatus Boolean       @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   coinTransactions CoinTransaction[]
