@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 
 import ImageModal from '../components/ImageModal';
+import UserListModal from '../components/UserListModal';
 
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -205,6 +206,26 @@ export default function Profile() {
         };
         fetchData();
     }, [id]);
+
+    const [userListModal, setUserListModal] = useState<{ isOpen: boolean, title: string, users: any[], loading: boolean }>({
+        isOpen: false, title: '', users: [], loading: false
+    });
+
+    const handleOpenFollowList = async (type: 'followers' | 'following') => {
+        if (!profile) return;
+        const title = type === 'followers' ? 'Người theo dõi' : 'Đang theo dõi';
+        setUserListModal({ isOpen: true, title, users: [], loading: true });
+
+        try {
+            const { getFollowers, getFollowing } = await import('../services/api');
+            const fn = type === 'followers' ? getFollowers : getFollowing;
+            const res = await fn(profile.id);
+            setUserListModal(prev => ({ ...prev, users: res.data, loading: false }));
+        } catch (error) {
+            setUserListModal(prev => ({ ...prev, loading: false }));
+            toast.error('Lỗi tải danh sách');
+        }
+    };
 
     const handleFollow = async () => {
         if (!profile) return;
@@ -416,15 +437,15 @@ export default function Profile() {
 
                         {/* Stats */}
                         <div className="flex gap-6 mt-6 border-t border-slate-100 dark:border-slate-800 pt-6">
-                            <div className="text-center">
+                            <div className="text-center p-2 rounded-xl">
                                 <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.posts}</span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Bài viết</span>
                             </div>
-                            <div className="text-center">
+                            <div className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl transition-all" onClick={() => handleOpenFollowList('followers')}>
                                 <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.followers}</span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Người theo dõi</span>
                             </div>
-                            <div className="text-center">
+                            <div className="text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 p-2 rounded-xl transition-all" onClick={() => handleOpenFollowList('following')}>
                                 <span className="block text-xl font-black text-slate-800 dark:text-slate-200">{profile._count.following}</span>
                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wide">Đang theo dõi</span>
                             </div>
@@ -781,6 +802,14 @@ export default function Profile() {
                     onSuccess={(updatedUser) => setProfile(prev => prev ? { ...prev, ...updatedUser } : null)}
                 />
             )}
+
+            <UserListModal
+                isOpen={userListModal.isOpen}
+                onClose={() => setUserListModal(prev => ({ ...prev, isOpen: false }))}
+                title={userListModal.title}
+                users={userListModal.users}
+                loading={userListModal.loading}
+            />
         </div>
     );
 }

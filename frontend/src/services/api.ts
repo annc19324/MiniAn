@@ -36,6 +36,8 @@ export const getComments = (postId: number, cursor?: number) => api.get(`/posts/
 
 // ==== User Services ====
 export const getProfile = (id: number) => api.get(`/users/profile/${id}`);
+export const getFollowers = (id: number) => api.get(`/users/profile/${id}/followers`); // New
+export const getFollowing = (id: number) => api.get(`/users/profile/${id}/following`); // New
 export const dailyCheckIn = () => api.post('/users/check-in');
 export const searchUsers = (q: string) => api.get(`/users/search?q=${q}`);
 export const followUser = (id: number) => api.post(`/users/follow/${id}`);

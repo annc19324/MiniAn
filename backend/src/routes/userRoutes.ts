@@ -1,7 +1,7 @@
 // src/routes/userRoutes.ts
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
-import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUsers, followUser, updateUserProfile, getLeaderboard, changePassword, updateUserCoins, deleteUser, adminCreateUser } from '../controllers/userController';
+import { getUserProfile, dailyCheckIn, getAllUsers, updateUserStatus, searchUsers, followUser, updateUserProfile, getLeaderboard, changePassword, updateUserCoins, deleteUser, adminCreateUser, getFollowers, getFollowing } from '../controllers/userController';
 import multer from 'multer';
 
 const upload = multer();
@@ -15,6 +15,8 @@ router.post('/check-in', protect, dailyCheckIn);
 router.get('/search', protect, searchUsers);
 router.post('/follow/:id', protect, followUser);
 router.get('/leaderboard', getLeaderboard); // Public
+router.get('/profile/:id/followers', protect, getFollowers); // New
+router.get('/profile/:id/following', protect, getFollowing); // New
 
 // Admin Routes
 router.get('/admin/users', protect, getAllUsers);
