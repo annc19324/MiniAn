@@ -11,7 +11,7 @@ router.post('/', protect, upload.single('image'), createPost);
 router.get('/', protect, getFeed);
 router.get('/user/:userId', protect, getUserPosts);
 router.post('/:postId/like', protect, toggleLike);
-router.post('/:postId/comment', protect, createComment);
+router.post('/:postId/comment', protect, upload.single('file'), createComment);
 router.get('/:id', protect, getPostById);
 router.delete('/:id', protect, deletePost);
 router.put('/:id', protect, updatePost);

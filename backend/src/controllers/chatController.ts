@@ -3,7 +3,7 @@ import { Response } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendPushNotification } from './pushController';
-import { uploadImage } from '../utils/upload';
+import { uploadMedia } from '../utils/upload';
 
 // Lấy danh sách cuộc trò chuyện (Rooms)
 export const getConversations = async (req: AuthRequest, res: Response) => {
@@ -181,13 +181,25 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
     const { roomId } = req.params;
     const { content } = req.body;
+    const file = req.file;
 
     try {
+        let mediaUrl: string | undefined;
+        let mediaType: string | undefined;
+
+        if (file) {
+            const uploadRes = await uploadMedia(file);
+            mediaUrl = uploadRes.url;
+            mediaType = uploadRes.type;
+        }
+
         const message = await prisma.message.create({
             data: {
-                content,
+                content: content || '', // Content optional if media is present
                 senderId: userId,
-                roomId: Number(roomId)
+                roomId: Number(roomId),
+                mediaUrl,
+                mediaType
             },
             include: {
                 sender: { select: { id: true, username: true, avatar: true } }
@@ -204,6 +216,14 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
             const io = req.app.get('io');
             const receivers = room.users.filter(u => u.userId !== userId);
 
+            // Determine notification body text
+            let notifBody = content;
+            if (!content && mediaType === 'image') notifBody = '[Hình ảnh]';
+            else if (!content && mediaType === 'video') notifBody = '[Video]';
+            else if (content && mediaType) notifBody = `[${mediaType === 'image' ? 'Hình ảnh' : 'Video'}] ${content}`;
+
+            if (notifBody.length > 50) notifBody = notifBody.substring(0, 50) + '...';
+
             // Loop through all receivers (relevant for group chat too)
             for (const receiver of receivers) {
                 // Socket Emit
@@ -213,7 +233,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
                 // Ensure import { sendPushNotification } from './pushController'; at top
                 sendPushNotification(receiver.userId, {
                     title: `Tin nhắn mới từ ${req.user!.username}`,
-                    body: content.length > 50 ? content.substring(0, 50) + '...' : content,
+                    body: notifBody,
                     url: `/chat` // Open Chat page on click
                 });
             }
@@ -441,7 +461,8 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
         // Upload avatar if file provided
         let avatarUrl: string | undefined;
         if (file) {
-            avatarUrl = await uploadImage(file);
+            const uploadRes = await uploadMedia(file);
+            avatarUrl = uploadRes.url;
         }
 
         const updatedRoom = await prisma.room.update({

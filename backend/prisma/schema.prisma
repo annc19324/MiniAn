@@ -68,6 +68,7 @@ model Post {
 model Comment {
   id            Int            @id @default(autoincrement())
   content       String
+  image         String?
   postId        Int
   authorId      Int
   createdAt     DateTime       @default(now())
@@ -135,10 +136,12 @@ model UserRoom {
 
 model Message {
   id         Int      @id @default(autoincrement())
-  content    String
+  content    String? // Made optional because message might be just media
   roomId     Int
   senderId   Int
   receiverId Int?
+  mediaUrl   String?
+  mediaType  String? // 'image' | 'video'
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
   isRead     Boolean  @default(false)

@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../server';
 import { AuthRequest } from '../middleware/authMiddleware';
-import { uploadImage } from '../utils/upload';
+import { uploadMedia } from '../utils/upload';
 
 // Tạo bài viết
 export const createPost = async (req: AuthRequest, res: Response) => {
@@ -13,7 +13,8 @@ export const createPost = async (req: AuthRequest, res: Response) => {
         let imageUrl: string | undefined;
 
         if (file) {
-            imageUrl = await uploadImage(file);
+            const uploadRes = await uploadMedia(file);
+            imageUrl = uploadRes.url;
         }
 
         const post = await prisma.post.create({
@@ -123,11 +124,24 @@ export const createComment = async (req: AuthRequest, res: Response) => {
     const { postId } = req.params;
     const { content } = req.body;
     const userId = req.user!.id;
+    const file = req.file;
 
     try {
+        let imageUrl: string | undefined;
+
+        if (file) {
+            // Comments only support images
+            if (!file.mimetype.startsWith('image/')) {
+                return res.status(400).json({ message: 'Bình luận chỉ hỗ trợ ảnh' });
+            }
+            const uploadRes = await uploadMedia(file);
+            imageUrl = uploadRes.url;
+        }
+
         const comment = await prisma.comment.create({
             data: {
-                content,
+                content: content || '', // Content can be empty if there is an image
+                image: imageUrl,
                 postId: Number(postId),
                 authorId: userId,
             },
@@ -157,7 +171,7 @@ export const createComment = async (req: AuthRequest, res: Response) => {
 
         res.status(201).json({ message: 'Bình luận thành công', comment });
     } catch (error) {
-        res.status(500).json({ error });
+        res.status(500).json({ message: 'Lỗi bình luận', error });
     }
 };
 

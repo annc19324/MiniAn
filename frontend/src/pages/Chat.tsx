@@ -3,11 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreateGroupModal from '../components/CreateGroupModal';
 import GroupManagementModal from '../components/GroupManagementModal';
+import ImageModal from '../components/ImageModal';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -17,6 +18,9 @@ interface Message {
     id: number;
     content: string;
     senderId: number;
+    roomId: number; // Added roomId
+    mediaUrl?: string; // Added
+    mediaType?: 'image' | 'video'; // Added
     sender: {
         id: number;
         username: string;
@@ -67,6 +71,10 @@ export default function Chat() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
     const [newMessage, setNewMessage] = useState('');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [socket, setSocket] = useState<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
@@ -297,9 +305,22 @@ export default function Chat() {
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Validate size (e.g. 50MB)
+            if (file.size > 50 * 1024 * 1024) {
+                toast.error('File quá lớn (Tối đa 50MB)');
+                return;
+            }
+            setSelectedFile(file);
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+        }
+    };
 
     const scrollToBottom = (smooth = true) => {
         messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
@@ -307,17 +328,24 @@ export default function Chat() {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newMessage.trim() || !activeRoomId || !user) return;
+        if ((!newMessage.trim() && !selectedFile) || !activeRoomId || !user) return;
 
         const tempContent = newMessage;
-        setNewMessage(''); // Clear input immediately
+        const tempFile = selectedFile;
+
+        // Clear input immediately
+        setNewMessage('');
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
 
         try {
             // Save to DB
-            const res = await sendMessage(activeRoomId, tempContent);
+            const res = await sendMessage(activeRoomId, tempContent, tempFile || undefined);
             const savedMessage = res.data;
 
-            // Update Local State
+            // Update Local State (if Socket doesn't do it faster, but usually we rely on socket for consistency or optimistic update)
+            // Here we just rely on socket receive or push optimistic
             setMessages((prev) => [...prev, savedMessage]);
 
             // Emit to Socket (so other user gets it)
@@ -329,16 +357,24 @@ export default function Chat() {
             scrollToBottom(true);
 
             // Update conversation list
-            // Update conversation list
+            let displayContent = tempContent;
+            if (!tempContent && savedMessage.mediaType === 'image') displayContent = '[Hình ảnh]';
+            if (!tempContent && savedMessage.mediaType === 'video') displayContent = '[Video]';
+
             setConversations(prev => prev.map(c =>
                 c.id === activeRoomId
-                    ? { ...c, lastMessage: { content: tempContent, createdAt: new Date().toISOString() } }
+                    ? { ...c, lastMessage: { content: displayContent, createdAt: new Date().toISOString() } }
                     : c
             ));
 
         } catch (error) {
             console.error("Lỗi gửi tin", error);
-            setNewMessage(tempContent); // Revert if failed
+            setNewMessage(tempContent);
+            if (tempFile) {
+                setSelectedFile(tempFile); // simplified revert
+                setPreviewUrl(URL.createObjectURL(tempFile));
+            }
+            toast.error('Gửi tin thất bại');
         }
     };
 
@@ -671,14 +707,37 @@ export default function Chat() {
                                                 </div>
                                             ) : (
                                                 <div
-                                                    className={`px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm relative ${isMe
+                                                    className={`rounded-2xl shadow-sm relative overflow-hidden ${isMe
                                                         ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
                                                         : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
                                                         }`}
                                                 >
-                                                    {msg.content}
-                                                    {msg.isEdited && (
-                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-1 italic block text-right">đã sửa</span>
+                                                    {msg.mediaUrl && msg.mediaType === 'image' && (
+                                                        <div className="mb-1">
+                                                            <img
+                                                                src={msg.mediaUrl}
+                                                                alt="Attached"
+                                                                className="max-w-[250px] max-h-[300px] object-cover rounded-lg cursor-pointer hover:opacity-95"
+                                                                onClick={() => setViewingImage(msg.mediaUrl!)}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {msg.mediaUrl && msg.mediaType === 'video' && (
+                                                        <div className="mb-1">
+                                                            <video
+                                                                src={msg.mediaUrl}
+                                                                controls
+                                                                className="max-w-[250px] max-h-[300px] object-cover rounded-lg bg-black"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {msg.content && (
+                                                        <div className="px-4 py-2 text-sm leading-relaxed">
+                                                            {msg.content}
+                                                            {msg.isEdited && (
+                                                                <span className="text-[10px] opacity-70 ml-1 italic block text-right">đã sửa</span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                             )}
@@ -703,7 +762,41 @@ export default function Chat() {
 
                         {/* Input Area */}
                         <div className="p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
+                            {previewUrl && (
+                                <div className="mb-2 relative inline-block">
+                                    {selectedFile?.type.startsWith('image/') ? (
+                                        <img src={previewUrl} alt="Preview" className="h-20 w-auto rounded-lg shadow-md object-cover border border-white dark:border-slate-700" />
+                                    ) : (
+                                        <video src={previewUrl} className="h-20 w-auto rounded-lg shadow-md bg-black border border-white dark:border-slate-700" />
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            setSelectedFile(null);
+                                            setPreviewUrl(null);
+                                            if (fileInputRef.current) fileInputRef.current.value = '';
+                                        }}
+                                        className="absolute -top-2 -right-2 bg-slate-500 text-white rounded-full p-1 hover:bg-slate-600 shadow-sm"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            )}
                             <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    accept="image/*,video/mp4,video/webm"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="p-3 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+                                    title="Đính kèm ảnh/video"
+                                >
+                                    <ImageIcon size={20} />
+                                </button>
                                 <input
                                     type="text"
                                     value={newMessage}
@@ -713,7 +806,7 @@ export default function Chat() {
                                 />
                                 <button
                                     type="submit"
-                                    disabled={!newMessage.trim()}
+                                    disabled={!newMessage.trim() && !selectedFile}
                                     className="p-3 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none transition-all hover:scale-105 active:scale-95"
                                 >
                                     <Send size={20} />
@@ -792,6 +885,10 @@ export default function Chat() {
                     />
                 )
             }
+            <ImageModal
+                src={viewingImage}
+                onClose={() => setViewingImage(null)}
+            />
         </div>
     );
 }

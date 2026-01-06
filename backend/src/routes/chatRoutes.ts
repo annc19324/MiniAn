@@ -16,7 +16,7 @@ router.post('/conversation/start', protect, startConversation);
 router.delete('/conversation/:id', protect, deleteConversation);
 
 router.get('/:roomId/messages', protect, getMessages);
-router.post('/:roomId/messages', protect, sendMessage);
+router.post('/:roomId/messages', protect, upload.single('file'), sendMessage);
 router.put('/read/:roomId', protect, markAsRead);
 
 router.put('/message/:id', protect, updateMessage);

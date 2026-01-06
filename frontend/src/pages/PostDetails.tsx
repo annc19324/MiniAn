@@ -1,13 +1,14 @@
 // src/pages/PostDetails.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPost, likePost, commentPost, deletePost, updatePost, getComments } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Send, ChevronLeft, MoreHorizontal, Trash2, Edit2, Check, X, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { getAvatarUrl } from '../utils/avatarUtils';
+import ImageModal from '../components/ImageModal';
 
 interface Post {
     id: number;
@@ -32,6 +33,10 @@ export default function PostDetails() {
     const [post, setPost] = useState<Post | null>(null);
     const [loading, setLoading] = useState(true);
     const [commentText, setCommentText] = useState('');
+    const [commentFile, setCommentFile] = useState<File | null>(null);
+    const [commentPreviewUrl, setCommentPreviewUrl] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
 
     // Pagination State
     const [loadingMoreComments, setLoadingMoreComments] = useState(false);
@@ -65,7 +70,7 @@ export default function PostDetails() {
         setLoadingMoreComments(true);
         try {
             const lastCommentId = post.comments[post.comments.length - 1].id;
-            const res = await getComments(post.id, lastCommentId); // Adjusted to default limit 5 or need to verify api
+            const res = await getComments(post.id, lastCommentId);
 
             if (res.data.length > 0) {
                 setPost(prev => prev ? ({
@@ -101,16 +106,39 @@ export default function PostDetails() {
         }
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                toast.error('Chỉ hỗ trợ file ảnh');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                toast.error('Ảnh quá lớn (Tối đa 10MB)');
+                return;
+            }
+            setCommentFile(file);
+            setCommentPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const clearCommentFile = () => {
+        setCommentFile(null);
+        setCommentPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     const handleCommentSubmit = async () => {
-        if (!commentText.trim() || !post) return;
+        if ((!commentText.trim() && !commentFile) || !post) return;
         try {
-            const res = await commentPost(post.id, commentText);
+            const res = await commentPost(post.id, commentText, commentFile || undefined);
             setPost({
                 ...post,
                 comments: [res.data.comment, ...post.comments],
                 _count: { ...post._count, comments: post._count.comments + 1 }
             });
             setCommentText('');
+            clearCommentFile();
         } catch (error) {
             toast.error('Lỗi bình luận');
         }
@@ -220,7 +248,7 @@ export default function PostDetails() {
                 )}
 
                 {post.image && (
-                    <div className="mb-6 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+                    <div className="mb-6 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 cursor-pointer" onClick={() => setViewingImage(post.image!)}>
                         <img
                             src={post.image}
                             alt="Post content"
@@ -250,21 +278,52 @@ export default function PostDetails() {
                 <div className="pt-4 border-t border-slate-50 dark:border-slate-800">
                     <div className="flex gap-3 mb-6">
                         <img src={getAvatarUrl(user?.avatar, user?.username)} className="w-10 h-10 rounded-full" alt="MyAvatar" />
-                        <div className="flex-1 relative">
-                            <input
-                                type="text"
-                                value={commentText}
-                                onChange={(e) => setCommentText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
-                                placeholder="Viết bình luận..."
-                                className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-5 py-3 pr-12 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-slate-800 dark:text-slate-200"
-                            />
-                            <button
-                                onClick={handleCommentSubmit}
-                                className="absolute right-2 top-2 text-indigo-500 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors"
-                            >
-                                <Send size={20} />
-                            </button>
+                        <div className="flex-1">
+                            {/* Preview Image */}
+                            {commentPreviewUrl && (
+                                <div className="mb-2 relative inline-block">
+                                    <img src={commentPreviewUrl} alt="Preview" className="h-16 w-auto rounded-lg shadow-sm border border-slate-200 dark:border-slate-700" />
+                                    <button
+                                        onClick={clearCommentFile}
+                                        className="absolute -top-1 -right-1 bg-slate-500 text-white rounded-full p-0.5 hover:bg-slate-600 shadow-sm"
+                                    >
+                                        <X size={10} />
+                                    </button>
+                                </div>
+                            )}
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={commentText}
+                                    onChange={(e) => setCommentText(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit()}
+                                    placeholder="Viết bình luận..."
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-2xl px-5 py-3 pr-20 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 outline-none text-slate-800 dark:text-slate-200"
+                                />
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="text-slate-400 hover:text-indigo-500 p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"
+                                        title="Đính kèm ảnh"
+                                    >
+                                        <ImageIcon size={18} />
+                                    </button>
+                                    <button
+                                        onClick={handleCommentSubmit}
+                                        disabled={!commentText.trim() && !commentFile}
+                                        className="text-indigo-500 hover:text-indigo-600 p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-full transition-colors disabled:opacity-50"
+                                    >
+                                        <Send size={18} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -279,7 +338,15 @@ export default function PostDetails() {
                                         <Link to={`/profile/${comment.authorId}`} className="font-bold text-slate-900 dark:text-white block mb-1 hover:underline">
                                             {comment.author?.fullName}
                                         </Link>
-                                        <p className="text-slate-800 dark:text-slate-300">{comment.content}</p>
+                                        {comment.content && <p className="text-slate-800 dark:text-slate-300">{comment.content}</p>}
+                                        {comment.image && (
+                                            <img
+                                                src={comment.image}
+                                                alt="Comment"
+                                                className="mt-2 rounded-lg max-h-[200px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95 transition-opacity"
+                                                onClick={() => setViewingImage(comment.image)}
+                                            />
+                                        )}
                                     </div>
                                     <div className="text-xs text-slate-400 mt-1 ml-2">
                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
@@ -300,6 +367,11 @@ export default function PostDetails() {
                     </div>
                 </div>
             </div>
+
+            <ImageModal
+                src={viewingImage}
+                onClose={() => setViewingImage(null)}
+            />
         </div >
     );
 }

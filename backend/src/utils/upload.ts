@@ -12,14 +12,30 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const uploadImage = async (file: Express.Multer.File): Promise<string> => {
+export const uploadMedia = async (file: Express.Multer.File): Promise<{ url: string, type: 'image' | 'video' }> => {
     return new Promise((resolve, reject) => {
+        // Simple check for video mime type
+        const isVideo = file.mimetype.startsWith('video/');
+        const resourceType = isVideo ? 'video' : 'image';
+
         cloudinary.uploader.upload_stream(
-            { resource_type: 'image', folder: 'minian/posts' },
+            {
+                resource_type: resourceType,
+                folder: isVideo ? 'minian/videos' : 'minian/images'
+            },
             (error, result) => {
                 if (error) return reject(error);
-                resolve(result!.secure_url);
+                resolve({
+                    url: result!.secure_url,
+                    type: resourceType
+                });
             }
         ).end(file.buffer);
     });
+};
+
+// Keep backward compatibility if needed, or refactor all usages
+export const uploadImage = async (file: Express.Multer.File): Promise<string> => {
+    const res = await uploadMedia(file);
+    return res.url;
 };

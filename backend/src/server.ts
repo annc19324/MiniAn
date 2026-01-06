@@ -62,6 +62,25 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
+app.get('/debug-posts/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const posts = await prisma.post.findMany({
+            where: { authorId: Number(userId) },
+            include: { comments: true } // simple include
+        });
+        res.json(posts);
+    } catch (error: any) {
+        res.status(500).json({
+            message: 'Debug Error',
+            name: error.name,
+            code: error.code,
+            meta: error.meta,
+            stack: error.stack
+        });
+    }
+});
+
 // Socket.io Setup
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {
@@ -102,4 +121,5 @@ process.on('SIGINT', async () => {
 // Start Server
 httpServer.listen(PORT, () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);
+    console.log('Backend restarted verifying fix');
 });
