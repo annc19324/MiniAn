@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getFeed, createPost, likePost, dailyCheckIn, commentPost, deletePost } from '../services/api';
-import { MessageCircle, Heart, Share2, Image as ImageIcon, X, Send, Search, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Image as ImageIcon, Send, Search, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
