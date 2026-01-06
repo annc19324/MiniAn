@@ -19,10 +19,11 @@ export const createPost = (formData: FormData) => api.post('/posts', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
 });
 export const likePost = (postId: number) => api.post(`/posts/${postId}/like`);
-export const commentPost = (postId: number, content: string, file?: File) => {
+export const commentPost = (postId: number, content: string, file?: File, parentId?: number) => {
     const formData = new FormData();
     formData.append('content', content);
     if (file) formData.append('file', file);
+    if (parentId) formData.append('parentId', parentId.toString());
     return api.post(`/posts/${postId}/comment`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });

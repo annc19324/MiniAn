@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreateGroupModal from '../components/CreateGroupModal';
@@ -545,8 +545,8 @@ export default function Chat() {
                         {/* Chat Header */}
                         <div className="p-4 border-b border-indigo-50 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex justify-between items-center z-10">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveRoomId(null)} className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400">
-                                    ←
+                                <button onClick={() => setActiveRoomId(null)} className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-[24px]">
+                                    ❮
                                 </button>
                                 {activeConversation?.isGroup ? (
                                     <button
@@ -763,7 +763,8 @@ export default function Chat() {
                         </div>
 
                         {/* Input Area */}
-                        <div className="pl-4 pr-5 py-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
+                        {/* Input Area */}
+                        <div className="px-3 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
                             {previewUrl && (
                                 <div className="mb-2 relative inline-block">
                                     {selectedFile?.type.startsWith('image/') ? (
@@ -783,7 +784,7 @@ export default function Chat() {
                                     </button>
                                 </div>
                             )}
-                            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                            <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full">
                                 <input
                                     type="file"
                                     ref={fileInputRef}
@@ -796,7 +797,7 @@ export default function Chat() {
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Nhập tin nhắn..."
-                                    className="flex-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                    className="flex-1 min-w-0 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
                                 />
                                 <button
                                     type="button"

@@ -162,6 +162,7 @@ export default function Profile() {
     const [commentText, setCommentText] = useState('');
     const [activeMenuPostId, setActiveMenuPostId] = useState<number | null>(null);
     const [expandedPosts, setExpandedPosts] = useState<Set<number>>(new Set());
+    const [replyingTo, setReplyingTo] = useState<{ commentId: number; username: string; postId: number } | null>(null);
 
     const toggleComments = (postId: number) => {
         setExpandedPosts(prev => {
@@ -256,7 +257,8 @@ export default function Profile() {
     const handleCommentSubmit = async (postId: number) => {
         if (!commentText.trim()) return;
         try {
-            const res = await commentPost(postId, commentText);
+            const parentId = replyingTo?.postId === postId ? replyingTo.commentId : undefined;
+            const res = await commentPost(postId, commentText, undefined, parentId);
             setPosts(posts.map(p => {
                 if (p.id === postId) {
                     return {
@@ -268,6 +270,7 @@ export default function Profile() {
                 return p;
             }));
             setCommentText('');
+            setReplyingTo(null);
         } catch (error) {
             toast.error('Lỗi bình luận');
         }
@@ -478,6 +481,17 @@ export default function Profile() {
                                         <div className="flex gap-2 mb-4">
                                             <img src={currentUser?.avatar || `https://ui-avatars.com/api/?name=${currentUser?.username}`} className="w-8 h-8 rounded-full" alt="MyAvatar" />
                                             <div className="flex-1 relative">
+                                                {replyingTo?.postId === post.id && (
+                                                    <div className="flex items-center justify-between text-xs text-indigo-600 bg-indigo-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-t-xl mb-1 border-b border-indigo-100 dark:border-slate-700">
+                                                        <span>Đang trả lời <b>{replyingTo.username}</b></span>
+                                                        <button
+                                                            onClick={() => setReplyingTo(null)}
+                                                            className="text-red-500 hover:underline"
+                                                        >
+                                                            Hủy
+                                                        </button>
+                                                    </div>
+                                                )}
                                                 <input
                                                     type="text"
                                                     value={commentText}
@@ -496,45 +510,117 @@ export default function Profile() {
                                         </div>
 
                                         <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
-                                            {(expandedPosts.has(post.id) ? post.comments : post.comments.slice(0, 3)).map((comment: any) => (
-                                                <div key={comment.id} className="flex gap-2 items-start">
-                                                    {/* Link to commenter profile, handle edge case if author is missing for some reason */}
-                                                    <img
-                                                        src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username || 'User'}`}
-                                                        className="w-7 h-7 rounded-full cursor-pointer"
-                                                        alt="CommenterAvatar"
-                                                        onClick={() => navigate(`/profile/${comment.authorId}`)}
-                                                    />
-                                                    <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none">
-                                                        <div
-                                                            className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
-                                                            onClick={() => navigate(`/profile/${comment.authorId}`)}
-                                                        >
-                                                            {comment.author?.fullName || 'Người dùng'}
-                                                        </div>
-                                                        <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
-                                                        {comment.image && (
+                                            {(() => {
+                                                const allComments = post.comments || [];
+                                                const roots = allComments.filter((c: any) => !c.parentId);
+                                                const repliesMap = new Map<number, any[]>();
+                                                allComments.forEach((c: any) => {
+                                                    if (c.parentId) {
+                                                        const list = repliesMap.get(c.parentId) || [];
+                                                        list.push(c);
+                                                        repliesMap.set(c.parentId, list);
+                                                    }
+                                                });
+
+                                                const displayRoots = expandedPosts.has(post.id) ? roots : roots.slice(0, 3);
+
+                                                return displayRoots.map((comment: any) => (
+                                                    <div key={comment.id} className="mb-3">
+                                                        {/* Root Comment */}
+                                                        <div className="flex gap-2 items-start">
                                                             <img
-                                                                src={comment.image}
-                                                                alt="Comment"
-                                                                className="mt-2 rounded-lg max-h-[150px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
-                                                                onClick={() => setViewingImage(comment.image)}
+                                                                src={comment.author?.avatar || `https://ui-avatars.com/api/?name=${comment.author?.username || 'User'}`}
+                                                                className="w-7 h-7 rounded-full cursor-pointer mt-1"
+                                                                alt="Avatar"
+                                                                onClick={() => navigate(`/profile/${comment.authorId}`)}
                                                             />
-                                                        )}
+                                                            <div className="flex-1">
+                                                                <div className="bg-slate-50 dark:bg-slate-800 p-2.5 rounded-2xl rounded-tl-none inline-block min-w-[150px]">
+                                                                    <div
+                                                                        className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
+                                                                        onClick={() => navigate(`/profile/${comment.authorId}`)}
+                                                                    >
+                                                                        {comment.author?.fullName || 'Người dùng'}
+                                                                    </div>
+                                                                    <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                                                                    {comment.image && (
+                                                                        <img
+                                                                            src={comment.image}
+                                                                            alt="Comment"
+                                                                            className="mt-2 rounded-lg max-h-[150px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
+                                                                            onClick={() => setViewingImage(comment.image)}
+                                                                        />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex gap-4 mt-1 ml-1 items-center">
+                                                                    <span className="text-[10px] text-slate-400">
+                                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
+                                                                    </span>
+                                                                    <button
+                                                                        className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer transition-colors"
+                                                                        onClick={() => setReplyingTo({ commentId: comment.id, username: comment.author?.fullName || 'User', postId: post.id })}
+                                                                    >
+                                                                        Trả lời
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Replies */}
+                                                        {repliesMap.get(comment.id)?.map((reply: any) => (
+                                                            <div key={reply.id} className="flex gap-2 items-start ml-9 mt-2">
+                                                                <img
+                                                                    src={reply.author?.avatar || `https://ui-avatars.com/api/?name=${reply.author?.username || 'User'}`}
+                                                                    className="w-6 h-6 rounded-full cursor-pointer mt-1"
+                                                                    alt="Avatar"
+                                                                    onClick={() => navigate(`/profile/${reply.authorId}`)}
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="bg-slate-50/50 dark:bg-slate-800/50 p-2 rounded-2xl rounded-tl-none inline-block min-w-[120px]">
+                                                                        <div
+                                                                            className="font-bold text-xs text-slate-900 dark:text-slate-100 block mb-0.5 cursor-pointer hover:underline"
+                                                                            onClick={() => navigate(`/profile/${reply.authorId}`)}
+                                                                        >
+                                                                            {reply.author?.fullName || 'Người dùng'}
+                                                                        </div>
+                                                                        <p className="text-sm text-slate-700 dark:text-slate-300">{reply.content}</p>
+                                                                        {reply.image && (
+                                                                            <img
+                                                                                src={reply.image}
+                                                                                alt="Reply"
+                                                                                className="mt-2 rounded-lg max-h-[100px] w-auto border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-95"
+                                                                                onClick={() => setViewingImage(reply.image)}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex gap-4 mt-1 ml-1 items-center">
+                                                                        <span className="text-[10px] text-slate-400">
+                                                                            {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true, locale: vi })}
+                                                                        </span>
+                                                                        <button
+                                                                            className="text-[10px] font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 cursor-pointer transition-colors"
+                                                                            onClick={() => setReplyingTo({ commentId: comment.id, username: reply.author?.fullName || 'User', postId: post.id })}
+                                                                        >
+                                                                            Trả lời
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                    <span className="text-[10px] text-slate-400 mt-1 self-end whitespace-nowrap">
-                                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: vi })}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                            {post.comments.length > 3 && !expandedPosts.has(post.id) && (
-                                                <button
-                                                    onClick={() => toggleComments(post.id)}
-                                                    className="text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 font-medium pl-2"
-                                                >
-                                                    Xem thêm {post.comments.length - 3} bình luận...
-                                                </button>
-                                            )}
+                                                ));
+                                            })()}
+                                            {(() => {
+                                                const roots = (post.comments || []).filter((c: any) => !c.parentId);
+                                                return roots.length > 3 && !expandedPosts.has(post.id) ? (
+                                                    <button
+                                                        onClick={() => toggleComments(post.id)}
+                                                        className="text-sm text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 font-medium pl-2 mt-2"
+                                                    >
+                                                        Xem thêm {roots.length - 3} bình luận...
+                                                    </button>
+                                                ) : null;
+                                            })()}
                                         </div>
                                     </div>
                                 )}

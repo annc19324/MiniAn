@@ -122,7 +122,7 @@ export const toggleLike = async (req: AuthRequest, res: Response) => {
 // Comment
 export const createComment = async (req: AuthRequest, res: Response) => {
     const { postId } = req.params;
-    const { content } = req.body;
+    const { content, parentId } = req.body;
     const userId = req.user!.id;
     const file = req.file;
 
@@ -144,6 +144,7 @@ export const createComment = async (req: AuthRequest, res: Response) => {
                 image: imageUrl,
                 postId: Number(postId),
                 authorId: userId,
+                parentId: parentId ? Number(parentId) : undefined,
             },
             include: {
                 author: { select: { username: true, fullName: true, avatar: true } },
