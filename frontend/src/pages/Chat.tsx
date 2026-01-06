@@ -649,7 +649,7 @@ export default function Chat() {
                                             <div className="relative self-center mr-2 order-first">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); setMsgMenuId(msgMenuId === msg.id ? null : msg.id); }}
-                                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/50 dark:bg-slate-800/50 rounded-full hover:bg-white dark:hover:bg-slate-700 transition-opacity"
                                                 >
                                                     <MoreHorizontal size={16} />
                                                 </button>
@@ -706,33 +706,35 @@ export default function Chat() {
                                                     <button onClick={() => setEditingMsgId(null)} className="p-1.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-300 dark:hover:bg-slate-600"><X size={14} /></button>
                                                 </div>
                                             ) : (
-                                                <div
-                                                    className={`rounded-2xl shadow-sm relative overflow-hidden ${isMe
-                                                        ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-br-none'
-                                                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none'
-                                                        }`}
-                                                >
-                                                    {msg.mediaUrl && msg.mediaType === 'image' && (
-                                                        <div className="mb-1">
-                                                            <img
-                                                                src={msg.mediaUrl}
-                                                                alt="Attached"
-                                                                className="max-w-[250px] max-h-[300px] object-cover rounded-lg cursor-pointer hover:opacity-95"
-                                                                onClick={() => setViewingImage(msg.mediaUrl!)}
-                                                            />
+                                                <div className="flex flex-col gap-1">
+                                                    {/* Media Block (Image/Video) */}
+                                                    {msg.mediaUrl && (
+                                                        <div className="">
+                                                            {msg.mediaType === 'image' ? (
+                                                                <img
+                                                                    src={msg.mediaUrl}
+                                                                    alt="Attached"
+                                                                    className="max-w-[250px] max-h-[300px] object-cover rounded-2xl shadow-sm cursor-pointer hover:opacity-95 bg-transparent"
+                                                                    onClick={() => setViewingImage(msg.mediaUrl!)}
+                                                                />
+                                                            ) : (
+                                                                <video
+                                                                    src={msg.mediaUrl}
+                                                                    controls
+                                                                    className="max-w-[250px] max-h-[300px] object-cover rounded-2xl shadow-sm bg-black"
+                                                                />
+                                                            )}
                                                         </div>
                                                     )}
-                                                    {msg.mediaUrl && msg.mediaType === 'video' && (
-                                                        <div className="mb-1">
-                                                            <video
-                                                                src={msg.mediaUrl}
-                                                                controls
-                                                                className="max-w-[250px] max-h-[300px] object-cover rounded-lg bg-black"
-                                                            />
-                                                        </div>
-                                                    )}
+
+                                                    {/* Text Content Block */}
                                                     {msg.content && (
-                                                        <div className="px-4 py-2 text-sm leading-relaxed">
+                                                        <div
+                                                            className={`px-4 py-2 text-sm leading-relaxed shadow-sm relative overflow-hidden max-w-fit ${isMe
+                                                                ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-2xl rounded-br-none self-end'
+                                                                : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl rounded-bl-none self-start'
+                                                                }`}
+                                                        >
                                                             {msg.content}
                                                             {msg.isEdited && (
                                                                 <span className="text-[10px] opacity-70 ml-1 italic block text-right">đã sửa</span>
@@ -789,6 +791,13 @@ export default function Chat() {
                                     className="hidden"
                                     accept="image/*,video/mp4,video/webm"
                                 />
+                                <input
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Nhập tin nhắn..."
+                                    className="flex-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                />
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
@@ -797,13 +806,6 @@ export default function Chat() {
                                 >
                                     <ImageIcon size={20} />
                                 </button>
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Nhập tin nhắn..."
-                                    className="flex-1 bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all font-medium placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                />
                                 <button
                                     type="submit"
                                     disabled={!newMessage.trim() && !selectedFile}
