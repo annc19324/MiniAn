@@ -411,12 +411,12 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
 
         // Validation: FullName
         if (fullName) {
-            if (fullName.length < 2 || fullName.length > 50) {
-                return res.status(400).json({ message: 'Họ tên phải từ 2-50 ký tự' });
+            if (fullName.length < 2 || fullName.length > 60) {
+                return res.status(400).json({ message: 'Họ tên phải từ 2-60 ký tự' });
             }
-            const fullNameRegex = /^[a-zA-Z0-9\s]+$/;
+            const fullNameRegex = /^[\p{L}\p{N}\s]+$/u;
             if (!fullNameRegex.test(fullName)) {
-                return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số (không dấu)' });
+                return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số' });
             }
         }
 

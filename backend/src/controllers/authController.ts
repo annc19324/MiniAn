@@ -39,15 +39,13 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
     // 3. Validate FullName
     // 2-50 chars, a-z A-Z 0-9 (allowing spaces for readability)
     if (fullName) {
-        if (fullName.length < 2 || fullName.length > 50) {
-            return res.status(400).json({ message: 'Họ tên phải từ 2-50 ký tự' });
+        if (fullName.length < 2 || fullName.length > 60) {
+            return res.status(400).json({ message: 'Họ tên phải từ 2-60 ký tự' });
         }
-        // User requested a-z A-Z 0-9. Assuming spaces allowed for names.
-        // If strictly no spaces: /^[a-zA-Z0-9]{2,50}$/
-        // I will allow spaces: /^[a-zA-Z0-9\s]{2,50}$/
-        const fullNameRegex = /^[a-zA-Z0-9\s]+$/;
+        // Support Unicode letters, numbers and spaces
+        const fullNameRegex = /^[\p{L}\p{N}\s]+$/u;
         if (!fullNameRegex.test(fullName)) {
-            return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số (không dấu)' });
+            return res.status(400).json({ message: 'Họ tên chỉ được chứa chữ cái và số' });
         }
     }
 
