@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play, Eye, EyeOff, Download } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound } from '../utils/notificationUtils';
 import { toast } from 'react-hot-toast'; // New import
@@ -402,6 +402,21 @@ export default function Settings() {
                     </div>
                 )}
             </div>
+
+            {/* Download APK Section */}
+            <a
+                href="/minian-app.apk"
+                download
+                className="w-full glass-card p-6 flex items-center gap-3 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-200 dark:hover:border-green-800 transition-all text-left group border border-transparent cursor-pointer block"
+            >
+                <div className="p-2 bg-slate-100 text-slate-500 group-hover:bg-green-500 group-hover:text-white rounded-lg transition-colors dark:bg-slate-700 dark:text-slate-300">
+                    <Download size={24} />
+                </div>
+                <div>
+                    <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 group-hover:text-green-600 dark:group-hover:text-green-400">Tải ứng dụng Android (APK)</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-green-400">Phiên bản mới nhất cho thiết bị di động</p>
+                </div>
+            </a>
 
             {/* Logout Section */}
             <button
