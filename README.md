@@ -7,7 +7,18 @@
 
 ## 🚀 Tính Năng Nổi Bật / Key Features
 
-### 💬 Hệ Thống Chat Real-time (Thời Gian Thực)
+### � Bảng Tin & Mạng Xã Hội (Newsfeed)
+- **Đăng bài viết:** Chia sẻ trạng thái, hình ảnh với cộng đồng.
+- **Tương tác:** Thả tim (Like), Bình luận (Comment) thời gian thực.
+- **Hồ sơ cá nhân:** Trang cá nhân chỉnh chu với ảnh đại diện, ảnh bìa và lịch sử bài đăng.
+
+### 📞 Gọi Video (Video Call)
+- **Kết nối P2P:** Gọi video trực tiếp chất lượng cao sử dụng WebRTC.
+- **Tính năng cao cấp:** Tắt/bật Camera/Mic, chuyển đổi Camera trước/sau.
+- **Chế độ thu nhỏ (PiP):** Vừa gọi điện vừa nhắn tin hoặc lướt bảng tin (Multitasking).
+- **Thông báo cuộc gọi:** Đổ chuông và rung liên tục ngay cả khi ứng dụng chạy ngầm (Background Ringing).
+
+### �💬 Hệ Thống Chat Real-time (Thời Gian Thực)
 - **Nhắn tin tức thì (Instant Messaging):** Sử dụng Socket.io cho độ trễ thấp nhất.
 - **Tiện ích chat:** Hỗ trợ thu hồi, chỉnh sửa tin nhắn, thông báo đã xem (seen).
 - **Phân trang thông minh:** Tải tin nhắn cũ mượt mà khi cuộn (Infinite Scroll).
