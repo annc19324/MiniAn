@@ -185,13 +185,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                             sound: undefined, // Use default or configure 'annc19324_sound.wav' if mapped
                             actionTypeId: 'OPEN_APP_ACTION',
                             extra: { type: 'call_incoming' },
-                            channelId: 'calls_channel' // Defined in Android generic setup or default
+                            channelId: 'calls_channel_v3',
+                            smallIcon: 'ic_launcher'
                         }]
                     });
                     // Create channel if needed (Android O+)
                     await LocalNotifications.createChannel({
-                        id: 'calls_channel',
-                        name: 'Call Notifications',
+                        id: 'calls_channel_v3',
+                        name: 'Call Notifications V3',
                         importance: 5, // High
                         visibility: 1,
                         sound: 'annc19324_sound.mp3', // Requires file in res/raw (already there)

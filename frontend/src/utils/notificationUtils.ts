@@ -8,7 +8,46 @@ export const requestNotificationPermission = async () => {
     return permission === 'granted';
 };
 
-export const sendSystemNotification = (title: string, body?: string, icon?: string) => {
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
+
+export const sendSystemNotification = async (title: string, body?: string, icon?: string) => {
+    // === NATIVE LOGIC ===
+    if (Capacitor.isNativePlatform()) {
+        try {
+            await LocalNotifications.requestPermissions();
+            // Random ID to allow multiple notifications to stack
+            const notifId = Math.floor(Math.random() * 100000);
+
+            await LocalNotifications.schedule({
+                notifications: [{
+                    title,
+                    body: body || '',
+                    id: notifId,
+                    schedule: { at: new Date(Date.now() + 100) },
+                    sound: 'annc19324_sound.mp3', // Reuse the custom sound or default
+                    actionTypeId: 'OPEN_APP_ACTION',
+                    smallIcon: 'ic_launcher',
+                    channelId: 'general_channel_v1'
+                }]
+            });
+
+            // Channel for General Messages
+            await LocalNotifications.createChannel({
+                id: 'general_channel_v1',
+                name: 'Tin nhắn & Thông báo',
+                importance: 4, // High but maybe not Max
+                visibility: 1,
+                sound: 'annc19324_sound.mp3',
+                vibration: true
+            });
+        } catch (e) {
+            console.error("Native Notif Error", e);
+        }
+        return;
+    }
+
+    // === WEB LOGIC ===
     if (!("Notification" in window)) return;
 
     if (Notification.permission === 'granted') {
@@ -18,8 +57,8 @@ export const sendSystemNotification = (title: string, body?: string, icon?: stri
                 icon: icon || '/minian.ico',
                 vibrate: [200, 100, 200],
                 badge: '/minian.ico',
-                tag: 'minian-notification',
-                silent: true // We handle sound manually
+                tag: 'minian-notification', // Stacks on web to prevent spam
+                silent: true // We handle sound manually in Layout
             };
 
             const notification = new Notification(title, options);
