@@ -105,6 +105,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             streamRef.current = null;
         }
         setRemoteStream(null); // Clear remote stream
+
+        if (Capacitor.isNativePlatform()) {
+            LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(e => console.error(e));
+        }
     };
 
     const leaveCall = (reason: 'missed' | 'rejected' | 'ended' | 'canceled' = 'ended') => {
@@ -156,6 +160,9 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             if ("Notification" in window && Notification.permission !== "granted") {
                 Notification.requestPermission();
             }
+            if (Capacitor.isNativePlatform()) {
+                LocalNotifications.requestPermissions();
+            }
         });
 
         socket.on('call_incoming', async (data) => {
@@ -175,14 +182,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             if (Capacitor.isNativePlatform()) {
                 // Schedule Local Notification
                 try {
-                    await LocalNotifications.requestPermissions();
+                    // Permissions requested on mount
                     await LocalNotifications.schedule({
                         notifications: [{
                             title: `📞 Cuộc gọi từ ${data.name || "Người dùng"}`,
                             body: "Nhấn để mở ứng dụng và trả lời",
                             id: 1,
                             schedule: { at: new Date(Date.now() + 100) }, // Now
-                            sound: undefined, // Use default or configure 'annc19324_sound.wav' if mapped
+                            sound: 'annc19324_sound.mp3',
                             actionTypeId: 'OPEN_APP_ACTION',
                             extra: { type: 'call_incoming' },
                             channelId: 'calls_channel_v3',
@@ -195,7 +202,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                         name: 'Call Notifications V3',
                         importance: 5, // High
                         visibility: 1,
-                        sound: 'annc19324_sound.mp3', // Requires file in res/raw (already there)
+                        sound: 'annc19324_sound.mp3',
                         vibration: true
                     });
                 } catch (e) {
@@ -231,16 +238,18 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
 
-            // Play Ringtone (Common)
-            try {
-                if (ringtoneRef.current) ringtoneRef.current.pause();
-                ringtoneRef.current = new Audio('/annc19324_sound.mp3');
-                ringtoneRef.current.loop = true;
-                const playPromise = ringtoneRef.current.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(e => { console.error("Ringtone error:", e); });
-                }
-            } catch (e) { }
+            // Play Ringtone (Common) - JS Audio ONLY on Web
+            if (!Capacitor.isNativePlatform()) {
+                try {
+                    if (ringtoneRef.current) ringtoneRef.current.pause();
+                    ringtoneRef.current = new Audio('/annc19324_sound.mp3');
+                    ringtoneRef.current.loop = true;
+                    const playPromise = ringtoneRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => { console.error("Ringtone error:", e); });
+                    }
+                } catch (e) { }
+            }
         });
 
         socket.on('call_accepted', async (data) => {
@@ -441,6 +450,9 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         }
         if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
         stopDialTone();
+        if (Capacitor.isNativePlatform()) {
+            LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(e => console.error(e));
+        }
 
         setCallAccepted(true);
         setIsMinimized(false); // Force maximize on answer

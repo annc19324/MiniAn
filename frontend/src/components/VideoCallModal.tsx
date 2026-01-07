@@ -52,16 +52,17 @@ export default function VideoCallModal() {
         return (
             <>
                 {/* Global Top Banner for Easy Return */}
+                {/* Global Top Banner for Easy Return - Moved to bottom above nav to avoid header overlap */}
                 <div
                     onClick={() => setIsMinimized(false)}
-                    className="fixed top-[60px] md:top-0 left-0 right-0 h-10 bg-green-600 text-white flex items-center justify-center text-sm font-bold z-[10000] cursor-pointer shadow-md animate-fade-in hover:bg-green-700 transition-colors"
+                    className="fixed bottom-[90px] left-4 right-4 h-12 bg-green-600 text-white flex items-center justify-center text-sm font-bold z-[10000] cursor-pointer shadow-lg rounded-xl animate-fade-in hover:bg-green-700 transition-colors border border-green-400/30 backdrop-blur-md"
                 >
-                    <Phone size={16} className="mr-2 animate-bounce" />
-                    Đang trong cuộc gọi - Nhấn để quay lại
+                    <Phone size={18} className="mr-2 animate-bounce" />
+                    Đang gọi - Nhấn để quay lại
                 </div>
 
-                {/* Mini Floating Video */}
-                <div className="fixed bottom-24 right-4 w-32 h-44 md:bottom-4 md:right-4 md:w-64 md:h-40 bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 z-[9999] group animate-fade-in ring-1 ring-white/10">
+                {/* Mini Floating Video - Moved to Top Right below header */}
+                <div className="fixed top-28 right-4 w-32 h-44 md:bottom-4 md:right-4 md:top-auto md:w-64 md:h-40 bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 z-[9999] group animate-fade-in ring-1 ring-white/10">
                     <video
                         ref={userVideo}
                         autoPlay
@@ -98,7 +99,7 @@ export default function VideoCallModal() {
             {callAccepted && !callEnded && (
                 <button
                     onClick={() => setIsMinimized(true)}
-                    className="absolute top-4 left-4 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all z-50 group border border-white/10"
+                    className="absolute top-14 left-4 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all z-50 group border border-white/10 shadow-lg"
                     title="Thu nhỏ"
                 >
                     <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />

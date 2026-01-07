@@ -10,6 +10,8 @@ import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { getConversations } from '../../services/api';
 import { sendSystemNotification, playNotificationSound } from '../../utils/notificationUtils';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -47,6 +49,9 @@ export default function Layout() {
 
     useEffect(() => {
         fetchLeaderboard();
+        if (Capacitor.isNativePlatform()) {
+            LocalNotifications.requestPermissions();
+        }
     }, []);
     useEffect(() => {
         if (!user) return;
