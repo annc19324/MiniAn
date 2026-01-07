@@ -13,6 +13,7 @@ import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import chatRoutes from './routes/chatRoutes';
+import { sendPushNotification } from './controllers/pushController';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -86,6 +87,8 @@ app.set('io', io); // Make io accessible in controllers via req.app.get('io')
 
 // Map UserId -> Set<SocketId>
 const userSocketMap = new Map<number, Set<string>>();
+// Map ReceiverId -> CallData (Pending calls for users who are offline/background)
+const pendingCalls = new Map<number, any>();
 
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
@@ -111,6 +114,14 @@ io.on("connection", (socket) => {
                     data: { isOnline: true }
                 });
                 socket.broadcast.emit('user_status_change', { userId: uid, isOnline: true });
+                socket.broadcast.emit('user_status_change', { userId: uid, isOnline: true });
+            }
+
+            // Check for pending calls (Call waiting while offline/background)
+            const pendingCall = pendingCalls.get(uid);
+            if (pendingCall) {
+                console.log(`Delivering pending call to ${uid}`);
+                socket.emit("call_incoming", pendingCall);
             }
         } catch (e) {
             console.error("Error updating online status:", e);
@@ -137,6 +148,13 @@ io.on("connection", (socket) => {
                     }
                 }
             }
+
+            // Cleanup pending calls initiated by this user
+            for (const [receiverId, callData] of pendingCalls.entries()) {
+                if (callData.fromUser === uid) {
+                    pendingCalls.delete(receiverId);
+                }
+            }
         }
     });
 
@@ -150,6 +168,9 @@ io.on("connection", (socket) => {
     // WebRTC Signaling Events
     socket.on('call_user', (data) => {
         const { userToCall, signalData, fromUser } = data;
+        // Store pending call
+        pendingCalls.set(Number(userToCall), data);
+
         const targetSockets = userSocketMap.get(Number(userToCall));
         if (targetSockets) {
             targetSockets.forEach(socketId => {
@@ -157,6 +178,13 @@ io.on("connection", (socket) => {
                 io.to(socketId).emit("call_incoming", data); // Forward full data
             });
         }
+
+        // Always send Web Push (Background/Offline support)
+        sendPushNotification(Number(userToCall), {
+            title: `Cuộc gọi video từ ${data.name || "Minian User"}`,
+            body: "Nhấn để trả lời ngay",
+            url: "/" // Opens app root, PWA handles navigation
+        }).catch(err => console.error("Call Push Error:", err));
     });
 
     socket.on("answer_call", (data) => {
@@ -182,6 +210,7 @@ io.on("connection", (socket) => {
 
     socket.on("end_call", (data) => {
         const { to } = data;
+        pendingCalls.delete(Number(to)); // Cleanup pending call
         const targetSockets = userSocketMap.get(Number(to));
         if (targetSockets) {
             targetSockets.forEach(socketId => {
