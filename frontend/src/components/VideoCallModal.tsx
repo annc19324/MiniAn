@@ -5,7 +5,7 @@ import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
 export default function VideoCallModal() {
     const {
         call, callAccepted, callEnded, isCalling, callInfo,
-        myVideo, userVideo, stream,
+        myVideo, userVideo, stream, remoteStream,
         answerCall, leaveCall, toggleAudio, toggleVideo,
         isMyAudioOff, isMyVideoOff
     } = useCall();
@@ -15,7 +15,14 @@ export default function VideoCallModal() {
             console.log("Attaching stream to local video");
             myVideo.current.srcObject = stream;
         }
-    }, [stream, callAccepted, isCalling]); // Re-run when view changes
+    }, [stream, callAccepted, isCalling]);
+
+    useEffect(() => {
+        if (userVideo.current && remoteStream) {
+            console.log("Attaching remote stream to user video");
+            userVideo.current.srcObject = remoteStream;
+        }
+    }, [remoteStream, callAccepted, isCalling]); // Re-run when view changes
 
     // Determine if we should show the modal
     const showModal = (call?.isReceivedCall && !callAccepted) || (callAccepted && !callEnded) || isCalling;

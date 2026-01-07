@@ -14,6 +14,7 @@ interface CallContextType {
     myVideo: React.RefObject<HTMLVideoElement | null>;
     userVideo: React.RefObject<HTMLVideoElement | null>;
     stream: MediaStream | null;
+    remoteStream: MediaStream | null; // Added state
     callInfo: { name: string; avatar?: string } | null;
     callUser: (user: { id: number; name: string; avatar?: string }, conversationId?: number) => void;
     answerCall: () => void;
@@ -40,6 +41,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const [callAccepted, setCallAccepted] = useState(false);
     const [callEnded, setCallEnded] = useState(false);
     const [stream, setStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null); // Added state
     const [isMyVideoOff, setIsMyVideoOff] = useState(false);
     const [isMyAudioOff, setIsMyAudioOff] = useState(false);
     const [callInfo, setCallInfo] = useState<{ name: string; avatar?: string } | null>(null);
@@ -87,6 +89,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             setStream(null);
             streamRef.current = null;
         }
+        setRemoteStream(null); // Clear remote stream
     };
 
     const leaveCall = (reason: 'missed' | 'rejected' | 'ended' | 'canceled' = 'ended') => {
@@ -162,7 +165,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         });
 
         socket.on('call_accepted', async (data) => {
-            console.log("Call Accepted Info:", data);
+            console.log("Call Accepted Info DEBUG:", data);
             setCallAccepted(true);
             setIsCalling(false);
 
@@ -243,8 +246,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
         peer.ontrack = (event) => {
             console.log("Received Remote Stream");
+            const remote = event.streams[0];
+            setRemoteStream(remote); // Update state to trigger UI effects
             if (userVideo.current) {
-                userVideo.current.srcObject = event.streams[0];
+                userVideo.current.srcObject = remote;
             }
         };
 
@@ -332,10 +337,18 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             await peer.setLocalDescription(answer);
 
             if (socketRef.current) {
+                console.log("Sending answer with info embedded:", user.fullName || user.username);
+                // Embed info into signal to ensure it passes through old backend logic
+                const signalWithInfo = {
+                    ...answer,
+                    name: user.fullName || user.username,
+                    avatar: getAvatarUrl(user.avatar)
+                };
+
                 socketRef.current.emit("answer_call", {
                     to: call.from,
-                    signal: answer,
-                    name: user.fullName || user.username,
+                    signal: signalWithInfo,
+                    name: user.fullName || user.username, // Send separately too just in case
                     avatar: getAvatarUrl(user.avatar)
                 });
             }
@@ -367,6 +380,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             myVideo,
             userVideo,
             stream,
+            remoteStream, // Export
             callInfo,
             callUser,
             answerCall,
