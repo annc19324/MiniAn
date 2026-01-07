@@ -63,6 +63,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const ringtoneRef = useRef<HTMLAudioElement | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null);
     const dialToneOscRef = useRef<OscillatorNode | null>(null);
+    const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null); // Added
 
     // Define helper to clear resources
     const stopDialTone = () => {
@@ -79,6 +80,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const cleanupCall = () => {
+        if (notificationIntervalRef.current) {
+            clearInterval(notificationIntervalRef.current);
+            notificationIntervalRef.current = null;
+        }
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
         stopDialTone();
@@ -160,19 +165,30 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             });
             if (data.conversationId) setConversationId(data.conversationId);
 
-            // Trigger System Notification
             if ("Notification" in window && Notification.permission === "granted") {
-                const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
-                    body: "Nhấn để quay lại cuộc gọi",
-                    icon: getAvatarUrl(data.avatar),
-                    tag: "call_incoming",
-                    requireInteraction: true
-                });
-                notif.onclick = () => {
-                    window.focus();
-                    // If minimized, restore?
-                    setIsMinimized(false);
+                const showNotification = () => {
+                    if (document.visibilityState === 'visible') return; // Don't spam if app is open
+
+                    // Vibrate
+                    if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
+
+                    const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
+                        body: "Nhấn để trả lời ngay",
+                        icon: getAvatarUrl(data.avatar),
+                        tag: "call_incoming", // Prevents stacking, updates existing
+                        renotify: true, // Vibrate/Sound again!
+                        requireInteraction: true,
+                        silent: false
+                    });
+                    notif.onclick = () => {
+                        window.focus();
+                        setIsMinimized(false);
+                        if (notificationIntervalRef.current) clearInterval(notificationIntervalRef.current);
+                    };
                 };
+
+                showNotification(); // Initial
+                notificationIntervalRef.current = setInterval(showNotification, 4000); // Loop to simulate ringing
             }
 
             // Play Ringtone
@@ -378,6 +394,10 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
     const answerCall = async () => {
         if (!user) return;
+        if (notificationIntervalRef.current) {
+            clearInterval(notificationIntervalRef.current);
+            notificationIntervalRef.current = null;
+        }
         if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
         stopDialTone();
 
