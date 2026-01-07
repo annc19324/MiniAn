@@ -78,7 +78,7 @@ interface Conversation {
 
 export default function Chat() {
     const { user } = useAuth();
-    const { callUser } = useCall();
+    const { callUser, returnToCall, isCalling, callAccepted, callEnded, call } = useCall();
     const location = useLocation();
     const navigate = useNavigate();
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -634,6 +634,22 @@ export default function Chat() {
                                             <span className={`text-xs ${getUserStatusColor(activeConversation?.isOnline)}`}>
                                                 {getUserStatusText(activeConversation?.isOnline, activeConversation?.lastSeen)}
                                             </span>
+                                            {((callAccepted && !callEnded) || isCalling) && call?.conversationId === activeConversation?.id && (
+                                                <div
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        returnToCall();
+                                                    }}
+                                                    className="flex items-center gap-1.5 text-xs text-green-500 font-bold mt-1 cursor-pointer hover:underline animate-fade-in"
+                                                >
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                    </span>
+                                                    Quay lại cuộc gọi
+                                                </div>
+                                            )}
                                         </div>
                                     </Link>
                                 )}

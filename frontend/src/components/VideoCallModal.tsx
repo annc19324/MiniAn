@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useCall } from '../context/CallContext';
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Maximize2, ArrowLeft } from 'lucide-react';
 
 export default function VideoCallModal() {
     const {
         call, callAccepted, callEnded, isCalling, callInfo,
         myVideo, userVideo, stream, remoteStream,
         answerCall, leaveCall, toggleAudio, toggleVideo,
-        isMyAudioOff, isMyVideoOff
+        isMyAudioOff, isMyVideoOff, isMinimized, setIsMinimized
     } = useCall();
 
     useEffect(() => {
@@ -18,24 +18,89 @@ export default function VideoCallModal() {
     }, [stream, callAccepted, isCalling]);
 
     useEffect(() => {
-        if (userVideo.current && remoteStream) {
-            console.log("Attaching remote stream to user video");
-            userVideo.current.srcObject = remoteStream;
-        }
-    }, [remoteStream, callAccepted, isCalling]); // Re-run when view changes
+        // Debounce to ensure DOM is ready
+        const timer = setTimeout(() => {
+            if (userVideo.current && remoteStream) {
+                console.log("Attaching remote stream to user video (Retried)");
+                userVideo.current.srcObject = remoteStream;
+                userVideo.current.play().catch(e => console.error("Play error", e));
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [remoteStream, callAccepted, isCalling, isMinimized]);
 
     // Determine if we should show the modal
     const showModal = (call?.isReceivedCall && !callAccepted) || (callAccepted && !callEnded) || isCalling;
 
     if (!showModal) return null;
 
-    const displayInfo = isCalling ? callInfo : call;
-    const displayName = displayInfo?.name || "Người dùng";
+    // Prioritize callInfo (which contains updated name from accepted event)
+    // If isCalling was true but now false (accepted), we still want callInfo.
+    // Only use 'call' for incoming calls that haven't been accepted yet (callInfo might be null).
+    const displayInfo = (callInfo && callInfo.name) ? callInfo : call;
+
+    const displayName = (displayInfo?.name && displayInfo.name !== "Người dùng") ? displayInfo.name : "Người dùng";
     const displayAvatar = displayInfo?.avatar;
     const displayInitial = (displayName?.[0] || "?").toUpperCase();
 
+    // Minimized View
+    if (showModal && isMinimized && callAccepted && !callEnded) {
+        return (
+            <>
+                {/* Global Top Banner for Easy Return */}
+                <div
+                    onClick={() => setIsMinimized(false)}
+                    className="fixed top-[60px] md:top-0 left-0 right-0 h-10 bg-green-600 text-white flex items-center justify-center text-sm font-bold z-[10000] cursor-pointer shadow-md animate-fade-in hover:bg-green-700 transition-colors"
+                >
+                    <Phone size={16} className="mr-2 animate-bounce" />
+                    Đang trong cuộc gọi - Nhấn để quay lại
+                </div>
+
+                {/* Mini Floating Video */}
+                <div className="fixed bottom-24 right-4 w-32 h-44 md:bottom-4 md:right-4 md:w-64 md:h-40 bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 z-[9999] group animate-fade-in ring-1 ring-white/10">
+                    <video
+                        ref={userVideo}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
+                        <button
+                            onClick={() => setIsMinimized(false)}
+                            className="p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 shadow-lg scale-90 hover:scale-100 transition-all"
+                            title="Phóng to"
+                        >
+                            <Maximize2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => leaveCall('ended')}
+                            className="p-2 bg-red-600 rounded-full text-white hover:bg-red-700 shadow-lg scale-90 hover:scale-100 transition-all"
+                            title="Kết thúc"
+                        >
+                            <PhoneOff size={20} />
+                        </button>
+                    </div>
+                    <div className="absolute top-1 left-2 text-[10px] text-white/80 font-bold truncate max-w-[80px] drop-shadow-md">
+                        {displayName}
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     return (
-        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[9999] flex flex-col items-center justify-center animate-fade-in text-white p-4">
+        <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[9999] flex flex-col items-center justify-center animate-fade-in text-white p-4">
+            {/* Minimize Button */}
+            {callAccepted && !callEnded && (
+                <button
+                    onClick={() => setIsMinimized(true)}
+                    className="absolute top-4 left-4 p-3 bg-slate-800/50 hover:bg-slate-700 rounded-full text-white transition-all backdrop-blur-sm border border-white/10 z-50 group"
+                    title="Thu nhỏ"
+                >
+                    <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="sr-only">Thu nhỏ</span>
+                </button>
+            )}
 
             {/* Active Call UI */}
             {callAccepted && !callEnded ? (
@@ -49,7 +114,7 @@ export default function VideoCallModal() {
                             playsInline
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-4 left-4 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20">
+                        <div className="absolute top-20 left-4 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20">
                             {displayAvatar ? (
                                 <img src={displayAvatar} className="w-8 h-8 rounded-full border border-white/20" />
                             ) : (
@@ -61,8 +126,8 @@ export default function VideoCallModal() {
                         </div>
                     </div>
 
-                    {/* Local Video (PiP) */}
-                    <div className="absolute bottom-24 right-4 w-32 h-44 md:w-48 md:h-72 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-600/50 z-30 group ring-1 ring-white/10">
+                    {/* Local Video (PiP) - Start at Top Right */}
+                    <div className="absolute top-20 right-4 w-32 h-44 md:w-48 md:h-72 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-600/50 z-30 group ring-1 ring-white/10 md:top-4">
                         <video
                             ref={myVideo}
                             autoPlay

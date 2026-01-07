@@ -19,8 +19,11 @@ interface CallContextType {
     callUser: (user: { id: number; name: string; avatar?: string }, conversationId?: number) => void;
     answerCall: () => void;
     leaveCall: (reason?: 'missed' | 'rejected' | 'ended' | 'canceled') => void;
+    returnToCall: () => void;
     toggleAudio: () => void;
     toggleVideo: () => void;
+    isMinimized: boolean; // Added
+    setIsMinimized: (value: boolean) => void; // Added
     isMyVideoOff: boolean;
     isMyAudioOff: boolean;
 }
@@ -44,6 +47,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null); // Added state
     const [isMyVideoOff, setIsMyVideoOff] = useState(false);
     const [isMyAudioOff, setIsMyAudioOff] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false); // Added state
     const [callInfo, setCallInfo] = useState<{ name: string; avatar?: string } | null>(null);
     const [conversationId, setConversationId] = useState<number | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -166,13 +170,44 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
         socket.on('call_accepted', async (data) => {
             console.log("Call Accepted Info DEBUG:", data);
+            toast.success(`Connected with ${data.name || "Unknown"}`);
+
+            // Robust Name Fetching
+            if (data.name && data.name !== "Người dùng") {
+                setCallInfo({ name: data.name, avatar: data.avatar });
+            } else {
+                // Fallback: Fetch profile directly
+                try {
+                    // We need the other user ID. 
+                    // 'call' object might still be 'connected' state, so use 'call.from' if we are receiver?
+                    // But here we are the CALLER (Call Accepted usually means we called).
+                    // If we are caller, who did we call? 'otherUserId' might be set.
+                    // Or use 'call.to'? No, call object is local.
+                    // The 'data' from 'call_accepted' might contain 'from'?
+                    // Usually 'call_accepted' is sent to the caller.
+                    // We can rely on 'otherUserId' state if set in 'callUser'.
+
+                    // If we have otherUserId, fetch it.
+                    // Use ID from payload (embedded in signal or direct) to avoid closure staleness
+                    const targetId = data.fromId || data.signal?.fromId || (data.type === 'answer' && data.fromId);
+
+                    if (targetId) {
+                        const { getProfile } = await import('../services/api');
+                        const res = await getProfile(targetId);
+                        if (res.data) {
+                            setCallInfo({ name: res.data.fullName || res.data.username, avatar: getAvatarUrl(res.data.avatar) });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch profile for call info", e);
+                }
+            }
+
             setCallAccepted(true);
             setIsCalling(false);
 
-            const signal = data.signal || data;
-            if (data.name) {
-                setCallInfo({ name: data.name, avatar: data.avatar });
-            }
+            // Ensure we are not minimized on start
+            setIsMinimized(false);
 
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
@@ -180,9 +215,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
             if (connectionRef.current) {
                 try {
+                    // If data is just signal
+                    const signal = data.signal || data;
                     await connectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
                 } catch (err) {
-                    console.error("Error setting remote desc on answer:", err);
+                    console.error("Error setting remote description", err);
                 }
             }
         });
@@ -273,6 +310,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         setCallInfo(targetUser);
         setOtherUserId(targetUser.id);
         if (cid) setConversationId(cid);
+        setIsMinimized(false); // Force maximize on new call
 
         const peer = createPeer(targetUser.id, true);
 
@@ -323,6 +361,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         stopDialTone();
 
         setCallAccepted(true);
+        setIsMinimized(false); // Force maximize on answer
         const currentStream = await getMedia();
         if (!currentStream) return;
 
@@ -330,9 +369,13 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         setOtherUserId(call.from);
 
         const peer = createPeer(call.from, false);
+        connectionRef.current = peer;
 
         try {
             await peer.setRemoteDescription(new RTCSessionDescription(call.signal));
+            // Tracks are already added by createPeer if stream exists
+
+
             const answer = await peer.createAnswer();
             await peer.setLocalDescription(answer);
 
@@ -342,7 +385,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 const signalWithInfo = {
                     ...answer,
                     name: user.fullName || user.username,
-                    avatar: getAvatarUrl(user.avatar)
+                    avatar: getAvatarUrl(user.avatar),
+                    fromId: user.id
                 };
 
                 socketRef.current.emit("answer_call", {
@@ -355,6 +399,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         } catch (error) {
             console.error("Answer Error:", error);
             toast.error("Lỗi khi trả lời cuộc gọi");
+        }
+    };
+
+    const returnToCall = () => {
+        // Force UI state to show modal if call object exists
+        if (call) {
+            if (call.isReceivedCall) setCallAccepted(true);
+            else setIsCalling(true);
         }
     };
 
@@ -385,10 +437,13 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             callUser,
             answerCall,
             leaveCall,
+            returnToCall, // Added
             toggleAudio,
             toggleVideo,
             isMyAudioOff,
             isMyVideoOff,
+            isMinimized, // Added
+            setIsMinimized, // Added
             isCalling
         }}>
             {children}
