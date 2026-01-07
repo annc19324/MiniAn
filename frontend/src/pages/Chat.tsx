@@ -645,8 +645,16 @@ export default function Chat() {
                                             toast.error("Tính năng gọi nhóm chưa được hỗ trợ");
                                             return;
                                         }
-                                        const targetId = activeConversation?.otherMemberId || activeConversation?.members?.find(m => m.id !== user?.id)?.id;
-                                        if (targetId) callUser(targetId);
+                                        const target = activeConversation?.members?.find(m => m.id !== user?.id);
+                                        const targetId = target?.id || activeConversation?.otherMemberId;
+
+                                        if (targetId) {
+                                            callUser({
+                                                id: targetId,
+                                                name: target?.fullName || target?.username || activeConversation?.name || "Người dùng",
+                                                avatar: getAvatarUrl(target?.avatar || activeConversation?.avatar)
+                                            }, activeConversation?.id);
+                                        }
                                     }}
                                     className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer p-1"
                                     title="Gọi Video"

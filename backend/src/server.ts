@@ -160,12 +160,12 @@ io.on("connection", (socket) => {
     });
 
     socket.on("answer_call", (data) => {
-        const { to, signal } = data;
+        const { to, signal, name, avatar } = data;
         const targetSockets = userSocketMap.get(Number(to));
         if (targetSockets) {
             targetSockets.forEach(socketId => {
                 console.log(`Forwarding answer to ${to}`);
-                io.to(socketId).emit("call_accepted", signal);
+                io.to(socketId).emit("call_accepted", { signal, name, avatar });
             });
         }
     });

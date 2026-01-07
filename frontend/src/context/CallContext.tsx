@@ -3,20 +3,21 @@ import type { ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
+import { getAvatarUrl } from '../utils/avatarUtils';
+import { sendMessage } from '../services/api';
 
 interface CallContextType {
-    call: { isReceivedCall: boolean; from: number; name?: string; avatar?: string; signal: any } | null;
+    call: { isReceivedCall: boolean; from: number; name?: string; avatar?: string; signal: any; conversationId?: number } | null;
     callAccepted: boolean;
     callEnded: boolean;
     isCalling: boolean;
     myVideo: React.RefObject<HTMLVideoElement | null>;
     userVideo: React.RefObject<HTMLVideoElement | null>;
     stream: MediaStream | null;
-    name: string;
-    setName: (name: string) => void;
-    callUser: (id: number) => void;
+    callInfo: { name: string; avatar?: string } | null;
+    callUser: (user: { id: number; name: string; avatar?: string }, conversationId?: number) => void;
     answerCall: () => void;
-    leaveCall: () => void;
+    leaveCall: (reason?: 'missed' | 'rejected' | 'ended' | 'canceled') => void;
     toggleAudio: () => void;
     toggleVideo: () => void;
     isMyVideoOff: boolean;
@@ -41,7 +42,9 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const [stream, setStream] = useState<MediaStream | null>(null);
     const [isMyVideoOff, setIsMyVideoOff] = useState(false);
     const [isMyAudioOff, setIsMyAudioOff] = useState(false);
-    const [name, setName] = useState('');
+    const [callInfo, setCallInfo] = useState<{ name: string; avatar?: string } | null>(null);
+    const [conversationId, setConversationId] = useState<number | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [otherUserId, setOtherUserId] = useState<number | null>(null);
     const [isCalling, setIsCalling] = useState(false);
@@ -53,7 +56,58 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const streamRef = useRef<MediaStream | null>(null);
     const ringtoneRef = useRef<HTMLAudioElement | null>(null);
 
-    // Initialize Socket and Stream
+    // Define helper to clear resources
+    const cleanupCall = () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
+
+        if (connectionRef.current) {
+            connectionRef.current.close();
+            connectionRef.current = null;
+        }
+
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            setStream(null);
+            streamRef.current = null;
+        }
+    };
+
+    const leaveCall = (reason: 'missed' | 'rejected' | 'ended' | 'canceled' = 'ended') => {
+        cleanupCall();
+
+        // If we are connected and remote ends, we don't need to emit end again.
+        // But if reason is 'ended', it means user clicked Hangup.
+        let targetId = otherUserId;
+        if (!targetId && call?.from) targetId = call.from;
+
+        if (socketRef.current && targetId) {
+            socketRef.current.emit("end_call", { to: targetId });
+        }
+
+        // Send System Message
+        console.log("Leaving call, reason:", reason, "CID:", conversationId);
+        if (conversationId) {
+            let msg = "";
+            if (reason === 'missed') msg = "Bạn đã bỏ lỡ cuộc gọi video";
+            else if (reason === 'rejected') msg = "Đã từ chối cuộc gọi video";
+            else if (reason === 'ended' && callAccepted) msg = "Cuộc gọi video đã kết thúc";
+
+            if (msg) {
+                sendMessage(conversationId, "_" + msg + "_").catch(e => console.error("Msg Error", e));
+            }
+        }
+
+        setCallEnded(true);
+        setIsCalling(false);
+        setCall(null);
+        setCallAccepted(false);
+        setOtherUserId(null);
+        setCallInfo(null);
+        setConversationId(null);
+    };
+
+    // Initialize Socket
     useEffect(() => {
         if (!user) return;
 
@@ -69,24 +123,39 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             console.log("Receive Call Incoming:", data);
             setCall({
                 isReceivedCall: true,
-                from: data.from,
+                from: data.fromUser,
                 name: data.name,
                 avatar: data.avatar,
-                signal: data.signalData
+                signal: data.signalData,
+                conversationId: data.conversationId
             });
+            if (data.conversationId) setConversationId(data.conversationId);
+
             // Play Ringtone
             try {
                 if (ringtoneRef.current) ringtoneRef.current.pause();
-                ringtoneRef.current = new Audio('https://www.soundjay.com/phone/phone-ringing-1.mp3');
+                ringtoneRef.current = new Audio('/annc19324_sound.mp3');
                 ringtoneRef.current.loop = true;
-                ringtoneRef.current.play().catch(e => console.log("Ringtone blocked", e));
+                const playPromise = ringtoneRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') console.error("Ringtone error:", e);
+                    });
+                }
             } catch (e) { }
         });
 
-        socket.on('call_accepted', async (signal) => {
-            console.log("Call Accepted, setting remote desc");
+        socket.on('call_accepted', async (data) => {
+            console.log("Call Accepted Info:", data);
             setCallAccepted(true);
             setIsCalling(false);
+
+            const signal = data.signal || data;
+            if (data.name) {
+                setCallInfo({ name: data.name, avatar: data.avatar });
+            }
+
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
             if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
 
             if (connectionRef.current) {
@@ -99,7 +168,15 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         });
 
         socket.on('call_ended', () => {
-            leaveCall(false); // Do not emit end_call again if received
+            // Remote ended. Pure cleanup.
+            cleanupCall();
+            setCallEnded(true);
+            setIsCalling(false);
+            setCall(null);
+            setCallAccepted(false);
+            setOtherUserId(null);
+            setCallInfo(null);
+            setConversationId(null);
             toast('Cuộc gọi đã kết thúc');
         });
 
@@ -164,37 +241,52 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         return peer;
     };
 
-    const callUser = async (id: number) => {
+    const callUser = async (targetUser: { id: number; name: string; avatar?: string }, cid?: number) => {
         const currentStream = await getMedia();
         if (!currentStream) return;
 
         setCallAccepted(false);
         setCallEnded(false);
         setIsCalling(true);
-        setOtherUserId(id);
+        setCallInfo(targetUser);
+        setOtherUserId(targetUser.id);
+        if (cid) setConversationId(cid);
 
-        const peer = createPeer(id, true);
+        const peer = createPeer(targetUser.id, true);
 
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
 
         if (socketRef.current && user) {
             socketRef.current.emit("call_user", {
-                userToCall: id,
+                userToCall: targetUser.id,
                 signalData: offer,
                 fromUser: user.id,
                 name: user.fullName || user.username,
-                avatar: user.avatar
+                avatar: getAvatarUrl(user.avatar), // Fix Avatar
+                conversationId: cid
             });
         }
+
+        // Timeout 60s
+        timeoutRef.current = setTimeout(() => {
+            toast("Không có phản hồi");
+            leaveCall('missed');
+        }, 60000);
 
         // Start Dial Tone
         try {
             if (ringtoneRef.current) ringtoneRef.current.pause();
-            ringtoneRef.current = new Audio('https://www.soundjay.com/phone/phone-calling-1.mp3');
+            ringtoneRef.current = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e0/Synthesized_Device_Dial_Tone.ogg');
+            ringtoneRef.current.volume = 1.0;
             ringtoneRef.current.loop = true;
-            ringtoneRef.current.play().catch(e => console.log("Dial tone blocked", e));
-        } catch (e) { }
+            const playPromise = ringtoneRef.current.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') console.error("Dial tone error:", e);
+                });
+            }
+        } catch (e) { console.error("Audio init error", e); }
     };
 
     const answerCall = async () => {
@@ -217,39 +309,15 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             if (socketRef.current) {
                 socketRef.current.emit("answer_call", {
                     to: call.from,
-                    signal: answer
+                    signal: answer,
+                    name: user.fullName || user.username,
+                    avatar: getAvatarUrl(user.avatar)
                 });
             }
         } catch (error) {
             console.error("Answer Error:", error);
             toast.error("Lỗi khi trả lời cuộc gọi");
         }
-    };
-
-    const leaveCall = (emitEnd = true) => {
-        if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
-
-        setCallEnded(true);
-        setIsCalling(false);
-        if (connectionRef.current) {
-            connectionRef.current.close();
-            connectionRef.current = null;
-        }
-
-        // Stop all tracks
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            setStream(null);
-            streamRef.current = null;
-        }
-
-        if (emitEnd && socketRef.current && otherUserId) {
-            socketRef.current.emit("end_call", { to: otherUserId });
-        }
-
-        setCall(null);
-        setCallAccepted(false);
-        setOtherUserId(null);
     };
 
     const toggleAudio = () => {
@@ -274,8 +342,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             myVideo,
             userVideo,
             stream,
-            name,
-            setName,
+            callInfo,
             callUser,
             answerCall,
             leaveCall,
