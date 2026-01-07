@@ -1,6 +1,6 @@
 // src/controllers/chatController.ts
 import { Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendPushNotification } from './pushController';
 import { uploadMedia } from '../utils/upload';
@@ -47,10 +47,10 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                     where: {
                         roomId: room.id,
                         senderId: { not: userId },
-                        isRead: false,
-                        NOT: {
-                            deletedBy: { has: userId }
-                        }
+                        NOT: [
+                            { readBy: { has: userId } },
+                            { deletedBy: { has: userId } }
+                        ]
                     }
                 });
             } catch (err) {
@@ -79,6 +79,8 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
                     name: otherMember?.fullName || 'Unknown User',
                     avatar: otherMember?.avatar,
                     isGroup: false,
+                    memberCount: room.users.length,
+                    members: room.users.map(u => u.user),
                     otherMemberId: otherMember?.id,
                     isOnline: otherMember?.showActivityStatus ? otherMember?.isOnline : false,
                     lastSeen: otherMember?.showActivityStatus ? otherMember?.lastSeen : null,
@@ -256,16 +258,14 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
     try {
         // Update tất cả tin nhắn trong room mà người gửi KHÔNG phải là user hiện tại
         // và chưa được đọc
-        await prisma.message.updateMany({
-            where: {
-                roomId: Number(roomId),
-                senderId: { not: userId },
-                isRead: false
-            },
-            data: {
-                isRead: true
-            }
-        });
+        // Update readBy array using raw query for atomicity and checking existence
+        await prisma.$executeRaw`
+            UPDATE messages 
+            SET "readBy" = array_append("readBy", ${userId}), "isRead" = true
+            WHERE "roomId" = ${Number(roomId)} 
+            AND "senderId" != ${userId} 
+            AND NOT (${userId} = ANY("readBy"))
+        `;
 
         // Emit socket event
         const io = req.app.get('io');

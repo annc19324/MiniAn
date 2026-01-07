@@ -1,5 +1,5 @@
 // src/pages/Chat.tsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
@@ -12,7 +12,7 @@ import ImageModal from '../components/ImageModal';
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 
 interface Message {
     id: number;
@@ -33,6 +33,7 @@ interface Message {
     deletedBy: number[];
     isRecalled: boolean;
     isEdited?: boolean;
+    readBy?: number[];
 }
 
 interface ConfirmModalState {
@@ -77,6 +78,7 @@ interface Conversation {
 export default function Chat() {
     const { user } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [activeRoomId, setActiveRoomId] = useState<number | null>(null);
@@ -85,12 +87,14 @@ export default function Chat() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [viewingImage, setViewingImage] = useState<string | null>(null);
+    const [viewingSeenBy, setViewingSeenBy] = useState<number[] | null>(null); // List of user IDs who read the message
     const [socket, setSocket] = useState<Socket | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
     const [showGroupManagement, setShowGroupManagement] = useState(false);
+    const [seenUsersModalOpen, setSeenUsersModalOpen] = useState(false); // Modal visibility
 
     // Pagination
     const [hasMore, setHasMore] = useState(true);
@@ -123,6 +127,18 @@ export default function Chat() {
     }, []);
 
     // Handle Start Chat from Profile/Search (via state)
+    const fetchConvos = useCallback(async () => {
+        try {
+            const res = await getConversations();
+            setConversations(res.data);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách chat", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Handle Start Chat from Profile/Search (via state)
     useEffect(() => {
         const startChat = async () => {
             if (location.state?.targetUserId) {
@@ -138,21 +154,10 @@ export default function Chat() {
             }
         };
 
-        const fetchConvos = async () => {
-            try {
-                const res = await getConversations();
-                setConversations(res.data);
-            } catch (error) {
-                console.error("Lỗi lấy danh sách chat", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchConvos().then(() => {
             if (location.state?.targetUserId) startChat();
         });
-    }, [location.state]); // Depend on location.state so it runs when navigating with state
+    }, [location.state, fetchConvos]);
 
     // Clear messages when switching rooms
     useEffect(() => {
@@ -231,9 +236,16 @@ export default function Chat() {
             if (data.readerId === user?.id) return;
 
             if (Number(data.roomId) === activeRoomId) {
-                // Sent messages read by other
+                // Update readBy for messages
                 setMessages((prev) => prev.map(msg => {
-                    if (msg.senderId === user?.id) return { ...msg, isRead: true };
+                    // Update if sender is not the reader (cannot read own message in this context)
+                    if (msg.senderId !== data.readerId) {
+                        const currentReadBy = msg.readBy || [];
+                        if (!currentReadBy.includes(data.readerId)) {
+                            return { ...msg, isRead: true, readBy: [...currentReadBy, data.readerId] };
+                        }
+                        return { ...msg, isRead: true };
+                    }
                     return msg;
                 }));
             }
@@ -271,6 +283,7 @@ export default function Chat() {
         socket.on('message_deleted', handleMessageDeleted);
         socket.on('message_updated', handleMessageUpdated);
         socket.on('user_status_change', handleUserStatusChange);
+        socket.on('refresh_unread', fetchConvos);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
@@ -278,7 +291,10 @@ export default function Chat() {
             socket.off('message_deleted', handleMessageDeleted);
             socket.off('message_updated', handleMessageUpdated);
             socket.off('user_status_change', handleUserStatusChange);
+            socket.off('refresh_unread', fetchConvos);
         };
+
+
     }, [activeRoomId, socket]);
 
     // Scroll Listener for History
@@ -795,7 +811,20 @@ export default function Chat() {
                                                     {format(new Date(msg.createdAt), "HH:mm dd/MM/yyyy", { locale: vi })}
                                                     {isMe && (
                                                         <span className="ml-2">
-                                                            {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                                            {msg.isRead ? (
+                                                                (msg.readBy && msg.readBy.length > 0) ? (
+                                                                    <span
+                                                                        className="cursor-pointer hover:underline hover:text-indigo-500 transition-colors"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setViewingSeenBy(msg.readBy || []);
+                                                                            setSeenUsersModalOpen(true);
+                                                                        }}
+                                                                    >
+                                                                        Đã xem
+                                                                    </span>
+                                                                ) : "Đã xem"
+                                                            ) : "Đã gửi"}
                                                         </span>
                                                     )}
                                                 </div>
@@ -933,6 +962,55 @@ export default function Chat() {
                     />
                 )
             }
+
+            {/* Seen Users Modal */}
+            {seenUsersModalOpen && viewingSeenBy && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSeenUsersModalOpen(false)}>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+                        <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                            <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
+                                <Users size={18} className="text-indigo-500" />
+                                Đã xem bởi
+                            </h3>
+                            <button onClick={() => setSeenUsersModalOpen(false)} className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="max-h-[50vh] overflow-y-auto p-1">
+                            {(() => {
+                                const readers = activeConversation?.members?.filter(m => viewingSeenBy.includes(m.id) && m.id !== user?.id) || [];
+
+                                if (readers.length === 0) {
+                                    return <div className="text-center text-slate-500 py-4 text-xs flex flex-col items-center gap-1">
+                                        <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
+                                            <Users size={16} />
+                                        </div>
+                                        <p>Chưa có ai xem (ngoài bạn)</p>
+                                    </div>;
+                                }
+
+                                return readers.map(member => (
+                                    <div
+                                        key={member.id}
+                                        className="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer group"
+                                        onClick={() => {
+                                            setSeenUsersModalOpen(false);
+                                            navigate(`/profile/${member.id}`);
+                                        }}
+                                    >
+                                        <img src={getAvatarUrl(member.avatar, member.username)} className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-600" alt={member.username} />
+                                        <div>
+                                            <p className="font-semibold text-slate-800 dark:text-white text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{member.fullName}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">@{member.username}</p>
+                                        </div>
+                                    </div>
+                                ));
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ImageModal
                 src={viewingImage}
                 onClose={() => setViewingImage(null)}

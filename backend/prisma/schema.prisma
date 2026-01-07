@@ -152,6 +152,7 @@ model Message {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
   isRead     Boolean  @default(false)
+  readBy     Int[]    @default([])
   deletedBy  Int[]    @default([])
   isRecalled Boolean  @default(false)
   isEdited   Boolean  @default(false)

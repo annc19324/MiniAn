@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import webpush from 'web-push';
 

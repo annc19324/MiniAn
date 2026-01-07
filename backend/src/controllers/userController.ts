@@ -1,6 +1,6 @@
 // src/controllers/userController.ts
 import { Request, Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadImage } from '../utils/upload';
 

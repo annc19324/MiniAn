@@ -1,6 +1,6 @@
 // src/controllers/notificationController.ts
 import { Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 
 // Lấy danh sách thông báo

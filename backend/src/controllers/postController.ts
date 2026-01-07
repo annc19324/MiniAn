@@ -1,6 +1,7 @@
+
 // src/controllers/postController.ts
 import { Request, Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadMedia } from '../utils/upload';
 
@@ -179,7 +180,7 @@ export const createComment = async (req: AuthRequest, res: Response) => {
 // Lấy bài viết của một user cụ thể
 export const getUserPosts = async (req: AuthRequest, res: Response) => {
     const { userId } = req.params;
-    console.log(`[getUserPosts] Request for UserId: ${userId}`);
+    console.log(`[getUserPosts] Request for UserId: ${userId} `);
 
     try {
         const posts = await prisma.post.findMany({
@@ -200,7 +201,7 @@ export const getUserPosts = async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: 'desc' },
         });
 
-        console.log(`[getUserPosts] Found ${posts.length} posts for UserId: ${userId}`);
+        console.log(`[getUserPosts] Found ${posts.length} posts for UserId: ${userId} `);
         res.json(posts);
     } catch (error) {
         console.error('[getUserPosts] Error:', error);

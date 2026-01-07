@@ -1,6 +1,6 @@
 // src/controllers/authController.ts
 import { Request, Response } from 'express';
-import { prisma } from '../server';  // singleton prisma từ server.ts
+import { prisma } from '../db';  // singleton prisma
 import bcrypt from 'bcryptjs';
 import { generateToken } from '../utils/generateToken';
 

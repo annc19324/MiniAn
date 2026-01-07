@@ -1,7 +1,7 @@
 // src/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../server';  // singleton prisma từ server.ts
+import { prisma } from '../db';  // singleton prisma
 
 export interface AuthRequest extends Request {
     user?: any;  // sau này có thể định nghĩa type User chi tiết hơn
