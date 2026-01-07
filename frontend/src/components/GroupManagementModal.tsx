@@ -175,7 +175,7 @@ export default function GroupManagementModal({
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
                     {/* Group Name */}
                     <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Tên nhóm</label>
@@ -250,7 +250,7 @@ export default function GroupManagementModal({
                                 />
                             </div>
                             {searchTerm && (
-                                <div className="mt-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 max-h-32 overflow-y-auto">
+                                <div className="mt-1.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 max-h-32 overflow-y-auto no-scrollbar">
                                     {isSearching ? (
                                         <div className="p-3 text-center text-slate-400 text-xs">Đang tìm kiếm...</div>
                                     ) : searchResults.length === 0 ? (
@@ -278,7 +278,7 @@ export default function GroupManagementModal({
                     {/* Members List */}
                     <div>
                         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Thành viên ({members.length})</label>
-                        <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                        <div className="space-y-1.5 max-h-64 overflow-y-auto no-scrollbar">
                             {members.map(member => {
                                 const isOnline = member.showActivityStatus ? member.isOnline : false;
                                 return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getNotifications, markRead, markAllRead } from '../services/api';
 import { CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,7 +13,7 @@ interface Notification {
     read: boolean;
     createdAt: string;
     postId?: number;
-    commentId?: number; // Added
+    commentId?: number;
     sender?: {
         id: number;
         username: string;
@@ -24,20 +24,35 @@ interface Notification {
 export default function Notifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const observer = useRef<IntersectionObserver | null>(null);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchNotifications();
-    }, []);
+        fetchNotifications(page);
+    }, [page]);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = async (p: number) => {
+        if (p === 1) setLoading(true); else setIsFetchingMore(true);
         try {
-            const res = await getNotifications();
-            setNotifications(res.data);
+            const res = await getNotifications(p, 10);
+            const newData = res.data;
+            if (newData.length < 10) setHasMore(false);
+
+            setNotifications(prev => {
+                if (p === 1) return newData;
+                // Avoid duplicates
+                const existingIds = new Set(prev.map(n => n.id));
+                const uniqueNew = newData.filter((n: Notification) => !existingIds.has(n.id));
+                return [...prev, ...uniqueNew];
+            });
         } catch (error) {
             console.error('Lỗi tải thông báo', error);
         } finally {
             setLoading(false);
+            setIsFetchingMore(false);
         }
     };
 
@@ -59,10 +74,21 @@ export default function Notifications() {
         }
     };
 
-    if (loading) return <div className="text-center p-10 text-slate-400">Đang tải thông báo...</div>;
+    const lastNotifRef = useCallback((node: HTMLDivElement) => {
+        if (loading || isFetchingMore) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) {
+                setPage(prev => prev + 1);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [loading, isFetchingMore, hasMore]);
+
+    if (loading && page === 1) return <div className="text-center p-10 text-slate-400">Đang tải thông báo...</div>;
 
     return (
-        <div className="md:px-4">
+        <div className="md:px-4 pb-10">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-extrabold heading-gradient">Thông báo</h1>
                 <button
@@ -75,20 +101,20 @@ export default function Notifications() {
             </div>
 
             <div className="space-y-3">
-                {notifications.length === 0 ? (
+                {notifications.length === 0 && !loading ? (
                     <div className="glass-card text-center py-10 text-slate-400">
                         Chưa có thông báo nào.
                     </div>
                 ) : (
-                    notifications.map((n) => (
+                    notifications.map((n, index) => (
                         <div
                             key={n.id}
+                            ref={index === notifications.length - 1 ? lastNotifRef : null}
                             onClick={() => {
                                 if (!n.read) handleMarkRead(n.id);
                                 if (n.type === 'follow' && n.sender?.id) {
                                     navigate(`/profile/${n.sender.id}`);
                                 } else if (n.postId) {
-                                    // Navigate to post with hash if commentId exists
                                     navigate(`/post/${n.postId}${n.commentId ? `#comment-${n.commentId}` : ''}`);
                                 }
                             }}
@@ -113,6 +139,8 @@ export default function Notifications() {
                         </div>
                     ))
                 )}
+                {isFetchingMore && <div className="text-center py-4 text-slate-400 text-sm">Đang tải thêm...</div>}
+                {!hasMore && notifications.length > 0 && <div className="text-center py-4 text-slate-400 text-xs">Đã hiển thị hết thông báo</div>}
             </div>
         </div>
     );

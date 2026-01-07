@@ -55,7 +55,7 @@ export const deleteUser = (id: number) => api.delete(`/users/admin/users/${id}`)
 export const adminCreateUser = (data: any) => api.post('/users/admin/users', data);
 
 // ==== Notification Services ====
-export const getNotifications = () => api.get('/notifications');
+export const getNotifications = (page = 1, limit = 10) => api.get(`/notifications?page=${page}&limit=${limit}`);
 export const getUnreadNotificationsCount = () => api.get('/notifications/unread-count');
 export const markRead = (id: number) => api.put(`/notifications/${id}/read`);
 export const markAllRead = () => api.put('/notifications/read-all');

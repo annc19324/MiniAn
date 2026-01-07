@@ -6,24 +6,17 @@ import { AuthRequest } from '../middleware/authMiddleware';
 // Lấy danh sách thông báo
 export const getNotifications = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
 
     try {
         const notifications = await prisma.notification.findMany({
             where: { userId },
-            include: {
-                // Ai tạo ra thông báo (người like, comment)
-                // Lưu ý: trong schema senderId không có relation trực tiếp, ta phải query thêm hoặc sửa schema. 
-                // Tuy nhiên, schema hiện tại: senderId Int?. 
-                // Để đơn giản, ta sẽ lấy thông báo trước, frontend có thể hiện "Ai đó đã like".
-                // Tốt hơn: thêm relation sender vào Notification model nếu chưa có.
-                // Kiểm tra lại schema: Notification có senderId nhưng không có relation 'sender'.
-                // Sửa schema mất công migrate. Ta dùng tạm senderId để fetch user nếu cần, 
-                // hoặc sửa schema ngay bây giờ? 
-                // Schema hiện tại: senderId Int?
-                // Thôi, ta sẽ sửa schema sau nếu cần thiết. Hiện tại trả về list.
-            },
+            include: {},
             orderBy: { createdAt: 'desc' },
-            take: 50,
+            take: limit,
+            skip: skip
         });
 
         // Để hiển thị tên người gửi, ta cần manual populate hoặc sửa schema.
