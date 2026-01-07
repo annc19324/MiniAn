@@ -393,25 +393,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             leaveCall('missed');
         }, 60000);
 
-        // Start Dial Tone (Web Audio API for reliability)
+        // Start Dial Tone (Custom MP3)
         try {
             stopDialTone();
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
-            const ctx = audioCtxRef.current;
-            if (ctx.state === 'suspended') ctx.resume();
-
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            osc.frequency.setValueAtTime(440, ctx.currentTime); // 440Hz "A" note
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            gain.gain.value = 0.1; // Low volume
-
-            osc.start();
-            dialToneOscRef.current = osc;
-        } catch (e) { console.error("Audio init error", e); }
+            if (ringtoneRef.current) ringtoneRef.current.pause();
+            ringtoneRef.current = new Audio('/annc19324_sound.mp3');
+            ringtoneRef.current.loop = true;
+            ringtoneRef.current.play().catch(e => console.error("Dialtone Play Error", e));
+        } catch (e) { console.error("Dialtone Init Error", e); }
     };
 
     const answerCall = async () => {

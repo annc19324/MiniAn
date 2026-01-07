@@ -4,11 +4,14 @@ self.addEventListener('push', function (event) {
         const options = {
             body: payload.body,
             icon: '/minian.ico',
-            badge: '/minian.ico', // Monochromatic icon recommended
+            badge: '/minian.ico',
             data: {
                 url: payload.url || '/'
             },
-            vibrate: [100, 50, 100]
+            vibrate: [200, 100, 200, 100, 200, 100, 200],
+            renotify: true, // Re-alert if stacking
+            tag: 'call_notification', // Overwrite old notifications
+            sound: '/annc19324_sound.mp3' // Attempt to play custom sound (OS dependent)
         };
 
         event.waitUntil(
