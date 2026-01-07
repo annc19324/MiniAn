@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllUsers, updateUserStatus, updateUserCoins, deleteUser, adminCreateUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Search, Coins, X, UserPlus, Trash2, ChevronDown } from 'lucide-react';
+import { Search, Coins, X, UserPlus, Trash2, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -37,6 +37,7 @@ export default function AdminDashboard() {
         isOpen: false, userId: null, username: ''
     });
     const [activeRoleMenuId, setActiveRoleMenuId] = useState<number | null>(null);
+    const [showCreatePassword, setShowCreatePassword] = useState(false);
 
     useEffect(() => {
         if (user && user.role !== 'ADMIN') {
@@ -365,7 +366,16 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Mật khẩu *</label>
-                                <input type="password" value={createModal.password} onChange={e => setCreateModal({ ...createModal, password: e.target.value })} className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 dark:text-white" placeholder="******" />
+                                <div className="relative">
+                                    <input type={showCreatePassword ? "text" : "password"} value={createModal.password} onChange={e => setCreateModal({ ...createModal, password: e.target.value })} className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 dark:text-white pr-10" placeholder="******" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreatePassword(!showCreatePassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                                    >
+                                        {showCreatePassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Họ tên</label>

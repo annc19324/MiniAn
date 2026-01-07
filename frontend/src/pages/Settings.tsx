@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound } from '../utils/notificationUtils';
 import { toast } from 'react-hot-toast'; // New import
@@ -19,6 +19,10 @@ export default function Settings() {
         email: user?.email || '',
         fullName: user?.fullName || ''
     });
+
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('notificationSound') !== 'false');
 
@@ -300,31 +304,58 @@ export default function Settings() {
                         <form onSubmit={handlePasswordSubmit} className="space-y-4">
                             <div>
                                 <label className="label dark:text-slate-300">Mật khẩu hiện tại</label>
-                                <input
-                                    type="password"
-                                    value={passwordData.currentPassword}
-                                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                    className="glass-input w-full"
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showCurrent ? "text" : "password"}
+                                        value={passwordData.currentPassword}
+                                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                        className="glass-input w-full pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCurrent(!showCurrent)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                                    >
+                                        {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="label dark:text-slate-300">Mật khẩu mới</label>
-                                    <input
-                                        type="password"
-                                        value={passwordData.newPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                        className="glass-input w-full"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showNew ? "text" : "password"}
+                                            value={passwordData.newPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                            className="glass-input w-full pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNew(!showNew)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                                        >
+                                            {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="label dark:text-slate-300">Xác nhận mật khẩu mới</label>
-                                    <input
-                                        type="password"
-                                        value={passwordData.confirmPassword}
-                                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                        className="glass-input w-full"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirm ? "text" : "password"}
+                                            value={passwordData.confirmPassword}
+                                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                            className="glass-input w-full pr-10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirm(!showConfirm)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                                        >
+                                            {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex justify-end">

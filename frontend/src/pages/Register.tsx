@@ -2,6 +2,7 @@ import { useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Register() {
@@ -12,6 +13,8 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -121,27 +124,45 @@ export default function Register() {
                         maxLength={50}
                     />
 
-                    <input
-                        type="password"
-                        placeholder="Mật khẩu (8+ ký tự, đủ mạnh)"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="glass-input w-full"
-                        required
-                        minLength={8}
-                        maxLength={50}
-                    />
+                    <div className="relative">
+                        <input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Mật khẩu (8+ ký tự, đủ mạnh)"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="glass-input w-full pr-10"
+                            required
+                            minLength={8}
+                            maxLength={50}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                        >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
 
-                    <input
-                        type="password"
-                        placeholder="Xác nhận mật khẩu"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="glass-input w-full"
-                        required
-                        minLength={8}
-                        maxLength={50}
-                    />
+                    <div className="relative">
+                        <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Xác nhận mật khẩu"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="glass-input w-full pr-10"
+                            required
+                            minLength={8}
+                            maxLength={50}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600 transition-colors"
+                        >
+                            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                    </div>
 
                     <button
                         type="submit"
