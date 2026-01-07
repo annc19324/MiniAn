@@ -39,58 +39,65 @@ export default function VideoCallModal() {
 
             {/* Active Call UI */}
             {callAccepted && !callEnded ? (
-                <div className="w-full h-full max-w-6xl flex flex-col gap-4 relative">
+                <div className="w-full h-full max-w-6xl flex flex-col gap-4 relative h-[80vh] md:h-auto">
+
                     {/* Remote Video (Main) */}
-                    <div className="flex-1 bg-black rounded-3xl overflow-hidden relative shadow-2xl border border-slate-700">
+                    <div className="flex-1 bg-black rounded-3xl overflow-hidden relative shadow-2xl border border-slate-700 w-full h-full">
                         <video
-                            playsInline
                             ref={userVideo}
                             autoPlay
+                            playsInline
                             className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-4 left-4 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3">
+                        <div className="absolute top-4 left-4 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20">
                             {displayAvatar ? (
                                 <img src={displayAvatar} className="w-8 h-8 rounded-full border border-white/20" />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs">
+                                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs shadow-inner text-white">
                                     {displayInitial}
                                 </div>
                             )}
-                            <span className="font-bold text-sm md:text-base">{displayName}</span>
+                            <span className="font-bold text-sm md:text-base text-white/90">{displayName}</span>
                         </div>
                     </div>
 
-                    {/* Local Video (Floating or Split) */}
-                    <div className="absolute top-4 right-4 w-32 h-48 md:w-48 md:h-72 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-600 transition-all hover:scale-105 z-10">
+                    {/* Local Video (PiP) */}
+                    <div className="absolute bottom-24 right-4 w-32 h-44 md:w-48 md:h-72 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-slate-600/50 z-30 group ring-1 ring-white/10">
                         <video
-                            playsInline
-                            muted
                             ref={myVideo}
                             autoPlay
-                            className={`w-full h-full object-cover ${isMyVideoOff ? 'hidden' : ''}`}
+                            muted
+                            playsInline
+                            className={`w-full h-full object-cover mirror ${isMyVideoOff ? 'hidden' : ''}`}
                         />
-                        {isMyVideoOff && <div className="w-full h-full flex items-center justify-center bg-slate-800 text-xs text-slate-400">Camera Off</div>}
+                        {isMyVideoOff && (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-500">
+                                <VideoOff size={24} className="mb-2 opacity-50" />
+                                <span className="text-[10px]">Camera Off</span>
+                            </div>
+                        )}
+                        <div className="absolute top-2 left-2 text-[10px] bg-black/40 px-2 py-0.5 rounded-full text-white/70 backdrop-blur-sm">Bạn</div>
                     </div>
 
                     {/* Controls */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 p-4 bg-slate-800/80 backdrop-blur-xl rounded-full shadow-2xl border border-slate-600 z-20">
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-6 p-3 md:p-4 bg-slate-900/80 backdrop-blur-xl rounded-full shadow-2xl border border-slate-700/50 z-40">
                         <button
                             onClick={toggleAudio}
-                            className={`p-4 rounded-full transition-all ${isMyAudioOff ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            className={`p-3 md:p-4 rounded-full transition-all ${isMyAudioOff ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
                         >
                             {isMyAudioOff ? <MicOff size={24} /> : <Mic size={24} />}
                         </button>
 
                         <button
                             onClick={() => leaveCall('ended')}
-                            className="p-4 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-lg shadow-red-600/30 scale-110 hover:scale-125 transition-all"
+                            className="p-3 md:p-4 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-lg shadow-red-600/30 scale-110 hover:scale-125 transition-all"
                         >
                             <PhoneOff size={32} />
                         </button>
 
                         <button
                             onClick={toggleVideo}
-                            className={`p-4 rounded-full transition-all ${isMyVideoOff ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-slate-700 hover:bg-slate-600'}`}
+                            className={`p-3 md:p-4 rounded-full transition-all ${isMyVideoOff ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
                         >
                             {isMyVideoOff ? <VideoOff size={24} /> : <Video size={24} />}
                         </button>
@@ -104,7 +111,7 @@ export default function VideoCallModal() {
                             {displayAvatar ? (
                                 <img src={displayAvatar} className="w-full h-full object-cover" />
                             ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold">
+                                <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl font-bold text-white">
                                     {displayInitial}
                                 </div>
                             )}
@@ -121,7 +128,7 @@ export default function VideoCallModal() {
                         <p className="text-slate-400 mt-1">{isCalling ? `Đang gọi cho ${displayName}...` : "Cuộc gọi video đến"}</p>
                     </div>
 
-                    <div className="flex items-center gap-10 mt-6">
+                    <div className="flex items-center gap-10 mt-6 md:gap-12">
                         {call?.isReceivedCall && !callAccepted && (
                             <div className="flex flex-col items-center gap-2">
                                 <button
@@ -137,7 +144,7 @@ export default function VideoCallModal() {
                         <div className="flex flex-col items-center gap-2">
                             <button
                                 onClick={() => leaveCall(isCalling ? 'canceled' : 'rejected')}
-                                className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 hover:scale-110 transition-all"
+                                className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 hover:scale-110 transition-all scale-100"
                             >
                                 <PhoneOff size={28} />
                             </button>
@@ -149,6 +156,6 @@ export default function VideoCallModal() {
                     {isCalling && <p className="text-xs text-slate-500 mt-2">Đang chờ phản hồi...</p>}
                 </div>
             )}
-        </div>
+        </div >
     );
 }
