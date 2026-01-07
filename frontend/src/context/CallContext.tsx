@@ -176,6 +176,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                         body: "Nhấn để trả lời ngay",
                         icon: getAvatarUrl(data.avatar),
                         tag: "call_incoming", // Prevents stacking, updates existing
+                        // @ts-ignore
                         renotify: true, // Vibrate/Sound again!
                         requireInteraction: true,
                         silent: false
