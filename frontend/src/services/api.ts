@@ -45,7 +45,7 @@ export const followUser = (id: number) => api.post(`/users/follow/${id}`);
 export const updateUserProfile = (data: FormData) => api.put('/users/profile/update', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
 });
-export const getLeaderboard = () => api.get('/users/leaderboard');
+export const getLeaderboard = (limit = 10, offset = 0) => api.get('/users/leaderboard', { params: { limit, offset } });
 
 // ==== Admin Services ====
 export const getAllUsers = () => api.get('/users/admin/users');

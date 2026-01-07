@@ -64,7 +64,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const audioCtxRef = useRef<AudioContext | null>(null);
     const dialToneOscRef = useRef<OscillatorNode | null>(null);
     const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]); // Queue for candidates arriving before remote desc // Added
+    const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]); // Queue for connected peer (waiting for RemoteDesc)
+    const incomingCandidatesBuffer = useRef<any[]>([]); // Buffer for candidates received BEFORE peer exists (Receiver side)
 
     // Define helper to clear resources
     const stopDialTone = () => {
@@ -298,14 +299,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 if (connectionRef.current.remoteDescription) {
                     try {
                         await connectionRef.current.addIceCandidate(iceCandidate);
-                    } catch (e) {
-                        console.error("Error adding ice candidate", e);
-                    }
+                    } catch (e) { console.error("Error adding ice candidate", e); }
                 } else {
-                    // Queue if remote description not set yet (common on Caller side)
-                    console.log("Queueing ICE candidate");
                     iceCandidatesQueue.current.push(iceCandidate);
                 }
+            } else if (!connectionRef.current && candidate) {
+                // Buffer candidates if peer doesn't exist yet (Receiver ringing state)
+                console.log("Buffering candidate (No Peer)");
+                incomingCandidatesBuffer.current.push(candidate);
             }
         });
 
@@ -335,8 +336,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         const peer = new RTCPeerConnection(peerConfiguration);
 
         peer.onicecandidate = (event) => {
-            if (event.candidate && socketRef.current) {
-                socketRef.current.emit("ice_candidate", {
+            if (event.candidate) {
+                socketRef.current?.emit("ice_candidate", {
                     to: targetId,
                     candidate: event.candidate
                 });
@@ -344,12 +345,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         };
 
         peer.ontrack = (event) => {
-            console.log("Received Remote Stream");
-            const remote = event.streams[0];
-            setRemoteStream(remote); // Update state to trigger UI effects
-            if (userVideo.current) {
-                userVideo.current.srcObject = remote;
-            }
+            console.log("Track received:", event.streams[0]);
+            setRemoteStream(event.streams[0]);
         };
 
         if (streamRef.current) {

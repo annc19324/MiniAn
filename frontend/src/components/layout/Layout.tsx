@@ -14,21 +14,38 @@ import { sendSystemNotification, playNotificationSound } from '../../utils/notif
 export default function Layout() {
     const { logout, user } = useAuth();
     const [leaderboard, setLeaderboard] = useState<any[]>([]);
+    const [hasMore, setHasMore] = useState(true);
     const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
     const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
     const navigate = useNavigate();
     const location = useLocation();
     const isChatPage = location.pathname === '/chat';
 
-    useEffect(() => {
-        const fetchLeaderboard = async () => {
-            try {
-                const res = await getLeaderboard();
-                setLeaderboard(res.data);
-            } catch (error) {
-                console.error("Lỗi lấy BXH");
+    const fetchLeaderboard = async () => {
+        try {
+            const res = await getLeaderboard(10, 0);
+            setLeaderboard(res.data);
+            if (res.data.length < 10) setHasMore(false);
+        } catch (error) {
+            console.error("Lỗi lấy BXH");
+        }
+    };
+
+    const loadMoreLeaderboard = async () => {
+        try {
+            const res = await getLeaderboard(10, leaderboard.length);
+            if (res.data && res.data.length > 0) {
+                setLeaderboard(prev => [...prev, ...res.data]);
+                if (res.data.length < 10) setHasMore(false);
+            } else {
+                setHasMore(false);
             }
-        };
+        } catch (error) {
+            console.error("Lỗi tải thêm BXH");
+        }
+    };
+
+    useEffect(() => {
         fetchLeaderboard();
     }, []);
     useEffect(() => {
@@ -168,6 +185,16 @@ export default function Layout() {
                             </div>
                         </NavLink>
                     ))}
+
+                    {hasMore && (
+                        <button
+                            onClick={loadMoreLeaderboard}
+                            className="w-full py-2 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg transition-colors flex items-center justify-center gap-1 group"
+                        >
+                            <span>Xem thêm</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-slate-400 border-t-transparent animate-spin hidden group-active:block w-3 h-3"></div>
+                        </button>
+                    )}
                 </div>
             </aside>
 
