@@ -116,7 +116,7 @@ export default function VideoCallModal() {
                             ref={userVideo}
                             autoPlay
                             playsInline
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain bg-black"
                         />
                         {/* Info Overlay */}
                         <div className="absolute top-4 left-4 md:top-6 md:left-6 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20 transition-all hover:bg-black/60">
