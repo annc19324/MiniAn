@@ -140,6 +140,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
         socket.on('connect', () => {
             console.log('Call Socket Connected:', socket.id);
             socket.emit('user_connected', user.id);
+
+            // Request Notification Permission
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
         });
 
         socket.on('call_incoming', (data) => {
@@ -154,6 +159,21 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 conversationId: data.conversationId
             });
             if (data.conversationId) setConversationId(data.conversationId);
+
+            // Trigger System Notification
+            if ("Notification" in window && Notification.permission === "granted") {
+                const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
+                    body: "Nhấn để quay lại cuộc gọi",
+                    icon: getAvatarUrl(data.avatar),
+                    tag: "call_incoming",
+                    requireInteraction: true
+                });
+                notif.onclick = () => {
+                    window.focus();
+                    // If minimized, restore?
+                    setIsMinimized(false);
+                };
+            }
 
             // Play Ringtone
             try {
