@@ -6,6 +6,10 @@ import toast from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import { sendMessage } from '../services/api';
 
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
+
+
 interface CallContextType {
     call: { isReceivedCall: boolean; from: number; name?: string; avatar?: string; signal: any; conversationId?: number } | null;
     callAccepted: boolean;
@@ -154,9 +158,9 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             }
         });
 
-        socket.on('call_incoming', (data) => {
+        socket.on('call_incoming', async (data) => {
             console.log("Receive Call Incoming:", data);
-            setCallEnded(false); // Reset in case previous call left it true
+            setCallEnded(false);
             setCall({
                 isReceivedCall: true,
                 from: data.fromUser,
@@ -167,48 +171,73 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             });
             if (data.conversationId) setConversationId(data.conversationId);
 
-            if ("Notification" in window && Notification.permission === "granted") {
-                const showNotification = () => {
-                    if (document.visibilityState === 'visible') return; // Don't spam if app is open
-
-                    // Vibrate
-                    if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
-
-                    // Attempt to maintain ringtone audio
-                    if (ringtoneRef.current && ringtoneRef.current.paused) {
-                        ringtoneRef.current.play().catch(() => { });
-                    }
-
-                    const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
-                        body: "Nhấn để trả lời ngay",
-                        icon: getAvatarUrl(data.avatar),
-                        tag: "call_incoming", // Prevents stacking, updates existing
-                        // @ts-ignore
-                        renotify: true, // Vibrate/Sound again!
-                        requireInteraction: true,
-                        silent: false
+            // === NATIVE MOBILE LOGIC ===
+            if (Capacitor.isNativePlatform()) {
+                // Schedule Local Notification
+                try {
+                    await LocalNotifications.requestPermissions();
+                    await LocalNotifications.schedule({
+                        notifications: [{
+                            title: `📞 Cuộc gọi từ ${data.name || "Người dùng"}`,
+                            body: "Nhấn để mở ứng dụng và trả lời",
+                            id: 1,
+                            schedule: { at: new Date(Date.now() + 100) }, // Now
+                            sound: undefined, // Use default or configure 'annc19324_sound.wav' if mapped
+                            actionTypeId: 'OPEN_APP_ACTION',
+                            extra: { type: 'call_incoming' },
+                            channelId: 'calls_channel' // Defined in Android generic setup or default
+                        }]
                     });
-                    notif.onclick = () => {
-                        window.focus();
-                        setIsMinimized(false);
-                        if (notificationIntervalRef.current) clearInterval(notificationIntervalRef.current);
-                    };
-                };
+                    // Create channel if needed (Android O+)
+                    await LocalNotifications.createChannel({
+                        id: 'calls_channel',
+                        name: 'Call Notifications',
+                        importance: 5, // High
+                        visibility: 1,
+                        sound: 'annc19324_sound.mp3', // Requires file in res/raw (already there)
+                        vibration: true
+                    });
+                } catch (e) {
+                    console.error("LocalNotif Error", e);
+                }
+            }
+            // === WEB LOGIC ===
+            else {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    const showNotification = () => {
+                        if (document.visibilityState === 'visible') return;
 
-                showNotification(); // Initial
-                notificationIntervalRef.current = setInterval(showNotification, 4000); // Loop to simulate ringing
+                        // Vibrate
+                        if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
+
+                        const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
+                            body: "Nhấn để trả lời ngay",
+                            icon: getAvatarUrl(data.avatar),
+                            tag: "call_incoming",
+                            // @ts-ignore
+                            renotify: true,
+                            requireInteraction: true,
+                            silent: false
+                        });
+                        notif.onclick = () => {
+                            window.focus();
+                            setIsMinimized(false);
+                            if (notificationIntervalRef.current) clearInterval(notificationIntervalRef.current);
+                        };
+                    };
+                    showNotification();
+                    notificationIntervalRef.current = setInterval(showNotification, 4000);
+                }
             }
 
-            // Play Ringtone
+            // Play Ringtone (Common)
             try {
                 if (ringtoneRef.current) ringtoneRef.current.pause();
                 ringtoneRef.current = new Audio('/annc19324_sound.mp3');
                 ringtoneRef.current.loop = true;
                 const playPromise = ringtoneRef.current.play();
                 if (playPromise !== undefined) {
-                    playPromise.catch(e => {
-                        if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') console.error("Ringtone error:", e);
-                    });
+                    playPromise.catch(e => { console.error("Ringtone error:", e); });
                 }
             } catch (e) { }
         });
