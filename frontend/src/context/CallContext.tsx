@@ -63,7 +63,8 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const ringtoneRef = useRef<HTMLAudioElement | null>(null);
     const audioCtxRef = useRef<AudioContext | null>(null);
     const dialToneOscRef = useRef<OscillatorNode | null>(null);
-    const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null); // Added
+    const notificationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const iceCandidatesQueue = useRef<RTCIceCandidate[]>([]); // Queue for candidates arriving before remote desc // Added
 
     // Define helper to clear resources
     const stopDialTone = () => {
@@ -172,6 +173,11 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                     // Vibrate
                     if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
 
+                    // Attempt to maintain ringtone audio
+                    if (ringtoneRef.current && ringtoneRef.current.paused) {
+                        ringtoneRef.current.play().catch(() => { });
+                    }
+
                     const notif = new Notification(`Cuộc gọi đến từ ${data.name || "Người dùng"}`, {
                         body: "Nhấn để trả lời ngay",
                         icon: getAvatarUrl(data.avatar),
@@ -256,6 +262,17 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                     // If data is just signal
                     const signal = data.signal || data;
                     await connectionRef.current.setRemoteDescription(new RTCSessionDescription(signal));
+
+                    // Process Queued Candidates
+                    while (iceCandidatesQueue.current.length > 0) {
+                        const candidate = iceCandidatesQueue.current.shift();
+                        if (candidate) {
+                            try {
+                                await connectionRef.current.addIceCandidate(candidate);
+                                console.log("Added queued candidate");
+                            } catch (e) { console.error("Error adding queued candidate", e); }
+                        }
+                    }
                 } catch (err) {
                     console.error("Error setting remote description", err);
                 }
@@ -277,10 +294,17 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
         socket.on('ice_candidate_received', async (candidate) => {
             if (connectionRef.current && candidate) {
-                try {
-                    await connectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-                } catch (e) {
-                    console.error("Error adding ice candidate", e);
+                const iceCandidate = new RTCIceCandidate(candidate);
+                if (connectionRef.current.remoteDescription) {
+                    try {
+                        await connectionRef.current.addIceCandidate(iceCandidate);
+                    } catch (e) {
+                        console.error("Error adding ice candidate", e);
+                    }
+                } else {
+                    // Queue if remote description not set yet (common on Caller side)
+                    console.log("Queueing ICE candidate");
+                    iceCandidatesQueue.current.push(iceCandidate);
                 }
             }
         });
