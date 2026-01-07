@@ -220,29 +220,7 @@ export default function Settings() {
 
                 {activeSection === 'notifications' && (
                     <div className="p-6 border-t border-slate-100 dark:border-slate-700 animate-slide-down space-y-6">
-                        {/* Browser Notifications */}
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="font-medium text-slate-800 dark:text-white">Thông báo đẩy</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn hoặc tương tác mới.</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => sendSystemNotification("Kiểm tra thông báo", "Đây là thông báo thử nghiệm từ MiniAn!")}
-                                    className="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg text-sm font-bold"
-                                    title="Gửi thông báo thử"
-                                >
-                                    Thử
-                                </button>
-                                <button
-                                    onClick={handleEnableNotifications}
-                                    disabled={notificationPermission === 'granted'}
-                                    className={`px-4 py-2 rounded-lg font-bold transition-all ${notificationPermission === 'granted' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                                >
-                                    {notificationPermission === 'granted' ? 'Đã bật' : 'Bật ngay'}
-                                </button>
-                            </div>
-                        </div>
+
 
                         {/* Sound Toggle */}
                         <div className="flex items-center justify-between">
@@ -272,31 +250,34 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        {/* Active Status */}
-                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl mt-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-800 dark:text-white">Trạng thái hoạt động</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Hiển thị khi bạn đang online</p>
-                                </div>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" checked={user?.showActivityStatus ?? true} onChange={(e) => {
-                                    const formData = new FormData();
-                                    formData.append('showActivityStatus', e.target.checked.toString());
-                                    updateUserProfile(formData).then(() => {
-                                        updateUser({ ...user!, showActivityStatus: e.target.checked });
-                                        toast.success('Đã cập nhật trạng thái');
-                                    });
-                                }} />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                            </label>
-                        </div>
+
                     </div>
                 )}
+            </div>
+
+            {/* Active Status Section */}
+            <div className="glass-card p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-100 text-green-600 rounded-lg dark:bg-green-900/30 dark:text-green-400 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white">Trạng thái hoạt động</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Hiển thị khi bạn đang online</p>
+                    </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={user?.showActivityStatus ?? true} onChange={(e) => {
+                        const formData = new FormData();
+                        formData.append('showActivityStatus', e.target.checked.toString());
+                        updateUserProfile(formData).then((res) => {
+                            // @ts-ignore
+                            updateUser(res.data.user);
+                            toast.success('Đã cập nhật trạng thái');
+                        });
+                    }} />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                </label>
             </div>
 
             {/* Security Accordion */}

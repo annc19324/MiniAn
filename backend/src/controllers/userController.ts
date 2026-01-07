@@ -445,8 +445,23 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: dataToUpdate,
-            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true, showActivityStatus: true }
+            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true, showActivityStatus: true, isOnline: true, lastSeen: true }
         });
+
+        // Notify Socket Status if changed
+        if (showActivityStatus !== undefined) {
+            const io = req.app.get('io');
+            if (io) {
+                const effectiveIsOnline = updatedUser.showActivityStatus ? updatedUser.isOnline : false;
+                const effectiveLastSeen = updatedUser.showActivityStatus ? updatedUser.lastSeen : null;
+
+                io.emit('user_status_change', {
+                    userId: updatedUser.id,
+                    isOnline: effectiveIsOnline,
+                    lastSeen: effectiveLastSeen
+                });
+            }
+        }
 
         res.json({ message: 'Cập nhật thành công', user: updatedUser });
     } catch (error) {
