@@ -15,7 +15,6 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
     // === NATIVE LOGIC ===
     if (Capacitor.isNativePlatform()) {
         try {
-            await LocalNotifications.requestPermissions();
             // Random ID to allow multiple notifications to stack
             const notifId = Math.floor(Math.random() * 100000);
 
@@ -24,22 +23,21 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
                     title,
                     body: body || '',
                     id: notifId,
-                    schedule: { at: new Date(Date.now() + 100) },
-                    sound: 'annc19324_sound.mp3', // Reuse the custom sound or default
+                    schedule: { at: new Date(Date.now()) }, // Immediate
                     actionTypeId: 'OPEN_APP_ACTION',
                     smallIcon: 'ic_launcher',
-                    channelId: 'general_channel_v1'
+                    channelId: 'general_channel_v4'
                 }]
             });
 
-            // Channel for General Messages
+            // Channel for General Messages (Default Sound)
             await LocalNotifications.createChannel({
-                id: 'general_channel_v1',
-                name: 'Tin nhắn & Thông báo',
-                importance: 4, // High but maybe not Max
+                id: 'general_channel_v4', // v4 for clean update
+                name: 'Tin nhắn & Thông báo (Mặc định)',
+                importance: 4,
                 visibility: 1,
-                sound: 'annc19324_sound.mp3',
                 vibration: true
+                // No sound property = System Default
             });
         } catch (e) {
             console.error("Native Notif Error", e);

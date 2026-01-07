@@ -294,9 +294,7 @@ export default function Layout() {
             >
                 <MobileNavItem to="/" icon={<Home size={24} />} />
                 <MobileNavItem to="/search" icon={<Search size={24} />} />
-                <NavLink to="/create" className="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white p-3.5 rounded-2xl -mt-8 shadow-lg shadow-indigo-500/40 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all border-4 border-slate-50 dark:border-slate-950">
-                    <PlusSquare size={26} />
-                </NavLink>
+                <MobileNavItem to="/create" icon={<PlusSquare size={24} />} />
                 <MobileNavItem to="/notifications" icon={<Bell size={24} />} count={unreadNotificationsCount > 0 ? unreadNotificationsCount : undefined} />
                 <MobileNavItem to={`/profile/${user?.id}`} icon={<User size={24} />} />
             </nav>
