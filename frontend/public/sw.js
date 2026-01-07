@@ -11,7 +11,11 @@ self.addEventListener('push', function (event) {
             vibrate: [200, 100, 200, 100, 200, 100, 200],
             renotify: true, // Re-alert if stacking
             tag: 'call_notification', // Overwrite old notifications
-            sound: '/annc19324_sound.mp3' // Attempt to play custom sound (OS dependent)
+            sound: '/annc19324_sound.mp3',
+            actions: [
+                { action: 'answer', title: '📞 Trả lời' },
+                { action: 'decline', title: '❌ Từ chối' }
+            ]
         };
 
         event.waitUntil(
@@ -22,6 +26,11 @@ self.addEventListener('push', function (event) {
 
 self.addEventListener('notificationclick', function (event) {
     event.notification.close();
+
+    if (event.action === 'decline') {
+        return;
+    }
+
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
             // If a window is open, focus it
