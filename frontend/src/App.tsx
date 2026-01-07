@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { ThemeProvider } from './context/ThemeContext';
+import { CallProvider } from './context/CallContext';
+import VideoCallModal from './components/VideoCallModal';
 import Home from './pages/Home';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -81,7 +83,10 @@ export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <AppContent />
+        <CallProvider>
+          <AppContent />
+          <VideoCallModal />
+        </CallProvider>
       </ThemeProvider>
     </AuthProvider>
   );

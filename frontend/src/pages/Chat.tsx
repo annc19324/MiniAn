@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
 import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon } from 'lucide-react';
+import { useCall } from '../context/CallContext';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
 import CreateGroupModal from '../components/CreateGroupModal';
@@ -77,6 +78,7 @@ interface Conversation {
 
 export default function Chat() {
     const { user } = useAuth();
+    const { callUser } = useCall();
     const location = useLocation();
     const navigate = useNavigate();
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -637,7 +639,20 @@ export default function Chat() {
                                 )}
                             </div>
                             <div className="flex gap-2 text-slate-400 dark:text-slate-500 relative" ref={roomMenuRef}>
-                                <Phone size={20} className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer" />
+                                <button
+                                    onClick={() => {
+                                        if (activeConversation?.isGroup) {
+                                            toast.error("Tính năng gọi nhóm chưa được hỗ trợ");
+                                            return;
+                                        }
+                                        const targetId = activeConversation?.otherMemberId || activeConversation?.members?.find(m => m.id !== user?.id)?.id;
+                                        if (targetId) callUser(targetId);
+                                    }}
+                                    className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer p-1"
+                                    title="Gọi Video"
+                                >
+                                    <Phone size={20} />
+                                </button>
                                 <MoreVertical
                                     size={20}
                                     className="hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer"

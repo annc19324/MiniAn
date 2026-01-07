@@ -147,6 +147,49 @@ io.on("connection", (socket) => {
         socket.to(String(data.roomId)).emit("receive_message", data);
     });
 
+    // WebRTC Signaling Events
+    socket.on('call_user', (data) => {
+        const { userToCall, signalData, fromUser } = data;
+        const targetSockets = userSocketMap.get(Number(userToCall));
+        if (targetSockets) {
+            targetSockets.forEach(socketId => {
+                console.log(`Forwarding call from ${fromUser} to ${userToCall}`);
+                io.to(socketId).emit("call_incoming", data); // Forward full data
+            });
+        }
+    });
+
+    socket.on("answer_call", (data) => {
+        const { to, signal } = data;
+        const targetSockets = userSocketMap.get(Number(to));
+        if (targetSockets) {
+            targetSockets.forEach(socketId => {
+                console.log(`Forwarding answer to ${to}`);
+                io.to(socketId).emit("call_accepted", signal);
+            });
+        }
+    });
+
+    socket.on("ice_candidate", (data) => {
+        const { to, candidate } = data;
+        const targetSockets = userSocketMap.get(Number(to));
+        if (targetSockets) {
+            targetSockets.forEach(socketId => {
+                io.to(socketId).emit("ice_candidate_received", candidate);
+            });
+        }
+    });
+
+    socket.on("end_call", (data) => {
+        const { to } = data;
+        const targetSockets = userSocketMap.get(Number(to));
+        if (targetSockets) {
+            targetSockets.forEach(socketId => {
+                io.to(socketId).emit("call_ended");
+            });
+        }
+    });
+
     socket.on("disconnect", () => {
         console.log("User disconnected:", socket.id);
     });
