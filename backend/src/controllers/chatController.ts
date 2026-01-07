@@ -259,13 +259,16 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
         // Update tất cả tin nhắn trong room mà người gửi KHÔNG phải là user hiện tại
         // và chưa được đọc
         // Update readBy array using raw query for atomicity and checking existence
-        await prisma.$executeRaw`
+        // Use COALESCE to ensure readBy is treated as empty array if null (though default is [])
+        const result = await prisma.$executeRaw`
             UPDATE messages 
-            SET "readBy" = array_append("readBy", ${userId}), "isRead" = true
+            SET "readBy" = array_append(COALESCE("readBy", ARRAY[]::integer[]), ${userId}), "isRead" = true
             WHERE "roomId" = ${Number(roomId)} 
             AND "senderId" != ${userId} 
-            AND NOT (${userId} = ANY("readBy"))
+            AND NOT (${userId} = ANY(COALESCE("readBy", ARRAY[]::integer[])))
         `;
+
+        console.log(`Updated read status for ${result} messages in room ${roomId} for user ${userId}`);
 
         // Emit socket event
         const io = req.app.get('io');

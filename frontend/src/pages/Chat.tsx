@@ -284,6 +284,9 @@ export default function Chat() {
         socket.on('message_updated', handleMessageUpdated);
         socket.on('user_status_change', handleUserStatusChange);
         socket.on('refresh_unread', fetchConvos);
+        socket.on('group_member_added', fetchConvos);
+        socket.on('group_member_removed', fetchConvos);
+        socket.on('group_updated', fetchConvos);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
@@ -292,6 +295,9 @@ export default function Chat() {
             socket.off('message_updated', handleMessageUpdated);
             socket.off('user_status_change', handleUserStatusChange);
             socket.off('refresh_unread', fetchConvos);
+            socket.off('group_member_added', fetchConvos);
+            socket.off('group_member_removed', fetchConvos);
+            socket.off('group_updated', fetchConvos);
         };
 
 
@@ -979,6 +985,8 @@ export default function Chat() {
                         <div className="max-h-[50vh] overflow-y-auto p-1">
                             {(() => {
                                 const readers = activeConversation?.members?.filter(m => viewingSeenBy.includes(m.id) && m.id !== user?.id) || [];
+                                // Debug logging for "Seen By" issue
+                                // console.log('SeenBy Debug:', { msgReadBy: viewingSeenBy, members: activeConversation?.members?.map(m => m.id), readers: readers.map(r => r.id) });
 
                                 if (readers.length === 0) {
                                     return <div className="text-center text-slate-500 py-4 text-xs flex flex-col items-center gap-1">
