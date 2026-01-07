@@ -55,11 +55,27 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
     const socketRef = useRef<Socket | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
     const ringtoneRef = useRef<HTMLAudioElement | null>(null);
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const dialToneOscRef = useRef<OscillatorNode | null>(null);
 
     // Define helper to clear resources
+    const stopDialTone = () => {
+        try {
+            if (dialToneOscRef.current) {
+                dialToneOscRef.current.stop();
+                dialToneOscRef.current.disconnect();
+                dialToneOscRef.current = null;
+            }
+            if (audioCtxRef.current && audioCtxRef.current.state === 'running') {
+                audioCtxRef.current.suspend();
+            }
+        } catch (e) { }
+    };
+
     const cleanupCall = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
+        stopDialTone();
 
         if (connectionRef.current) {
             connectionRef.current.close();
@@ -157,6 +173,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
             if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
+            stopDialTone();
 
             if (connectionRef.current) {
                 try {
@@ -274,23 +291,31 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             leaveCall('missed');
         }, 60000);
 
-        // Start Dial Tone
+        // Start Dial Tone (Web Audio API for reliability)
         try {
-            if (ringtoneRef.current) ringtoneRef.current.pause();
-            ringtoneRef.current = new Audio('https://upload.wikimedia.org/wikipedia/commons/e/e0/Synthesized_Device_Dial_Tone.ogg');
-            ringtoneRef.current.volume = 1.0;
-            ringtoneRef.current.loop = true;
-            const playPromise = ringtoneRef.current.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(e => {
-                    if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') console.error("Dial tone error:", e);
-                });
-            }
+            stopDialTone();
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+            const ctx = audioCtxRef.current;
+            if (ctx.state === 'suspended') ctx.resume();
+
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.frequency.setValueAtTime(440, ctx.currentTime); // 440Hz "A" note
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            gain.gain.value = 0.1; // Low volume
+
+            osc.start();
+            dialToneOscRef.current = osc;
         } catch (e) { console.error("Audio init error", e); }
     };
 
     const answerCall = async () => {
+        if (!user) return;
         if (ringtoneRef.current) { ringtoneRef.current.pause(); ringtoneRef.current = null; }
+        stopDialTone();
 
         setCallAccepted(true);
         const currentStream = await getMedia();
