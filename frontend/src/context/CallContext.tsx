@@ -144,6 +144,7 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
         socket.on('call_incoming', (data) => {
             console.log("Receive Call Incoming:", data);
+            setCallEnded(false); // Reset in case previous call left it true
             setCall({
                 isReceivedCall: true,
                 from: data.fromUser,
