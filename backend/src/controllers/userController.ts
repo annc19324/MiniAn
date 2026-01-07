@@ -509,9 +509,13 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 // Lấy bảng xếp hạng (Top 10 Coin)
 export const getLeaderboard = async (req: Request, res: Response) => {
     try {
+        const limit = parseInt(req.query.limit as string) || 10;
+        const offset = parseInt(req.query.offset as string) || 0;
+
         const users = await prisma.user.findMany({
             orderBy: { coins: 'desc' },
-            take: 10,
+            take: limit,
+            skip: offset,
             select: { id: true, username: true, fullName: true, avatar: true, coins: true, isVip: true }
         });
         res.json(users);
