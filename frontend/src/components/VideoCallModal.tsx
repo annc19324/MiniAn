@@ -11,11 +11,15 @@ export default function VideoCallModal() {
     } = useCall();
 
     useEffect(() => {
-        if (myVideo.current && stream) {
-            console.log("Attaching stream to local video");
-            myVideo.current.srcObject = stream;
-        }
-    }, [stream, callAccepted, isCalling]);
+        const timer = setTimeout(() => {
+            if (myVideo.current && stream) {
+                console.log("Attaching stream to local video (Retried)");
+                myVideo.current.srcObject = stream;
+                myVideo.current.play().catch(e => console.error("Local video play error", e));
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [stream, callAccepted, isCalling, isMinimized]);
 
     useEffect(() => {
         // Debounce to ensure DOM is ready
