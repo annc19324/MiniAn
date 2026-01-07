@@ -4,7 +4,7 @@ import { updateUserProfile } from '../services/api';
 import api from '../services/api';
 import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { requestNotificationPermission, sendSystemNotification, playNotificationSound } from '../utils/notificationUtils';
+import { playNotificationSound } from '../utils/notificationUtils';
 import { toast } from 'react-hot-toast'; // New import
 
 export default function Settings() {
@@ -19,7 +19,7 @@ export default function Settings() {
         email: user?.email || '',
         fullName: user?.fullName || ''
     });
-    const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
+
     const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('notificationSound') !== 'false');
 
     const toggleSection = (section: string) => {
@@ -89,12 +89,7 @@ export default function Settings() {
         }
     };
 
-    const handleEnableNotifications = async () => {
-        const granted = await requestNotificationPermission();
-        setNotificationPermission(granted ? 'granted' : 'denied');
-        if (granted) alert("Đã bật thông báo hệ thống!");
-        else alert("Bạn đã từ chối quyền thông báo. Vui lòng bật lại trong cài đặt trình duyệt.");
-    };
+
 
     return (
         <div className="max-w-2xl mx-auto space-y-6">
