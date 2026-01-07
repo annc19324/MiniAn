@@ -469,6 +469,17 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             await peer.setRemoteDescription(new RTCSessionDescription(call.signal));
             // Tracks are already added by createPeer if stream exists
 
+            // Process Buffered Candidates (Fix for Mobile -> PC calls)
+            while (incomingCandidatesBuffer.current.length > 0) {
+                const candidate = incomingCandidatesBuffer.current.shift();
+                if (candidate) {
+                    try {
+                        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+                        console.log("Added buffered candidate in answer");
+                    } catch (e) { console.error("Error adding buffered candidate", e); }
+                }
+            }
+
 
             const answer = await peer.createAnswer();
             await peer.setLocalDescription(answer);

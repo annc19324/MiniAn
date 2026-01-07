@@ -52,17 +52,17 @@ export default function VideoCallModal() {
         return (
             <>
                 {/* Global Top Banner for Easy Return */}
-                {/* Return Text Button - Top Right */}
+                {/* Return Text Button - Top Right - Lowered */}
                 <div
                     onClick={() => setIsMinimized(false)}
-                    className="fixed top-[130px] right-4 z-[10000] cursor-pointer animate-fade-in bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg hover:bg-black/60 transition-all flex items-center gap-2"
+                    className="fixed top-[180px] right-4 z-[10000] cursor-pointer animate-fade-in bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-lg hover:bg-black/60 transition-all flex items-center gap-2"
                 >
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                     <span className="text-white text-xs font-bold">Quay lại cuộc gọi</span>
                 </div>
 
                 {/* Mini Floating Video - Below Text */}
-                <div className="fixed top-[170px] right-4 w-32 h-44 md:bottom-4 md:right-4 md:top-auto md:w-64 md:h-40 bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 z-[9999] group animate-fade-in ring-1 ring-white/10">
+                <div className="fixed top-[220px] right-4 w-32 h-44 md:bottom-4 md:right-4 md:top-auto md:w-64 md:h-40 bg-slate-900 rounded-xl overflow-hidden shadow-2xl border border-slate-700 z-[9999] group animate-fade-in ring-1 ring-white/10">
                     <video
                         ref={userVideo}
                         autoPlay

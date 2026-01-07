@@ -30,11 +30,11 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
                 }]
             });
 
-            // Channel for General Messages (Default Sound)
+            // Channel for General Messages (Default Sound, Heads-up)
             await LocalNotifications.createChannel({
                 id: 'general_channel_v4', // v4 for clean update
                 name: 'Tin nhắn & Thông báo (Mặc định)',
-                importance: 4,
+                importance: 5,
                 visibility: 1,
                 vibration: true
                 // No sound property = System Default
