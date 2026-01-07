@@ -475,8 +475,19 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 if (candidate) {
                     try {
                         await peer.addIceCandidate(new RTCIceCandidate(candidate));
-                        console.log("Added buffered candidate in answer");
-                    } catch (e) { console.error("Error adding buffered candidate", e); }
+                        console.log("Added buffered incoming candidate in answer");
+                    } catch (e) { console.error("Error adding buffered incoming candidate", e); }
+                }
+            }
+
+            // Process Queued Candidates (received while connectionRef was set but RemoteDesc was processing)
+            while (iceCandidatesQueue.current.length > 0) {
+                const candidate = iceCandidatesQueue.current.shift();
+                if (candidate) {
+                    try {
+                        await peer.addIceCandidate(candidate);
+                        console.log("Added queued candidate in answer");
+                    } catch (e) { console.error("Error adding queued candidate in answer", e); }
                 }
             }
 
