@@ -64,6 +64,10 @@ export default function Layout() {
         });
 
         socket.on('receive_message', (data) => {
+            // Prevent self-notifications
+            const senderId = data.messageData.sender?._id || data.messageData.sender?.id;
+            if (senderId === user?.id) return;
+
             // GLOBAL LOGIC: Always play sound (simplified for reliability)
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
             if (soundEnabled) {
@@ -85,6 +89,10 @@ export default function Layout() {
         });
 
         socket.on('new_notification', (data) => {
+            // Prevent self-notifications if sender info is present
+            const senderId = data.sender?._id || data.sender?.id || data.senderId;
+            if (senderId && senderId === user?.id) return;
+
             // For general notifications (Likes, Comments, Follows), ALWAYS play sound if enabled
             const soundEnabled = localStorage.getItem('notificationSound') !== 'false';
             if (soundEnabled) {
