@@ -98,87 +98,87 @@ export default function VideoCallModal() {
             {callAccepted && !callEnded && (
                 <button
                     onClick={() => setIsMinimized(true)}
-                    className="absolute top-4 left-4 p-3 bg-slate-800/50 hover:bg-slate-700 rounded-full text-white transition-all backdrop-blur-sm border border-white/10 z-50 group"
+                    className="absolute top-4 left-4 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-all z-50 group border border-white/10"
                     title="Thu nhỏ"
                 >
                     <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
-                    <span className="sr-only">Thu nhỏ</span>
                 </button>
             )}
 
-            {/* Active Call UI */}
-            {callAccepted && !callEnded ? (
-                <div className="relative w-full max-w-5xl aspect-[9/16] md:aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10 flex flex-col md:flex-row">
-
-                    {/* Remote Video (Full Container) */}
-                    <div className="absolute inset-0 w-full h-full">
-                        <video
-                            ref={userVideo}
-                            autoPlay
-                            playsInline
-                            className="w-full h-full object-contain bg-black"
-                        />
-                        {/* Info Overlay */}
-                        <div className="absolute top-4 left-4 md:top-6 md:left-6 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20 transition-all hover:bg-black/60">
-                            {displayAvatar ? (
-                                <img src={displayAvatar} className="w-8 h-8 rounded-full border border-white/20" />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs shadow-inner text-white">
-                                    {displayInitial}
-                                </div>
-                            )}
-                            <span className="font-bold text-sm md:text-base text-white/90">{displayName}</span>
-                        </div>
-                    </div>
-
-                    {/* Local Video (PiP) */}
-                    <div className="absolute top-20 right-4 w-28 h-40 md:top-6 md:right-6 md:w-48 md:h-36 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 z-30 group/pip ring-1 ring-black/50 transition-all hover:scale-105">
-                        <video
-                            ref={myVideo}
-                            autoPlay
-                            muted
-                            playsInline
-                            className={`w-full h-full object-cover mirror ${isMyVideoOff ? 'hidden' : ''}`}
-                        />
-                        {isMyVideoOff && (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-500">
-                                <VideoOff size={20} className="mb-1 opacity-50" />
-                                <span className="text-[10px]">Off</span>
+            {/* Active Call UI (Hidden, not Unmounted) */}
+            <div
+                className={`relative w-full max-w-5xl aspect-[9/16] md:aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10 flex flex-col md:flex-row transition-all duration-300 ${(!callAccepted || callEnded) ? 'hidden' : 'flex'}`}
+            >
+                {/* Remote Video (Full Container) */}
+                <div className="absolute inset-0 w-full h-full">
+                    <video
+                        ref={userVideo}
+                        autoPlay
+                        playsInline
+                        className="w-full h-full object-contain bg-black"
+                    />
+                    {/* Info Overlay */}
+                    <div className="absolute top-4 left-4 md:top-6 md:left-6 bg-black/40 pr-4 pl-1 py-1 rounded-full backdrop-blur-sm flex items-center gap-3 border border-white/10 z-20 transition-all hover:bg-black/60">
+                        {displayAvatar ? (
+                            <img src={displayAvatar} className="w-8 h-8 rounded-full border border-white/20" />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs shadow-inner text-white">
+                                {displayInitial}
                             </div>
                         )}
-                        <div className="absolute bottom-1 left-2 text-[10px] text-white/70 font-semibold drop-shadow-md">Bạn</div>
-                    </div>
-
-                    {/* Controls Bar */}
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 md:bottom-8 md:gap-6 md:p-3 bg-slate-900/60 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 z-40 transition-all hover:bg-slate-900/80">
-                        <button
-                            onClick={toggleVideo}
-                            className={`p-3 rounded-full transition-all ${isMyVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            title={isMyVideoOff ? "Bật Camera" : "Tắt Camera"}
-                        >
-                            {isMyVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
-                        </button>
-
-                        <button
-                            onClick={toggleAudio}
-                            className={`p-3 rounded-full transition-all ${isMyAudioOff ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            title={isMyAudioOff ? "Bật Mic" : "Tắt Mic"}
-                        >
-                            {isMyAudioOff ? <MicOff size={20} /> : <Mic size={20} />}
-                        </button>
-
-                        <button
-                            onClick={() => leaveCall('ended')}
-                            className="p-4 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-lg shadow-red-600/30 transition-all hover:scale-110 mx-2"
-                            title="Kết thúc"
-                        >
-                            <PhoneOff size={24} fill="white" />
-                        </button>
+                        <span className="font-bold text-sm md:text-base text-white/90">{displayName}</span>
                     </div>
                 </div>
-            ) : (
-                /* Incoming Call or Calling UI */
-                <div className="bg-slate-800/50 p-8 rounded-3xl backdrop-blur-xl border border-slate-700 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full animate-scale-in border-t border-white/10">
+
+                {/* Local Video (PiP) */}
+                <div className="absolute top-20 right-4 w-28 h-40 md:top-6 md:right-6 md:w-48 md:h-36 bg-slate-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/10 z-30 group/pip ring-1 ring-black/50 transition-all hover:scale-105">
+                    <video
+                        ref={myVideo}
+                        autoPlay
+                        muted
+                        playsInline
+                        className={`w-full h-full object-cover mirror ${isMyVideoOff ? 'hidden' : ''}`}
+                    />
+                    {isMyVideoOff && (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-500">
+                            <VideoOff size={20} className="mb-1 opacity-50" />
+                            <span className="text-[10px]">Off</span>
+                        </div>
+                    )}
+                    <div className="absolute bottom-1 left-2 text-[10px] text-white/70 font-semibold drop-shadow-md">Bạn</div>
+                </div>
+
+                {/* Controls Bar */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 p-2 md:bottom-8 md:gap-6 md:p-3 bg-slate-900/60 backdrop-blur-xl rounded-full shadow-2xl border border-white/10 z-40 transition-all hover:bg-slate-900/80">
+                    <button
+                        onClick={toggleVideo}
+                        className={`p-3 rounded-full transition-all ${isMyVideoOff ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                        title={isMyVideoOff ? "Bật Camera" : "Tắt Camera"}
+                    >
+                        {isMyVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+                    </button>
+
+                    <button
+                        onClick={toggleAudio}
+                        className={`p-3 rounded-full transition-all ${isMyAudioOff ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                        title={isMyAudioOff ? "Bật Mic" : "Tắt Mic"}
+                    >
+                        {isMyAudioOff ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+
+                    <button
+                        onClick={() => leaveCall('ended')}
+                        className="p-4 bg-red-600 hover:bg-red-700 rounded-full text-white shadow-lg shadow-red-600/30 transition-all hover:scale-110 mx-2"
+                        title="Kết thúc"
+                    >
+                        <PhoneOff size={24} fill="white" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Incoming/Outgoing Call UI */}
+            {!callAccepted && !callEnded && (
+                <div className="relative bg-slate-800/50 p-8 rounded-3xl backdrop-blur-xl border border-slate-700 shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full animate-scale-in border-t border-white/10">
                     <div className="relative">
                         <div className="w-32 h-32 rounded-full ring-4 ring-indigo-500/30 overflow-hidden shadow-2xl">
                             {displayAvatar ? (
