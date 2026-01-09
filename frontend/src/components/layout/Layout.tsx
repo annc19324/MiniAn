@@ -176,7 +176,7 @@ export default function Layout() {
             if (Capacitor.isNativePlatform()) {
                 import('../../utils/notificationUtils').then(async ({ registerPushNotifications }) => {
                     const { subscribePush } = await import('../../services/api');
-                    await registerPushNotifications(subscribePush);
+                    await registerPushNotifications(subscribePush, navigate);
                 });
             }
         }

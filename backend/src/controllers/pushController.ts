@@ -105,9 +105,9 @@ export const sendPushNotification = async (userId: number, payload: { title: str
                         android: {
                             priority: 'high',
                             notification: {
-                                sound: 'default',
-                                clickAction: 'FLUTTER_NOTIFICATION_CLICK', // or generic
-                                channelId: 'general_channel_v4'
+                                sound: (payload as any).android?.sound || 'default',
+                                clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+                                channelId: (payload as any).android?.channelId || 'general_channel_v4'
                             }
                         }
                     });

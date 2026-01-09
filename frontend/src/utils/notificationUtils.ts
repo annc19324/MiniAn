@@ -86,7 +86,10 @@ export const playNotificationSound = () => {
 };
 
 // === NATIVE PUSH REGISTRATION ===
-export const registerPushNotifications = async (subscribeApiCall: (sub: any) => Promise<any>) => {
+export const registerPushNotifications = async (
+    subscribeApiCall: (sub: any) => Promise<any>,
+    navigate?: (path: string) => void
+) => {
     if (!Capacitor.isNativePlatform()) return;
 
     try {
@@ -108,6 +111,29 @@ export const registerPushNotifications = async (subscribeApiCall: (sub: any) => 
 
         PushNotifications.addListener('registration', async (token: Token) => {
             console.log('Push Registration Token:', token.value);
+
+            // Create Channels
+            // 1. General
+            await PushNotifications.createChannel({
+                id: 'general_channel_v4',
+                name: 'Tin nhắn & Thông báo',
+                description: 'Thông báo chung',
+                importance: 5,
+                visibility: 1,
+                vibration: true,
+            });
+
+            // 2. Calls (High Priority + Long Sound)
+            await PushNotifications.createChannel({
+                id: 'call_channel_v1',
+                name: 'Cuộc gọi đến',
+                description: 'Thông báo cuộc gọi video',
+                importance: 5,
+                visibility: 1,
+                vibration: true,
+                sound: 'annc19324_sound.mp3' // Refers to res/raw/annc19324_sound.mp3
+            });
+
             // Send to backend with special format for FCM
             // We use a dummy endpoint format "fcm:TOKEN" to distinguish
             const subscription = {
@@ -128,14 +154,31 @@ export const registerPushNotifications = async (subscribeApiCall: (sub: any) => 
         PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
             console.log('Push received:', notification);
             // Show as Local Notification so it looks consistent
-            sendSystemNotification(notification.title || 'New Notification', notification.body || '');
+            // But if we are in foreground, maybe we don't want to show system notification if it's already redundant with toast?
+            // Actually, for consistency let's keep toast only for simplicity or careful handling
+            // sendSystemNotification(notification.title || 'New Notification', notification.body || ''); 
+            // NOTE: Layout.tsx already listens to socket for foreground 'new_notification' -> Toast.
+            // Push is mostly for background. If we get push in foreground, it's duplicate of socket usually.
+            // So we might skip showing it here to avoid double notifs if socket is connected.
         });
 
         // Action Performed (Click)
         PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
             console.log('Push action performed:', notification.actionId, notification.inputValue);
-            // App is opened, you might want to navigate
-            // window.location.href = ... (Routing logic handled usually by checking URL in payload)
+            console.log('Notification data:', notification.notification.data);
+
+            const data = notification.notification.data;
+            if (data && data.url) {
+                const targetUrl = data.url;
+                if (navigate) {
+                    // Navigate within React Router
+                    console.log('Navigating to:', targetUrl);
+                    navigate(targetUrl);
+                } else {
+                    // Fallback
+                    window.location.href = targetUrl;
+                }
+            }
         });
 
     } catch (e) {

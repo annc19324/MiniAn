@@ -4,8 +4,156 @@ import { Request, Response } from 'express';
 import { prisma } from '../db';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { uploadMedia } from '../utils/upload';
+import { sendPushNotification } from './pushController';
 
-// Tạo bài viết
+// Điều chỉnh lại imports nếu cần thiết
+// ...
+
+// ... (createPost and getFeed remain unchanged) ...
+
+// Like / Unlike
+export const toggleLike = async (req: AuthRequest, res: Response) => {
+    const { postId } = req.params;
+    const userId = req.user!.id;
+
+    try {
+        const existingLike = await prisma.like.findUnique({
+            where: { postId_userId: { postId: Number(postId), userId } },
+        });
+
+        if (existingLike) {
+            await prisma.like.delete({
+                where: { id: existingLike.id },
+            });
+            res.json({ message: 'Đã unlike' });
+        } else {
+            await prisma.like.create({
+                data: { postId: Number(postId), userId },
+            });
+
+            // Tạo notification (nếu không phải tự like)
+            const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
+            if (post && post.authorId !== userId) {
+                const notifContent = `${req.user?.username} đã thích bài viết của bạn`;
+                const notif = await prisma.notification.create({
+                    data: {
+                        type: 'like',
+                        content: notifContent,
+                        userId: post.authorId,
+                        senderId: userId,
+                        postId: Number(postId),
+                    },
+                });
+
+                // Socket Emit
+                const { io } = require('../server');
+                io.to(post.authorId.toString()).emit('new_notification', notif);
+
+                // Push Notification
+                sendPushNotification(post.authorId, {
+                    title: 'Tương tác mới',
+                    body: notifContent,
+                    url: `/post/${postId}`
+                });
+            }
+
+            res.json({ message: 'Đã like' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi like', error });
+    }
+};
+
+// Comment
+export const createComment = async (req: AuthRequest, res: Response) => {
+    const { postId } = req.params;
+    const { content, parentId } = req.body;
+    const userId = req.user!.id;
+    const file = req.file;
+
+    try {
+        let imageUrl: string | undefined;
+
+        if (file) {
+            if (!file.mimetype.startsWith('image/')) {
+                return res.status(400).json({ message: 'Bình luận chỉ hỗ trợ ảnh' });
+            }
+            const uploadRes = await uploadMedia(file);
+            imageUrl = uploadRes.url;
+        }
+
+        const comment = await prisma.comment.create({
+            data: {
+                content: content || '',
+                image: imageUrl,
+                postId: Number(postId),
+                authorId: userId,
+                parentId: parentId ? Number(parentId) : undefined,
+            },
+            include: {
+                author: { select: { username: true, fullName: true, avatar: true } },
+            },
+        });
+
+        const post = await prisma.post.findUnique({ where: { id: Number(postId) } });
+
+        // 1. Notify Post Author
+        if (post && post.authorId !== userId) {
+            const notifContent = `${req.user?.username} đã bình luận về bài viết của bạn`;
+            const notif = await prisma.notification.create({
+                data: {
+                    type: 'comment',
+                    content: notifContent,
+                    userId: post.authorId,
+                    senderId: userId,
+                    postId: Number(postId),
+                    commentId: comment.id,
+                },
+            });
+
+            const { io } = require('../server');
+            io.to(post.authorId.toString()).emit('new_notification', notif);
+
+            sendPushNotification(post.authorId, {
+                title: 'Bình luận mới',
+                body: notifContent,
+                url: `/post/${postId}?commentId=${comment.id}`
+            });
+        }
+
+        // 2. Notify Parent Comment Author (if Reply)
+        if (parentId) {
+            const parentComment = await prisma.comment.findUnique({ where: { id: Number(parentId) } });
+            // Notify if parent exists, isn't me, AND isn't the post author (avoid double notif if post author = comment author)
+            if (parentComment && parentComment.authorId !== userId && parentComment.authorId !== post?.authorId) {
+                const replyContent = `${req.user?.username} đã trả lời bình luận của bạn`;
+                const replyNotif = await prisma.notification.create({
+                    data: {
+                        type: 'comment', // or 'reply' if separate type supported
+                        content: replyContent,
+                        userId: parentComment.authorId,
+                        senderId: userId,
+                        postId: Number(postId),
+                        commentId: comment.id,
+                    },
+                });
+
+                const { io } = require('../server');
+                io.to(parentComment.authorId.toString()).emit('new_notification', replyNotif);
+
+                sendPushNotification(parentComment.authorId, {
+                    title: 'Phản hồi mới',
+                    body: replyContent,
+                    url: `/post/${postId}?commentId=${comment.id}`
+                });
+            }
+        }
+
+        res.status(201).json({ message: 'Bình luận thành công', comment });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi bình luận', error });
+    }
+};
 export const createPost = async (req: AuthRequest, res: Response) => {
     const { content } = req.body;
     const file = req.file;

@@ -334,10 +334,11 @@ export const followUser = async (req: AuthRequest, res: Response) => {
             });
 
             // Notification
+            const notifContent = `${req.user?.username} đã bắt đầu theo dõi bạn`;
             const notif = await prisma.notification.create({
                 data: {
                     type: 'follow',
-                    content: `${req.user?.username} đã bắt đầu theo dõi bạn`,
+                    content: notifContent,
                     userId: targetId,
                     senderId: userId
                 }
@@ -346,6 +347,14 @@ export const followUser = async (req: AuthRequest, res: Response) => {
             // Socket Emit
             const { io } = require('../server');
             io.to(targetId.toString()).emit('new_notification', notif);
+
+            // Push Notification
+            const { sendPushNotification } = require('./pushController');
+            sendPushNotification(targetId, {
+                title: 'Follower mới',
+                body: notifContent,
+                url: `/profile/${userId}`
+            });
 
             res.json({ message: 'Followed', isFollowing: true });
         }

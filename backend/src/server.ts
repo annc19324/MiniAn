@@ -183,7 +183,12 @@ io.on("connection", (socket) => {
         sendPushNotification(Number(userToCall), {
             title: `Cuộc gọi video từ ${data.name || "Minian User"}`,
             body: "Nhấn để trả lời ngay",
-            url: "/" // Opens app root, PWA handles navigation
+            url: "/", // Opens app root, PWA handles navigation
+            // @ts-ignore - Assuming controller handles extra fields or we pack them in payload
+            android: {
+                channelId: 'call_channel_v1',
+                sound: 'annc19324_sound.mp3'
+            }
         }).catch(err => console.error("Call Push Error:", err));
     });
 
