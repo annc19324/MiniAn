@@ -178,6 +178,12 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
         socket.on('call_incoming', async (data) => {
             console.log("Receive Call Incoming:", data);
+
+            // Deduplicate: If we are already receiving a call from this user, ignore
+            if (call && call.from === data.fromUser && call.isReceivedCall) {
+                return;
+            }
+
             setCallEnded(false);
             setCall({
                 isReceivedCall: true,

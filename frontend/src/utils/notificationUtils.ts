@@ -106,6 +106,10 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
     // Foreground Notification
     PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
         console.log('Push received:', notification);
+        const data = notification.data;
+        if (data && data.type === 'call_ended') {
+            LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(console.error);
+        }
     });
 
     // Action Performed (Click) - Push
@@ -121,6 +125,13 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
             // Handle Call Answer/Decline Actions if any
             if (notification.actionId === 'answer' && data.conversationId) {
                 navigate(`/chat`);
+            } else if (data.type === 'call_incoming') {
+                navigate(`/chat`);
+            } else if (data.type === 'call_ended') {
+                // Do nothing or navigate to chat to see missed call
+                // But most importantly, cancel notification
+                LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(console.error);
+                // No navigation needed, or maybe navigate home
             }
         }
     });

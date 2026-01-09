@@ -222,6 +222,14 @@ io.on("connection", (socket) => {
                 io.to(socketId).emit("call_ended");
             });
         }
+
+        // Always send "Call Ended" push to cancel notification
+        sendPushNotification(Number(to), {
+            title: "Cuộc gọi đã kết thúc",
+            body: "",
+            // @ts-ignore
+            type: 'call_ended'
+        }).catch(err => console.error("Call End Push Error:", err));
     });
 
     socket.on("disconnect", () => {
