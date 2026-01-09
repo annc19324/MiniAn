@@ -6,7 +6,8 @@ self.addEventListener('push', function (event) {
             icon: '/minian.ico',
             badge: '/minian.ico',
             data: {
-                url: payload.url || '/'
+                url: payload.url || '/',
+                click_action: payload.url || '/'
             },
             vibrate: [200, 100, 200, 100, 200, 100, 200],
             renotify: true, // Re-alert if stacking

@@ -294,7 +294,7 @@ export default function Layout() {
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
             <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300`}>
-                <PullToRefresh onRefresh={async () => window.location.reload()} className="h-full">
+                <PullToRefresh onRefresh={async () => { window.location.reload(); return Promise.resolve(); }} className="h-full">
                     <div className="px-4 py-6 min-h-screen">
                         <Outlet />
                     </div>

@@ -162,6 +162,17 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             }
             if (Capacitor.isNativePlatform()) {
                 LocalNotifications.requestPermissions();
+
+                // Add listener (once)
+                LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+                    if (notification.notification.extra && notification.notification.extra.type === 'call_incoming') {
+                        // Just bringing app to foreground is enough, the socket event 'call_incoming' triggers state.
+                        // But if state was lost/app killed, we need to handle hydration? 
+                        // For now assuming background but alive:
+                        window.focus();
+                        setIsMinimized(false);
+                    }
+                });
             }
         });
 
@@ -187,16 +198,21 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                         notifications: [{
                             title: `📞 Cuộc gọi từ ${data.name || "Người dùng"}`,
                             body: "Nhấn để mở ứng dụng và trả lời",
-                            id: 1,
+                            id: 1, // Fixed ID to overwrite
                             schedule: { at: new Date(Date.now() + 100) }, // Now
                             sound: 'annc19324_sound.mp3',
                             actionTypeId: 'OPEN_APP_ACTION',
-                            extra: { type: 'call_incoming' },
+                            extra: {
+                                type: 'call_incoming',
+                                conversationId: data.conversationId,
+                                fromUser: data.fromUser
+                            },
                             channelId: 'calls_channel_v3',
                             smallIcon: 'ic_launcher'
                         }]
                     });
-                    // Create channel if needed (Android O+)
+
+                    // Create channel if needed (Android O+) - Force High Importance
                     await LocalNotifications.createChannel({
                         id: 'calls_channel_v3',
                         name: 'Call Notifications V3',
