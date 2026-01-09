@@ -379,6 +379,9 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     if (showActivityStatus !== undefined) {
         if (typeof showActivityStatus === 'string') showActivityStatus = showActivityStatus === 'true';
     }
+    if (allowMessageNotifications !== undefined) {
+        if (typeof allowMessageNotifications === 'string') allowMessageNotifications = allowMessageNotifications === 'true';
+    }
 
     try {
         console.log("Update Body:", req.body);
@@ -447,6 +450,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         if (username) dataToUpdate.username = username;
         if (email) dataToUpdate.email = email;
         if (showActivityStatus !== undefined) dataToUpdate.showActivityStatus = showActivityStatus;
+        if (allowMessageNotifications !== undefined) dataToUpdate.allowMessageNotifications = allowMessageNotifications;
         if (imageUrl) dataToUpdate.avatar = imageUrl;
 
         console.log("Final dataToUpdate:", dataToUpdate);

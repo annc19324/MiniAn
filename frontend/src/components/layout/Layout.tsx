@@ -12,6 +12,7 @@ import { getConversations } from '../../services/api';
 import { sendSystemNotification, playNotificationSound } from '../../utils/notificationUtils';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -292,8 +293,12 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-4 py-6 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300`}>
-                <Outlet />
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300`}>
+                <PullToRefresh onRefresh={async () => window.location.reload()} className="h-full">
+                    <div className="px-4 py-6 min-h-screen">
+                        <Outlet />
+                    </div>
+                </PullToRefresh>
             </main>
 
             {/* Mobile Bottom Nav */}

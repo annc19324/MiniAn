@@ -14,6 +14,7 @@ interface User {
     role: string;
     isVip: boolean;
     showActivityStatus?: boolean;
+    allowMessageNotifications?: boolean;
 }
 
 interface AuthContextType {

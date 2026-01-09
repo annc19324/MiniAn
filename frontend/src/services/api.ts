@@ -85,5 +85,6 @@ export const updateGroup = (id: number, data: FormData) => api.put(`/chat/group/
 export const addGroupMember = (roomId: number, memberId: number) => api.post(`/chat/group/${roomId}/member/add`, { memberId });
 export const removeGroupMember = (roomId: number, memberId: number) => api.delete(`/chat/group/${roomId}/member/remove`, { data: { memberId } });
 export const leaveGroup = (roomId: number) => api.post(`/chat/group/${roomId}/leave`);
+export const muteConversation = (roomId: number, duration: number | null) => api.put(`/chat/conversation/${roomId}/mute`, { duration });
 
 export default api;

@@ -1,9 +1,9 @@
 // src/pages/Chat.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation } from '../services/api';
+import { getConversations, getMessages, sendMessage, startConversation, markMessagesRead, updateMessage, deleteMessage, deleteConversation, muteConversation } from '../services/api';
 import { io, Socket } from 'socket.io-client';
-import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon } from 'lucide-react';
+import { Send, MoreVertical, Phone, MessageCircle, Search, Trash2, Edit2, RotateCcw, MoreHorizontal, X, Check, Users, Image as ImageIcon, BellOff } from 'lucide-react';
 import { useCall } from '../context/CallContext';
 import { toast } from 'react-hot-toast';
 import { getAvatarUrl } from '../utils/avatarUtils';
@@ -117,6 +117,19 @@ export default function Chat() {
         onConfirm: () => { },
         type: 'danger'
     });
+    const [showMuteModal, setShowMuteModal] = useState(false);
+
+    const handleMute = async (duration: number) => {
+        if (!activeRoomId) return;
+        try {
+            await muteConversation(activeRoomId, duration);
+            toast.success(duration ? 'Đã tắt thông báo' : 'Đã bật thông báo');
+            setShowMuteModal(false);
+            setShowRoomMenu(false);
+        } catch (error) {
+            toast.error('Lỗi cập nhật');
+        }
+    };
 
     // Initialize Socket
     useEffect(() => {
@@ -697,6 +710,13 @@ export default function Chat() {
                                             </button>
                                         )}
                                         <button
+                                            onClick={() => setShowMuteModal(true)}
+                                            className="w-full text-left px-4 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 text-sm font-medium transition-colors"
+                                        >
+                                            <BellOff size={16} />
+                                            Tắt thông báo
+                                        </button>
+                                        <button
                                             onClick={handleDeleteConv}
                                             className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 text-sm font-medium transition-colors"
                                         >
@@ -798,6 +818,47 @@ export default function Chat() {
                                                     {msg.sender.fullName || msg.sender.username}
                                                 </Link>
                                             )}
+
+
+                                            {showMuteModal && (
+                                                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                                                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
+                                                        <div className="p-6 text-center">
+                                                            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500 dark:text-slate-300">
+                                                                <BellOff size={32} />
+                                                            </div>
+                                                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tắt thông báo?</h3>
+                                                            <p className="text-slate-500 dark:text-slate-400 mb-6">Bạn sẽ không nhận được thông báo đẩy từ cuộc trò chuyện này.</p>
+
+                                                            <div className="space-y-3">
+                                                                <button onClick={() => handleMute(15)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                                                    Trong 15 phút
+                                                                </button>
+                                                                <button onClick={() => handleMute(60)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                                                    Trong 1 giờ
+                                                                </button>
+                                                                <button onClick={() => handleMute(60 * 8)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                                                    Trong 8 giờ
+                                                                </button>
+                                                                <button onClick={() => handleMute(60 * 24)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                                                    Trong 24 giờ
+                                                                </button>
+                                                                <button onClick={() => handleMute(0)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                                                    Bật lại thông báo
+                                                                </button>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => setShowMuteModal(false)}
+                                                                className="mt-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium"
+                                                            >
+                                                                Hủy bỏ
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
 
                                             {isEditing ? (
                                                 <div className="flex gap-2 items-center">
@@ -1009,59 +1070,102 @@ export default function Chat() {
             }
 
             {/* Seen Users Modal */}
-            {seenUsersModalOpen && viewingSeenBy && (
-                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSeenUsersModalOpen(false)}>
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-                        <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
-                            <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
-                                <Users size={18} className="text-indigo-500" />
-                                Đã xem bởi
-                            </h3>
-                            <button onClick={() => setSeenUsersModalOpen(false)} className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
-                                <X size={18} />
-                            </button>
-                        </div>
-                        <div className="max-h-[50vh] overflow-y-auto p-1">
-                            {(() => {
-                                const readers = activeConversation?.members?.filter(m => viewingSeenBy.includes(m.id) && m.id !== user?.id) || [];
-                                // Debug logging for "Seen By" issue
-                                // console.log('SeenBy Debug:', { msgReadBy: viewingSeenBy, members: activeConversation?.members?.map(m => m.id), readers: readers.map(r => r.id) });
+            {
+                seenUsersModalOpen && viewingSeenBy && (
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSeenUsersModalOpen(false)}>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in border border-slate-100 dark:border-slate-700" onClick={e => e.stopPropagation()}>
+                            <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                                <h3 className="font-bold text-base text-slate-800 dark:text-white flex items-center gap-2">
+                                    <Users size={18} className="text-indigo-500" />
+                                    Đã xem bởi
+                                </h3>
+                                <button onClick={() => setSeenUsersModalOpen(false)} className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="max-h-[50vh] overflow-y-auto p-1">
+                                {(() => {
+                                    const readers = activeConversation?.members?.filter(m => viewingSeenBy.includes(m.id) && m.id !== user?.id) || [];
+                                    // Debug logging for "Seen By" issue
+                                    // console.log('SeenBy Debug:', { msgReadBy: viewingSeenBy, members: activeConversation?.members?.map(m => m.id), readers: readers.map(r => r.id) });
 
-                                if (readers.length === 0) {
-                                    return <div className="text-center text-slate-500 py-4 text-xs flex flex-col items-center gap-1">
-                                        <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
-                                            <Users size={16} />
-                                        </div>
-                                        <p>Chưa có ai xem (ngoài bạn)</p>
-                                    </div>;
-                                }
+                                    if (readers.length === 0) {
+                                        return <div className="text-center text-slate-500 py-4 text-xs flex flex-col items-center gap-1">
+                                            <div className="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-400">
+                                                <Users size={16} />
+                                            </div>
+                                            <p>Chưa có ai xem (ngoài bạn)</p>
+                                        </div>;
+                                    }
 
-                                return readers.map(member => (
-                                    <div
-                                        key={member.id}
-                                        className="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer group"
-                                        onClick={() => {
-                                            setSeenUsersModalOpen(false);
-                                            navigate(`/profile/${member.id}`);
-                                        }}
-                                    >
-                                        <img src={getAvatarUrl(member.avatar, member.username)} className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-600" alt={member.username} />
-                                        <div>
-                                            <p className="font-semibold text-slate-800 dark:text-white text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{member.fullName}</p>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">@{member.username}</p>
+                                    return readers.map(member => (
+                                        <div
+                                            key={member.id}
+                                            className="flex items-center gap-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors cursor-pointer group"
+                                            onClick={() => {
+                                                setSeenUsersModalOpen(false);
+                                                navigate(`/profile/${member.id}`);
+                                            }}
+                                        >
+                                            <img src={getAvatarUrl(member.avatar, member.username)} className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-600" alt={member.username} />
+                                            <div>
+                                                <p className="font-semibold text-slate-800 dark:text-white text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{member.fullName}</p>
+                                                <p className="text-[10px] text-slate-500 dark:text-slate-400">@{member.username}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ));
-                            })()}
+                                    ));
+                                })()}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <ImageModal
                 src={viewingImage}
                 onClose={() => setViewingImage(null)}
             />
-        </div>
+            {/* Mute Modal */}
+            {
+                showMuteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-scale-in">
+                            <div className="p-6 text-center">
+                                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500 dark:text-slate-300">
+                                    <BellOff size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Tắt thông báo?</h3>
+                                <p className="text-slate-500 dark:text-slate-400 mb-6">Bạn sẽ không nhận được thông báo đẩy từ cuộc trò chuyện này.</p>
+
+                                <div className="space-y-3">
+                                    <button onClick={() => handleMute(15)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                        Trong 15 phút
+                                    </button>
+                                    <button onClick={() => handleMute(60)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                        Trong 1 giờ
+                                    </button>
+                                    <button onClick={() => handleMute(60 * 8)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                        Trong 8 giờ
+                                    </button>
+                                    <button onClick={() => handleMute(60 * 24)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                        Trong 24 giờ
+                                    </button>
+                                    <button onClick={() => handleMute(0)} className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl font-medium text-slate-700 dark:text-slate-200 transition-colors">
+                                        Bật lại thông báo
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={() => setShowMuteModal(false)}
+                                    className="mt-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium"
+                                >
+                                    Hủy bỏ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

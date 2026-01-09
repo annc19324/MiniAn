@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
-import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play, Eye, EyeOff, Download } from 'lucide-react';
+import { User, Lock, Save, LogOut, Moon, Bell, Volume2, Play, Eye, EyeOff, Download, MessageCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { playNotificationSound } from '../utils/notificationUtils';
 import { toast } from 'react-hot-toast'; // New import
@@ -247,6 +247,36 @@ export default function Settings() {
                                     <div className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${soundEnabled ? 'translate-x-7' : 'translate-x-0'}`}></div>
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Message Push Toggle */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 text-blue-600 rounded-lg dark:bg-blue-900/30 dark:text-blue-400">
+                                    <MessageCircle size={20} />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-slate-800 dark:text-white">Thông báo tin nhắn</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Nhận thông báo khi có tin nhắn mới</p>
+                                </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={user?.allowMessageNotifications ?? true}
+                                    onChange={(e) => {
+                                        const formData = new FormData();
+                                        formData.append('allowMessageNotifications', e.target.checked.toString());
+                                        updateUserProfile(formData).then((res) => {
+                                            // @ts-ignore
+                                            updateUser(res.data.user);
+                                            toast.success(e.target.checked ? 'Đã bật thông báo tin nhắn' : 'Đã tắt thông báo tin nhắn');
+                                        });
+                                    }}
+                                />
+                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            </label>
                         </div>
 
 

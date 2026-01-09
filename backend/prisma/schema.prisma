@@ -23,6 +23,7 @@ model User {
   lastSeen         DateTime          @default(now())
   isOnline         Boolean           @default(false)
   showActivityStatus Boolean       @default(true)
+  allowMessageNotifications Boolean @default(true)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   coinTransactions CoinTransaction[]
@@ -134,6 +135,7 @@ model UserRoom {
   userId   Int
   roomId   Int
   joinedAt DateTime @default(now())
+  mutedUntil DateTime?
   room     Room     @relation(fields: [roomId], references: [id])
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

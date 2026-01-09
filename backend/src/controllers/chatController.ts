@@ -213,7 +213,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         // Notify Receiver for global unread count
         const room = await prisma.room.findUnique({
             where: { id: Number(roomId) },
-            include: { users: true }
+            include: { users: { include: { user: true } } }
         });
 
         if (room) {
@@ -235,6 +235,14 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
                 // Push Notification
                 // Ensure import { sendPushNotification } from './pushController'; at top
+                // Check Mute & Global Notification
+                // @ts-ignore
+                const isMuted = receiver.mutedUntil && new Date(receiver.mutedUntil) > new Date();
+                // @ts-ignore
+                const isGlobalAllowed = receiver.user.allowMessageNotifications;
+
+                if (isMuted || !isGlobalAllowed) continue;
+
                 sendPushNotification(receiver.userId, {
                     title: `Tin nhắn mới từ ${req.user!.username}`,
                     body: notifBody,
@@ -664,3 +672,35 @@ export const leaveGroup = async (req: AuthRequest, res: Response) => {
     }
 };
 
+
+
+
+// Mute/Unmute conversation
+export const muteConversation = async (req: AuthRequest, res: Response) => {
+    const { id } = req.params; // roomId
+    const userId = req.user!.id;
+    const { duration } = req.body; // minutes. If 0 or null, unmute.
+
+    try {
+        const room = await prisma.room.findUnique({ where: { id: Number(id) } });
+        if (!room) return res.status(404).json({ message: 'Chat not found' });
+
+        let mutedUntil: Date | null = null;
+        if (duration && duration > 0) {
+            mutedUntil = new Date();
+            mutedUntil.setMinutes(mutedUntil.getMinutes() + Number(duration));
+        }
+
+        await prisma.userRoom.update({
+            where: {
+                userId_roomId: { userId, roomId: Number(id) }
+            },
+            data: { mutedUntil }
+        });
+
+        res.json({ message: duration ? `Đã tắt thông báo trong ${duration} phút` : 'Đã bật thông báo', mutedUntil });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Lỗi tắt thông báo' });
+    }
+};
