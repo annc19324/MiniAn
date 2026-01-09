@@ -26,7 +26,6 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
                     body: body || '',
                     id: notifId,
                     schedule: { at: new Date(Date.now()) }, // Immediate
-                    actionTypeId: 'OPEN_APP_ACTION',
                     smallIcon: 'ic_launcher',
                     channelId: 'general_channel_v4'
                 }]
@@ -109,7 +108,7 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
         console.log('Push received:', notification);
     });
 
-    // Action Performed (Click) - CRITICAL FOR OPENING APP
+    // Action Performed (Click) - Push
     PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
         console.log('Push action performed:', notification.actionId);
         const data = notification.notification.data;
@@ -121,8 +120,24 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
             }
             // Handle Call Answer/Decline Actions if any
             if (notification.actionId === 'answer' && data.conversationId) {
-                navigate(`/chat`); // Or specific call route
+                navigate(`/chat`);
             }
+        }
+    });
+
+    // Action Performed (Click) - Local
+    LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+        console.log('Local action performed:', notification.actionId);
+        // Default Local Notification behavior is to open app.
+        // We just need to handle specific navigation if 'extra' data is present.
+        // But sendSystemNotification just sends title/body.
+        // If we want navigation, we should add 'extra' or data to it.
+        // For now, at least it logs and maybe we can direct to /notifications
+        if (notification.notification.extra && notification.notification.extra.url) {
+            navigate(notification.notification.extra.url);
+        } else {
+            // Fallback to home or notifications
+            // navigate('/notifications'); // Optional
         }
     });
 };
