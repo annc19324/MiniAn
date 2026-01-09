@@ -175,9 +175,9 @@ export default function Layout() {
 
             // Native Push Registration
             if (Capacitor.isNativePlatform()) {
-                import('../../utils/notificationUtils').then(async ({ registerPushNotifications }) => {
+                import('../../utils/notificationUtils').then(async ({ registerPushToken }) => {
                     const { subscribePush } = await import('../../services/api');
-                    await registerPushNotifications(subscribePush, navigate);
+                    await registerPushToken(subscribePush);
                 });
             }
         }
@@ -293,14 +293,13 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
+            {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
             <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col`}>
-                <div className="flex-1 h-full overflow-hidden relative">
-                    <PullToRefresh onRefresh={async () => { window.location.reload(); return Promise.resolve(); }} className="h-full overflow-y-auto">
-                        <div className="px-4 py-6 min-h-screen">
-                            <Outlet />
-                        </div>
-                    </PullToRefresh>
-                </div>
+                <PullToRefresh onRefresh={async () => { window.location.reload(); return Promise.resolve(); }} className="flex-1 overflow-y-auto">
+                    <div className="px-4 py-6 min-h-screen">
+                        <Outlet />
+                    </div>
+                </PullToRefresh>
             </main>
 
             {/* Mobile Bottom Nav */}

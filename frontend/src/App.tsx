@@ -29,11 +29,14 @@ import LeaderboardPage from './pages/LeaderboardPage';
 
 import { Toaster } from 'react-hot-toast';
 
+import PushListener from './components/PushListener';
+
 function AppContent() {
   const { user } = useAuth();
 
   return (
     <Router>
+      <PushListener />
       <Toaster
         position="top-center"
         reverseOrder={false}
