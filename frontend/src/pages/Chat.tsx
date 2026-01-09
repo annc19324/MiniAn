@@ -531,7 +531,7 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="fixed inset-x-2 top-[70px] bottom-[85px] z-30 lg:z-auto lg:static lg:inset-auto flex lg:h-[calc(100vh-80px)] glass-card overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-white dark:bg-slate-900 lg:z-auto lg:static lg:bg-transparent lg:inset-auto flex lg:h-[calc(100vh-80px)] lg:glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
             <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-3 border-b border-indigo-50 dark:border-slate-800 space-y-3">

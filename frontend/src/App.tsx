@@ -39,10 +39,12 @@ function AppContent() {
         reverseOrder={false}
         toastOptions={{
           duration: 2000,
+          className: '',
           style: {
             background: '#333',
             color: '#fff',
             borderRadius: '12px',
+            marginTop: 'env(safe-area-inset-top, 40px)', // Safe area or default 40px
           },
           success: {
             style: {
@@ -54,6 +56,9 @@ function AppContent() {
               background: '#EF4444',
             },
           },
+        }}
+        containerStyle={{
+          top: 40, // Force push down
         }}
       />
       <Routes>
