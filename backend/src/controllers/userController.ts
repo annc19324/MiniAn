@@ -369,7 +369,7 @@ export const followUser = async (req: AuthRequest, res: Response) => {
 // Cập nhật Profile (User tự cập nhật)
 export const updateUserProfile = async (req: AuthRequest, res: Response) => {
     const userId = req.user!.id;
-    let { fullName, bio, username, email, showActivityStatus } = req.body;
+    let { fullName, bio, username, email, showActivityStatus, allowMessageNotifications } = req.body;
     const file = req.file;
 
     // Normalize
