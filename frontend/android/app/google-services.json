@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "162631341854",
+    "project_id": "minian-b3aa6",
+    "storage_bucket": "minian-b3aa6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162631341854:android:d96548d643ce991c801b0f",
+        "android_client_info": {
+          "package_name": "com.minian.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvITZvU_MTfdYz4K7_h6gq0m5_WxrTtk0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

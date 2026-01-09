@@ -57,10 +57,28 @@ export const subscribe = async (req: AuthRequest, res: Response) => {
     }
 };
 
+
+// Lazy load firebase-admin to avoid crash if not installed
+let admin: any;
+try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    admin = require('firebase-admin');
+    if (!admin.apps.length) {
+        // Initialize with default strategy (GOOGLE_APPLICATION_CREDENTIALS) 
+        // or serviceAccount from env
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        }
+    }
+} catch (e) {
+    console.log("Firebase Admin not installed or configured. Native Push won't work.");
+}
+
 // 2. Helper to Send Notification
 export const sendPushNotification = async (userId: number, payload: { title: string, body: string, url?: string }) => {
-    if (!process.env.VAPID_PUBLIC_KEY) return; // Not configured
-
     try {
         const subs = await prisma.pushSubscription.findMany({
             where: { userId }
@@ -68,9 +86,43 @@ export const sendPushNotification = async (userId: number, payload: { title: str
 
         const notificationPayload = JSON.stringify(payload);
 
-        // Send to all user's subscriptions
-        const promises = subs.map(sub =>
-            webpush.sendNotification(
+        const promises = subs.map(async sub => {
+            // Check if it is an FCM Token (Using our 'fcm:' prefix convention)
+            if (sub.endpoint.startsWith('fcm:')) {
+                if (!admin) return;
+                const token = sub.endpoint.split('fcm:')[1];
+                try {
+                    await admin.messaging().send({
+                        token: token,
+                        notification: {
+                            title: payload.title,
+                            body: payload.body,
+                        },
+                        data: {
+                            url: payload.url || '/',
+                            ...payload
+                        },
+                        android: {
+                            priority: 'high',
+                            notification: {
+                                sound: 'default',
+                                clickAction: 'FLUTTER_NOTIFICATION_CLICK', // or generic
+                                channelId: 'general_channel_v4'
+                            }
+                        }
+                    });
+                } catch (err: any) {
+                    console.error("FCM Send Error:", err);
+                    if (err.code === 'messaging/registration-token-not-registered') {
+                        await prisma.pushSubscription.delete({ where: { id: sub.id } });
+                    }
+                }
+                return;
+            }
+
+            // Normal Web Push
+            if (!process.env.VAPID_PUBLIC_KEY) return;
+            return webpush.sendNotification(
                 {
                     endpoint: sub.endpoint,
                     keys: sub.keys as any
@@ -78,12 +130,11 @@ export const sendPushNotification = async (userId: number, payload: { title: str
                 notificationPayload
             ).catch(async err => {
                 if (err.statusCode === 410 || err.statusCode === 404) {
-                    // Subscription expired/invalid
                     await prisma.pushSubscription.delete({ where: { id: sub.id } });
                 }
-                console.error('Error sending push:', err);
-            })
-        );
+                console.error('Error sending web push:', err);
+            });
+        });
 
         await Promise.all(promises);
     } catch (error) {

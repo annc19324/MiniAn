@@ -165,10 +165,19 @@ export default function Layout() {
                                 // console.log('Push Subscribed');
                             } catch (err) {
                                 console.error('Failed to subscribe push', err);
+                                console.error('Failed to subscribe push', err);
                             }
                         }
                     })
                     .catch(err => console.error('SW Register Error', err));
+            }
+
+            // Native Push Registration
+            if (Capacitor.isNativePlatform()) {
+                import('../../utils/notificationUtils').then(async ({ registerPushNotifications }) => {
+                    const { subscribePush } = await import('../../services/api');
+                    await registerPushNotifications(subscribePush);
+                });
             }
         }
     }, [user, window.location.pathname]); // Refresh when navigating too

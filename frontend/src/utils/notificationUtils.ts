@@ -10,6 +10,8 @@ export const requestNotificationPermission = async () => {
 
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
+import type { Token, ActionPerformed, PushNotificationSchema } from '@capacitor/push-notifications';
 
 export const sendSystemNotification = async (title: string, body?: string, icon?: string) => {
     // === NATIVE LOGIC ===
@@ -78,8 +80,65 @@ export const playNotificationSound = () => {
     try {
         const audio = new Audio(RELIABLE_SOUND_URL);
         audio.volume = 0.6;
-        audio.play().catch(e => console.error("Audio play blocked:", e));
     } catch (e) {
         console.error("Audio init error:", e);
+    }
+};
+
+// === NATIVE PUSH REGISTRATION ===
+export const registerPushNotifications = async (subscribeApiCall: (sub: any) => Promise<any>) => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    try {
+        let permStatus = await PushNotifications.checkPermissions();
+
+        if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive !== 'granted') {
+            console.log('User denied permissions!');
+            return;
+        }
+
+        await PushNotifications.register();
+
+        // On success, we get a token
+        PushNotifications.removeAllListeners();
+
+        PushNotifications.addListener('registration', async (token: Token) => {
+            console.log('Push Registration Token:', token.value);
+            // Send to backend with special format for FCM
+            // We use a dummy endpoint format "fcm:TOKEN" to distinguish
+            const subscription = {
+                endpoint: `fcm:${token.value}`,
+                keys: {
+                    p256dh: 'fcm',
+                    auth: 'fcm'
+                }
+            };
+            await subscribeApiCall(subscription);
+        });
+
+        PushNotifications.addListener('registrationError', (error: any) => {
+            console.error('Error on registration:', error);
+        });
+
+        // Foreground Notification
+        PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
+            console.log('Push received:', notification);
+            // Show as Local Notification so it looks consistent
+            sendSystemNotification(notification.title || 'New Notification', notification.body || '');
+        });
+
+        // Action Performed (Click)
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification: ActionPerformed) => {
+            console.log('Push action performed:', notification.actionId, notification.inputValue);
+            // App is opened, you might want to navigate
+            // window.location.href = ... (Routing logic handled usually by checking URL in payload)
+        });
+
+    } catch (e) {
+        console.error("Push Register Error:", e);
     }
 };
