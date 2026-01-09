@@ -90,6 +90,9 @@ const userSocketMap = new Map<number, Set<string>>();
 // Map ReceiverId -> CallData (Pending calls for users who are offline/background)
 const pendingCalls = new Map<number, any>();
 
+// Map ReceiverId -> Interval (For looping call notifications)
+const callPulseIntervals = new Map<number, NodeJS.Timeout>();
+
 io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
@@ -132,20 +135,36 @@ io.on("connection", (socket) => {
         const userId = (socket as any).userId;
         if (userId) {
             const uid = Number(userId);
+
+            // CLEANUP PULSE IF CALLER
+            // If this user was calling someone, stop the pulse to that person
+            // How do we know who they are calling? We iterate pendingCalls?
+            for (const [receiverId, callData] of pendingCalls.entries()) {
+                if (callData.fromUser === uid) {
+                    pendingCalls.delete(receiverId);
+                    // Stop Pulse
+                    if (callPulseIntervals.has(receiverId)) {
+                        clearInterval(callPulseIntervals.get(receiverId)!);
+                        callPulseIntervals.delete(receiverId);
+                    }
+                    // Send End Call Signal?
+                    const targetSockets = userSocketMap.get(receiverId);
+                    if (targetSockets) targetSockets.forEach(s => io.to(s).emit("call_ended"));
+
+                    // Send Push Cancellation
+                    sendPushNotification(receiverId, { title: "Cuộc gọi đã kết thúc", body: "", type: 'call_ended' } as any).catch(e => { });
+                }
+            }
+
             if (userSocketMap.has(uid)) {
                 userSocketMap.get(uid)!.delete(socket.id);
                 if (userSocketMap.get(uid)!.size === 0) {
                     userSocketMap.delete(uid);
                     try {
                         const now = new Date();
-                        await prisma.user.update({
-                            where: { id: uid },
-                            data: { isOnline: false, lastSeen: now }
-                        });
+                        await prisma.user.update({ where: { id: uid }, data: { isOnline: false, lastSeen: now } });
                         socket.broadcast.emit('user_status_change', { userId: uid, isOnline: false, lastSeen: now });
-                    } catch (e) {
-                        console.error("Error updating offline status:", e);
-                    }
+                    } catch (e) { console.error("Error updating offline status:", e); }
                 }
             }
 
@@ -168,7 +187,6 @@ io.on("connection", (socket) => {
     // WebRTC Signaling Events
     socket.on('call_user', (data) => {
         const { userToCall, signalData, fromUser } = data;
-        // Store pending call
         pendingCalls.set(Number(userToCall), data);
 
         const targetSockets = userSocketMap.get(Number(userToCall));
@@ -179,21 +197,64 @@ io.on("connection", (socket) => {
             });
         }
 
-        // Always send Web Push (Background/Offline support)
-        sendPushNotification(Number(userToCall), {
-            title: `Cuộc gọi video từ ${data.name || "Minian User"}`,
-            body: "Nhấn để trả lời ngay",
-            url: "/", // Opens app root, PWA handles navigation
-            // @ts-ignore - Assuming controller handles extra fields or we pack them in payload
-            android: {
-                channelId: 'call_channel_v1',
-                sound: 'annc19324_sound.mp3'
+        // === PULSE PUSH LOGIC (Looping Ring) ===
+        // Clear any existing beat
+        if (callPulseIntervals.has(Number(userToCall))) {
+            clearInterval(callPulseIntervals.get(Number(userToCall))!);
+        }
+
+        const sendCallPush = () => {
+            // Check if call is still pending
+            if (!pendingCalls.has(Number(userToCall))) {
+                if (callPulseIntervals.has(Number(userToCall))) {
+                    clearInterval(callPulseIntervals.get(Number(userToCall))!);
+                    callPulseIntervals.delete(Number(userToCall));
+                }
+                return;
             }
-        }).catch(err => console.error("Call Push Error:", err));
+
+            sendPushNotification(Number(userToCall), {
+                title: `Cuộc gọi video từ ${data.name || "Minian User"}`,
+                body: "Nhấn để trả lời ngay",
+                url: "/",
+                // @ts-ignore
+                android: {
+                    channelId: 'call_channel_v1', // Using v1 or v2 doesn't matter as long as matches client
+                    sound: 'annc19324_sound.mp3'
+                },
+                type: 'call_incoming'
+            }).catch(err => console.error("Call Push Error:", err));
+        };
+
+        // Send immediately
+        sendCallPush();
+
+        // Repeat every 6 seconds
+        const interval = setInterval(sendCallPush, 6000);
+        callPulseIntervals.set(Number(userToCall), interval);
+
+        // Auto-stop after 60s (Timeout)
+        setTimeout(() => {
+            if (callPulseIntervals.has(Number(userToCall))) {
+                clearInterval(callPulseIntervals.get(Number(userToCall))!);
+                callPulseIntervals.delete(Number(userToCall));
+            }
+        }, 60000);
     });
 
     socket.on("answer_call", (data) => {
         const { to, signal, name, avatar } = data;
+
+        // STOP PULSE
+        // Actually, we must clear pulse for the User who WAS being called.
+        // Data.to is the CALLER.
+        // The one answering is... sending the event.
+        const answeringUserId = (socket as any).userId;
+        if (answeringUserId && callPulseIntervals.has(answeringUserId)) {
+            clearInterval(callPulseIntervals.get(answeringUserId)!);
+            callPulseIntervals.delete(answeringUserId);
+        }
+
         const targetSockets = userSocketMap.get(Number(to));
         if (targetSockets) {
             targetSockets.forEach(socketId => {
@@ -215,7 +276,20 @@ io.on("connection", (socket) => {
 
     socket.on("end_call", (data) => {
         const { to } = data;
-        pendingCalls.delete(Number(to)); // Cleanup pending call
+        pendingCalls.delete(Number(to));
+
+        // STOP PULSE for target
+        if (callPulseIntervals.has(Number(to))) {
+            clearInterval(callPulseIntervals.get(Number(to))!);
+            callPulseIntervals.delete(Number(to));
+        }
+        // Also stop pulse for Sender (if they were the one being called and decided to hang up?)
+        const senderId = (socket as any).userId;
+        if (senderId && callPulseIntervals.has(senderId)) {
+            clearInterval(callPulseIntervals.get(senderId)!);
+            callPulseIntervals.delete(senderId);
+        }
+
         const targetSockets = userSocketMap.get(Number(to));
         if (targetSockets) {
             targetSockets.forEach(socketId => {
