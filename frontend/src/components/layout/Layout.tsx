@@ -184,7 +184,7 @@ export default function Layout() {
     }, [user, window.location.pathname]); // Refresh when navigating too
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row transition-colors duration-300">
+        <div className="h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row transition-colors duration-300">
             {/* Leaderboard Sidebar (Left Side) */}
             <aside className="hidden lg:flex w-56 xl:w-64 flex-col bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-r border-white/50 dark:border-slate-800/50 h-screen fixed left-0 top-0 z-40 p-6 transition-colors duration-300">
                 <div className="flex items-center gap-2 mb-6 text-yellow-600 dark:text-yellow-500 flex-shrink-0">
@@ -203,7 +203,7 @@ export default function Layout() {
                             </div>
                             <img src={getAvatarUrl(u.avatar, u.username)} alt="Avatar" className="w-8 h-8 rounded-full border border-white dark:border-slate-700 shadow-sm" />
                             <div className="flex-1 min-w-0">
-                                <p className="font-bold text-slate-800 dark:text-slate-200 text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{u.fullName}</p>
+                                <p className="font-bold text-slate-800 dark:text-slate-200 truncate text-sm">{u.fullName}</p>
                                 <p className="text-xs text-yellow-600 dark:text-yellow-500 font-bold">{u.coins} xu</p>
                             </div>
                         </NavLink>
@@ -266,7 +266,7 @@ export default function Layout() {
             {/* Mobile Header */}
             <header
                 style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
-                className="lg:hidden sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 pb-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300"
+                className="lg:hidden z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 pb-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300"
             >
                 <NavLink to="/">
                     <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">MiniAn</h1>
@@ -293,10 +293,9 @@ export default function Layout() {
             </header>
 
             {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col`}>
-                <PullToRefresh onRefresh={async () => { window.location.reload(); return Promise.resolve(); }} className="flex-1 overflow-y-auto">
-                    <div className="px-4 py-6 min-h-screen">
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+                <PullToRefresh onRefresh={async () => { window.location.reload(); return Promise.resolve(); }} className="h-full w-full overflow-y-auto">
+                    <div className="px-4 py-6 min-h-full">
                         <Outlet />
                     </div>
                 </PullToRefresh>
