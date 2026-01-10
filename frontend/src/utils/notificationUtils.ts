@@ -182,7 +182,7 @@ export const registerPushToken = async (subscribeApiCall: (sub: any) => Promise<
 
         // 2. Calls (Max Priority + Sound)
         await PushNotifications.createChannel({
-            id: 'call_channel_v2', // Increment to apply new sound settings if any
+            id: 'minian_call_headsup', // Unified Channel ID
             name: 'Cuộc gọi đến',
             description: 'Thông báo cuộc gọi video',
             importance: 5, // MAX importance for Heads-up

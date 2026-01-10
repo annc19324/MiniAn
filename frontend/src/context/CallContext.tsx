@@ -213,14 +213,14 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                                 conversationId: data.conversationId,
                                 fromUser: data.fromUser
                             },
-                            channelId: 'calls_channel_v3',
+                            channelId: 'minian_call_headsup',
                             smallIcon: 'ic_launcher'
                         }]
                     });
 
                     // Create channel if needed (Android O+) - Force High Importance
                     await LocalNotifications.createChannel({
-                        id: 'calls_channel_v3',
+                        id: 'minian_call_headsup',
                         name: 'Call Notifications V3',
                         importance: 5, // High
                         visibility: 1,

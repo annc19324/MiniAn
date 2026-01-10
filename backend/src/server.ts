@@ -219,7 +219,7 @@ io.on("connection", (socket) => {
                 url: "/",
                 // @ts-ignore
                 android: {
-                    channelId: 'call_channel_v1', // Using v1 or v2 doesn't matter as long as matches client
+                    channelId: 'minian_call_headsup', // Consistent Channel ID
                     sound: 'annc19324_sound.mp3'
                 },
                 type: 'call_incoming'
