@@ -533,7 +533,7 @@ export default function Chat() {
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="flex-1 flex bg-white dark:bg-slate-900 lg:bg-transparent flex-col lg:flex-row h-full lg:h-[calc(100vh-80px)] lg:glass-card overflow-hidden">
+        <div className="flex-1 flex bg-white dark:bg-slate-900 lg:bg-transparent flex-col lg:flex-row h-full lg:h-[calc(100vh-80px)] overflow-hidden">
             {/* Sidebar / Conversation List */}
             <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-3 border-b border-indigo-50 dark:border-slate-800 space-y-3">
@@ -602,7 +602,7 @@ export default function Chat() {
             </div>
 
             {/* Chat Box */}
-            <div className={`flex-1 flex-col bg-white/30 dark:bg-slate-900/30 min-w-0 ${!activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
+            <div className={`flex-1 flex flex-col bg-white dark:bg-slate-900 lg:bg-white/30 lg:dark:bg-slate-900/30 min-w-0 ${!activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 {activeRoomId ? (
                     <>
                         {/* Chat Header */}
@@ -632,20 +632,22 @@ export default function Chat() {
                                         </div>
                                     </button>
                                 ) : (
-                                    <Link to={`/profile/${otherMember?.id}`} className="flex items-center gap-3 group">
+                                    <Link to={`/profile/${otherMember?.id || activeConversation?.otherMemberId}`} className="flex items-center gap-3 group">
                                         <div className="relative">
                                             <img
-                                                src={getAvatarUrl(otherMember?.avatar, otherMember?.username)}
+                                                src={getAvatarUrl(otherMember?.avatar || activeConversation?.avatar, otherMember?.username || activeConversation?.name)}
                                                 className="w-10 h-10 rounded-full object-cover border-2 border-indigo-50 dark:border-slate-700 group-hover:border-indigo-400 transition-all"
-                                                alt={otherMember?.username}
+                                                alt="Avatar"
                                             />
                                             {otherMember?.isOnline && (
                                                 <span className="absolute -bottom-1 -right-1 bg-green-500 border-2 border-white dark:border-slate-900 w-3.5 h-3.5 rounded-full ring-2 ring-transparent group-hover:ring-green-400/20" />
                                             )}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800 dark:text-white text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{otherMember?.fullName || otherMember?.username}</span>
-                                            <span className={`text-[11px] font-medium ${otherMember?.isOnline ? 'text-green-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                                            <span className="font-bold text-slate-800 dark:text-white text-sm lg:text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight truncate max-w-[120px] lg:max-w-none">
+                                                {otherMember?.fullName || activeConversation?.name}
+                                            </span>
+                                            <span className={`text-[10px] lg:text-[11px] font-medium ${otherMember?.isOnline ? 'text-green-500' : 'text-slate-400 dark:text-slate-500'}`}>
                                                 {getUserStatusText(otherMember?.isOnline, otherMember?.lastSeen)}
                                             </span>
                                             {((callAccepted && !callEnded) || isCalling) && call?.conversationId === activeConversation?.id && (
@@ -655,27 +657,27 @@ export default function Chat() {
                                                         e.stopPropagation();
                                                         returnToCall();
                                                     }}
-                                                    className="flex items-center gap-1.5 text-xs text-green-500 font-bold mt-1 cursor-pointer hover:underline animate-fade-in"
+                                                    className="flex items-center gap-1.5 text-[10px] text-green-500 font-bold mt-1 cursor-pointer hover:underline animate-fade-in"
                                                 >
-                                                    <span className="relative flex h-2 w-2">
+                                                    <span className="relative flex h-1.5 w-1.5">
                                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
                                                     </span>
-                                                    Quay lại cuộc gọi
+                                                    Cuộc gọi
                                                 </div>
                                             )}
                                         </div>
                                     </Link>
                                 )}
                             </div>
-                            <div className="flex gap-2 text-slate-400 dark:text-slate-500 relative" ref={roomMenuRef}>
+                            <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 relative" ref={roomMenuRef}>
                                 <button
                                     onClick={() => {
                                         if (activeConversation?.isGroup) {
                                             toast.error("Tính năng gọi nhóm chưa được hỗ trợ");
                                             return;
                                         }
-                                        const target = activeConversation?.members?.find(m => m.id !== user?.id);
+                                        const target = otherMember || activeConversation?.members?.find(m => m.id !== user?.id);
                                         const targetId = target?.id || activeConversation?.otherMemberId;
 
                                         if (targetId) {

@@ -12,7 +12,6 @@ import { getConversations } from '../../services/api';
 import { sendSystemNotification, playNotificationSound } from '../../utils/notificationUtils';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import PullToRefresh from 'react-simple-pull-to-refresh';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -303,22 +302,21 @@ export default function Layout() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-[80px] lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-[70px] lg:pb-0 overscroll-none' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
                 {isChatPage ? (
-                    /* Chat Page: Full screen on mobile, respects sidebar on desktop */
-                    <div className="flex-1 flex flex-col h-full w-full min-h-0">
-                        <Outlet />
+                    /* Chat Page: Floats with gaps on mobile */
+                    <div className="flex-1 flex flex-col h-full w-full min-h-0 bg-slate-50 dark:bg-slate-950 px-3 py-4 lg:p-0">
+                        <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl lg:rounded-none overflow-hidden shadow-xl lg:shadow-none flex flex-col border border-indigo-50/50 dark:border-slate-800/50 lg:border-none">
+                            <Outlet />
+                        </div>
                     </div>
                 ) : (
-                    /* Other Pages: PullToRefresh and Padding */
-                    <PullToRefresh
-                        onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
-                        className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
-                    >
+                    /* Other Pages: Standard Scrollable Area (Removed PullToRefresh for better touch response) */
+                    <div className="flex-1 w-full h-full overflow-y-auto overscroll-contain no-scrollbar">
                         <div className="px-4 py-6 min-h-full">
                             <Outlet />
                         </div>
-                    </PullToRefresh>
+                    </div>
                 )}
             </main>
 
