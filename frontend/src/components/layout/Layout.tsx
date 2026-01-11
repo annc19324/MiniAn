@@ -294,20 +294,22 @@ export default function Layout() {
 
             {/* Main Content */}
             <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
-                {isChatPage ? (
-                    <div className="flex-1 flex flex-col h-full w-full min-h-0">
-                        <Outlet />
-                    </div>
-                ) : (
+                {/* Mobile Chat: No separate PullToRefresh, full h-full */}
+                <div className={`${isChatPage ? 'lg:hidden' : 'hidden'} flex-1 flex flex-col h-full w-full min-h-0`}>
+                    <Outlet />
+                </div>
+
+                {/* Desktop and Non-Chat Mobile: Standard layout with padding */}
+                <div className={`${isChatPage ? 'hidden lg:block' : 'block'} flex-1 w-full h-full`}>
                     <PullToRefresh
                         onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
                         className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
                     >
-                        <div className="px-4 py-6 min-h-full">
+                        <div className={`${isChatPage ? 'p-0 h-full' : 'px-4 py-6 min-h-full'}`}>
                             <Outlet />
                         </div>
                     </PullToRefresh>
-                )}
+                </div>
             </main>
 
             {/* Mobile Bottom Nav */}

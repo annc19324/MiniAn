@@ -33,12 +33,11 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
 
             // Channel for General Messages (Default Sound, Heads-up)
             await LocalNotifications.createChannel({
-                id: 'general_channel_v4', // v4 for clean update
-                name: 'Tin nhắn & Thông báo (Mặc định)',
+                id: 'general_channel_v6', // v6 for MAX priority
+                name: 'Tin nhắn & Thông báo (MAX)',
                 importance: 5,
                 visibility: 1,
                 vibration: true
-                // No sound property = System Default
             });
         } catch (e) {
             console.error("Native Notif Error", e);
@@ -104,12 +103,26 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
     });
 
     // Foreground Notification
-    PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-        console.log('Push received:', notification);
+    PushNotifications.addListener('pushNotificationReceived', async (notification: PushNotificationSchema) => {
+        console.log('Push received in foreground:', notification);
         const data = notification.data;
+
         if (data && data.type === 'call_ended') {
             LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(console.error);
+            return;
         }
+
+        // For other notifications, show as LocalNotification to ensure banner (Heads-up)
+        const notifId = Math.floor(Math.random() * 100000);
+        await LocalNotifications.schedule({
+            notifications: [{
+                title: notification.title || 'Thông báo mới',
+                body: notification.body || '',
+                id: notifId,
+                extra: data, // Pass through data for click handling
+                channelId: 'general_channel_v6'
+            }]
+        });
     });
 
     // Action Performed (Click) - Push
@@ -139,16 +152,12 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
     // Action Performed (Click) - Local
     LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
         console.log('Local action performed:', notification.actionId);
-        // Default Local Notification behavior is to open app.
-        // We just need to handle specific navigation if 'extra' data is present.
-        // But sendSystemNotification just sends title/body.
-        // If we want navigation, we should add 'extra' or data to it.
-        // For now, at least it logs and maybe we can direct to /notifications
-        if (notification.notification.extra && notification.notification.extra.url) {
-            navigate(notification.notification.extra.url);
-        } else {
-            // Fallback to home or notifications
-            // navigate('/notifications'); // Optional
+        const data = notification.notification.extra;
+        if (data && data.url) {
+            console.log('Navigating from Local Notif:', data.url);
+            navigate(data.url);
+        } else if (data && data.type === 'call_incoming') {
+            navigate('/chat');
         }
     });
 };
@@ -172,10 +181,10 @@ export const registerPushToken = async (subscribeApiCall: (sub: any) => Promise<
         // Create Channels (Update ID to v2/v5 to force refresh audio settings)
         // 1. General
         await PushNotifications.createChannel({
-            id: 'general_channel_v5', // Increment version
+            id: 'general_channel_v6', // Increment version to MAX
             name: 'Tin nhắn & Thông báo',
             description: 'Thông báo chung',
-            importance: 4, // High but not max
+            importance: 5, // MAX for banner
             visibility: 1,
             vibration: true,
         });

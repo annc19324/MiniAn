@@ -444,7 +444,7 @@ export default function Settings() {
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 group-hover:text-green-600 dark:group-hover:text-green-400">Tải ứng dụng Android (APK)</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-green-400">Phiên bản mới nhất cho thiết bị di động [11/01/2026 18:10]</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-green-400">Phiên bản mới nhất cho thiết bị di động [11/01/2026 18:35]</p>
                 </div>
             </a>
 

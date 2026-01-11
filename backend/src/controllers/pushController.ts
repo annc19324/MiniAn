@@ -106,7 +106,7 @@ export const sendPushNotification = async (userId: number, payload: { title: str
                             priority: 'high',
                             notification: {
                                 sound: (payload as any).android?.sound || 'default',
-                                channelId: (payload as any).android?.channelId || 'general_channel_v4',
+                                channelId: (payload as any).android?.channelId || 'general_channel_v6',
                                 tag: 'call_incoming' // Replace existing notification to create "looping" ring effect without stacking
                             }
                         }
