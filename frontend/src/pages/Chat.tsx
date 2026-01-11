@@ -46,7 +46,7 @@ interface ConfirmModalState {
 }
 
 // Imports
-import { getUserStatusText, getUserStatusColor } from '../utils/statusUtils';
+import { getUserStatusText } from '../utils/statusUtils';
 
 // Update Interface
 interface Conversation {
@@ -68,6 +68,7 @@ interface Conversation {
         avatar?: string;
         isOnline?: boolean;
         showActivityStatus?: boolean;
+        lastSeen?: string;
     }>;
     createdBy?: number;
     isOnline?: boolean;
@@ -527,11 +528,12 @@ export default function Chat() {
     };
 
     const activeConversation = conversations.find(c => c.id === activeRoomId);
+    const otherMember = activeConversation?.members?.find(m => m.id !== user?.id);
 
     if (loading) return <div className="text-center p-10 text-slate-400">Đang tải đoạn chat...</div>;
 
     return (
-        <div className="flex-1 flex bg-white dark:bg-slate-900 lg:bg-transparent flex-col h-full lg:h-[calc(100vh-80px)] lg:glass-card overflow-hidden">
+        <div className="flex-1 flex bg-white dark:bg-slate-900 lg:bg-transparent flex-col lg:flex-row h-full lg:h-[calc(100vh-80px)] lg:glass-card overflow-hidden">
             {/* Sidebar / Conversation List */}
             <div className={`w-full lg:w-[30%] lg:max-w-sm border-r border-indigo-50 dark:border-slate-800 flex flex-col ${activeRoomId ? 'hidden lg:flex' : 'flex'}`}>
                 <div className="p-3 border-b border-indigo-50 dark:border-slate-800 space-y-3">
@@ -604,48 +606,47 @@ export default function Chat() {
                 {activeRoomId ? (
                     <>
                         {/* Chat Header */}
-                        <div className="p-4 border-b border-indigo-50 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm flex justify-between items-center z-10">
+                        <div className="px-4 py-3 border-b border-indigo-50 dark:border-slate-800 bg-white dark:bg-slate-900 lg:bg-white/60 lg:dark:bg-slate-900/60 backdrop-blur-sm flex justify-between items-center z-10 shrink-0">
                             <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveRoomId(null)} className="lg:hidden text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 text-[24px]">
-                                    ❮
+                                <button onClick={() => setActiveRoomId(null)} className="lg:hidden text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 p-1.5 rounded-lg transition-colors">
+                                    <X size={24} />
                                 </button>
                                 {activeConversation?.isGroup ? (
                                     <button
                                         onClick={() => setShowGroupManagement(true)}
-                                        className="flex items-center gap-3 hover:opacity-80 transition-opacity text-left"
+                                        className="flex items-center gap-2 group transition-all"
                                     >
                                         <div className="relative">
                                             <img
-                                                src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
-                                                className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                                alt="Avatar"
+                                                src={getAvatarUrl(activeConversation.avatar, activeConversation.name)}
+                                                className="w-10 h-10 rounded-full object-cover border-2 border-indigo-50 dark:border-slate-700 group-hover:border-indigo-400"
+                                                alt={activeConversation.name}
                                             />
-                                            {activeConversation.members?.some(m => m.id !== user?.id && m.showActivityStatus && m.isOnline) && (
-                                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm"></div>
+                                            {activeConversation && activeConversation.memberCount && activeConversation.memberCount > 0 && (
+                                                <span className="absolute -bottom-1 -right-1 bg-green-500 border-2 border-white dark:border-slate-900 w-3.5 h-3.5 rounded-full" />
                                             )}
                                         </div>
-                                        <div className="text-left">
-                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[150px] sm:max-w-[200px]" title={activeConversation?.name}>
-                                                {activeConversation?.name}
-                                            </h4>
-                                            {activeConversation.members?.some(m => m.id !== user?.id && m.showActivityStatus && m.isOnline) ? (
-                                                <span className="text-xs text-green-500 font-medium block">● Đang hoạt động</span>
-                                            ) : (
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 block">{activeConversation.memberCount} thành viên</span>
-                                            )}
+                                        <div className="flex flex-col text-left">
+                                            <span className="font-bold text-slate-800 dark:text-white text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{activeConversation.name}</span>
+                                            <span className="text-[11px] text-green-500 font-medium">Đang hoạt động</span>
                                         </div>
                                     </button>
                                 ) : (
-                                    <Link to={`/profile/${activeConversation?.otherMemberId}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                                        <img
-                                            src={getAvatarUrl(activeConversation?.avatar, activeConversation?.name)}
-                                            className="w-10 h-10 rounded-full border border-white dark:border-slate-700 shadow-sm object-cover"
-                                            alt="Avatar"
-                                        />
-                                        <div>
-                                            <h4 className="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">{activeConversation?.name}</h4>
-                                            <span className={`text-xs ${getUserStatusColor(activeConversation?.isOnline)}`}>
-                                                {getUserStatusText(activeConversation?.isOnline, activeConversation?.lastSeen)}
+                                    <Link to={`/profile/${otherMember?.id}`} className="flex items-center gap-3 group">
+                                        <div className="relative">
+                                            <img
+                                                src={getAvatarUrl(otherMember?.avatar, otherMember?.username)}
+                                                className="w-10 h-10 rounded-full object-cover border-2 border-indigo-50 dark:border-slate-700 group-hover:border-indigo-400 transition-all"
+                                                alt={otherMember?.username}
+                                            />
+                                            {otherMember?.isOnline && (
+                                                <span className="absolute -bottom-1 -right-1 bg-green-500 border-2 border-white dark:border-slate-900 w-3.5 h-3.5 rounded-full ring-2 ring-transparent group-hover:ring-green-400/20" />
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-slate-800 dark:text-white text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{otherMember?.fullName || otherMember?.username}</span>
+                                            <span className={`text-[11px] font-medium ${otherMember?.isOnline ? 'text-green-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                {getUserStatusText(otherMember?.isOnline, otherMember?.lastSeen)}
                                             </span>
                                             {((callAccepted && !callEnded) || isCalling) && call?.conversationId === activeConversation?.id && (
                                                 <div
@@ -943,8 +944,7 @@ export default function Chat() {
                         </div>
 
                         {/* Input Area */}
-                        {/* Input Area */}
-                        <div className="px-3 py-3 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-t border-indigo-50 dark:border-slate-800">
+                        <div className="px-3 py-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-indigo-50 dark:border-slate-800 shrink-0">
                             {previewUrl && (
                                 <div className="mb-2 relative inline-block">
                                     {selectedFile?.type.startsWith('image/') ? (
@@ -1042,6 +1042,7 @@ export default function Chat() {
                 onClose={() => setShowCreateGroupModal(false)}
                 onGroupCreated={async () => {
                     const res = await getConversations();
+                    // @ts-ignore
                     setConversations(res.data);
                 }}
             />
@@ -1059,6 +1060,7 @@ export default function Chat() {
                         createdBy={activeConversation?.createdBy}
                         onUpdate={async () => {
                             const res = await getConversations();
+                            // @ts-ignore
                             setConversations(res.data);
                         }}
                         onDelete={() => {

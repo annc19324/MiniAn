@@ -13,7 +13,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
 import type { Token, ActionPerformed, PushNotificationSchema } from '@capacitor/push-notifications';
 
-export const sendSystemNotification = async (title: string, body?: string, icon?: string) => {
+export const sendSystemNotification = async (title: string, body?: string, icon?: string, extra?: any) => {
     // === NATIVE LOGIC ===
     if (Capacitor.isNativePlatform()) {
         try {
@@ -25,9 +25,10 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
                     title,
                     body: body || '',
                     id: notifId,
+                    extra: extra || {},
                     schedule: { at: new Date(Date.now()) }, // Immediate
                     smallIcon: 'ic_launcher',
-                    channelId: 'general_channel_v4'
+                    channelId: 'general_channel_v6'
                 }]
             });
 
@@ -63,6 +64,9 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
 
             notification.onclick = function () {
                 window.focus();
+                if (extra && extra.url && (window as any).routerNavigate) {
+                    (window as any).routerNavigate(extra.url);
+                }
                 this.close();
             };
         } catch (e) {

@@ -24,6 +24,11 @@ export default function Layout() {
     const location = useLocation();
     const isChatPage = location.pathname === '/chat';
 
+    // Expose navigate for notification clicks
+    useEffect(() => {
+        (window as any).routerNavigate = navigate;
+    }, [navigate]);
+
     const fetchLeaderboard = async () => {
         try {
             const res = await getLeaderboard(10, 0);
@@ -76,7 +81,12 @@ export default function Layout() {
             }
 
             // Always try to send system notification
-            sendSystemNotification(`Tin nhắn mới từ ${data.messageData.sender.username}`, data.messageData.content);
+            sendSystemNotification(
+                `Tin nhắn mới từ ${data.messageData.sender.username}`,
+                data.messageData.content,
+                undefined,
+                { url: '/chat' }
+            );
 
             // Toast logic: Only show if NOT on chat page or hidden
             const isChatPage = window.location.pathname === '/chat';
@@ -104,7 +114,7 @@ export default function Layout() {
             setUnreadNotificationsCount(prev => prev + 1);
 
             // SYSTEM NOTIFICATION FOR ALL TYPES
-            sendSystemNotification('Thông báo mới', data.content);
+            sendSystemNotification('Thông báo mới', data.content, undefined, { url: data.url || '/notifications' });
         });
 
         // Listen for new message alerts to update global count
@@ -293,23 +303,23 @@ export default function Layout() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
-                {/* Mobile Chat: No separate PullToRefresh, full h-full */}
-                <div className={`${isChatPage ? 'lg:hidden' : 'hidden'} flex-1 flex flex-col h-full w-full min-h-0`}>
-                    <Outlet />
-                </div>
-
-                {/* Desktop and Non-Chat Mobile: Standard layout with padding */}
-                <div className={`${isChatPage ? 'hidden lg:block' : 'block'} flex-1 w-full h-full`}>
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-[80px] lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+                {isChatPage ? (
+                    /* Chat Page: Full screen on mobile, respects sidebar on desktop */
+                    <div className="flex-1 flex flex-col h-full w-full min-h-0">
+                        <Outlet />
+                    </div>
+                ) : (
+                    /* Other Pages: PullToRefresh and Padding */
                     <PullToRefresh
                         onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
                         className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
                     >
-                        <div className={`${isChatPage ? 'p-0 h-full' : 'px-4 py-6 min-h-full'}`}>
+                        <div className="px-4 py-6 min-h-full">
                             <Outlet />
                         </div>
                     </PullToRefresh>
-                </div>
+                )}
             </main>
 
             {/* Mobile Bottom Nav */}
