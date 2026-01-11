@@ -292,21 +292,22 @@ export default function Layout() {
                 </div>
             </header>
 
-            {/* Main Content (Shifted Left because Sidebar is Right, Shifted Right because Leaderboard is Left) */}
+            {/* Main Content */}
             <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0' : 'pb-24'} lg:pb-10 px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
-                {/* 
-                   PullToRefresh wrapper must handle the scroll. 
-                   We give it fixed dimensions or flex to fill available space.
-                   The library creates a wrapper div using 'className' prop.
-                 */}
-                <PullToRefresh
-                    onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
-                    className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
-                >
-                    <div className="px-4 py-6 min-h-full">
+                {isChatPage ? (
+                    <div className="flex-1 flex flex-col h-full w-full min-h-0">
                         <Outlet />
                     </div>
-                </PullToRefresh>
+                ) : (
+                    <PullToRefresh
+                        onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
+                        className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
+                    >
+                        <div className="px-4 py-6 min-h-full">
+                            <Outlet />
+                        </div>
+                    </PullToRefresh>
+                )}
             </main>
 
             {/* Mobile Bottom Nav */}

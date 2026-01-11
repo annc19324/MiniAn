@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { updateUserProfile } from '../services/api';
 import api from '../services/api';
@@ -444,7 +444,7 @@ export default function Settings() {
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 group-hover:text-green-600 dark:group-hover:text-green-400">Tải ứng dụng Android (APK)</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-green-400">Phiên bản mới nhất cho thiết bị di động [10/01/2026 15:38]</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-green-400">Phiên bản mới nhất cho thiết bị di động [11/01/2026 18:00]</p>
                 </div>
             </a>
 
