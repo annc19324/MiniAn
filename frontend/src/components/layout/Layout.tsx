@@ -3,7 +3,7 @@ import { Home, MessageCircle, User, PlusSquare, Bell, LogOut, Search, Settings }
 import { useAuth } from '../../context/AuthContext';
 import { getAvatarUrl } from '../../utils/avatarUtils';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { getLeaderboard } from '../../services/api';
 import { Award } from 'lucide-react';
 import { io } from 'socket.io-client';
@@ -26,10 +26,16 @@ export default function Layout() {
     const contentRef = useRef<HTMLDivElement>(null);
 
     // Auto-focus on route change to enable immediate scrolling without initial click
-    useEffect(() => {
-        if (contentRef.current) {
-            contentRef.current.focus();
-        }
+    useLayoutEffect(() => {
+        const handleFocus = () => {
+            if (contentRef.current) {
+                contentRef.current.focus({ preventScroll: true });
+            }
+        };
+        handleFocus();
+        // Small delay to ensure browser processed the new page
+        const t = setTimeout(handleFocus, 50);
+        return () => clearTimeout(t);
     }, [location.pathname]);
 
 
@@ -312,7 +318,10 @@ export default function Layout() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-24 lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+            <main
+                tabIndex={-1}
+                className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-24 lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden no-scrollbar`}
+            >
                 {isChatPage ? (
                     /* Chat Page: Floating Card with Significant Gaps (Matching Image 1) */
                     <div className="flex-1 flex flex-col h-full w-full min-h-0 p-4 lg:p-10 xl:p-16 bg-slate-100 dark:bg-slate-950/50">
