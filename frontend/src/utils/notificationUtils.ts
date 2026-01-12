@@ -118,14 +118,20 @@ export const setupPushListeners = (navigate: (path: string) => void) => {
         }
 
         // For other notifications, show as LocalNotification to ensure banner (Heads-up)
-        const notifId = Math.floor(Math.random() * 100000);
+        const notifId = typeof notification.id === 'string' ? parseInt(notification.id) : (notification.id || Math.floor(Math.random() * 100000));
+
+        // Specialized handling for incoming calls to ensure they stay on screen
+        const isCall = data && data.type === 'call_incoming';
+
         await LocalNotifications.schedule({
             notifications: [{
                 title: notification.title || 'Thông báo mới',
                 body: notification.body || '',
-                id: notifId,
-                extra: data, // Pass through data for click handling
-                channelId: 'general_channel_v6'
+                id: isCall ? 1 : notifId, // Fixed ID for calls
+                extra: data,
+                channelId: isCall ? 'minian_call_headsup' : 'general_channel_v6',
+                actionTypeId: isCall ? 'CALL_ACTIONS' : undefined,
+                ongoing: isCall // Keep it on screen
             }]
         });
     });
@@ -195,14 +201,27 @@ export const registerPushToken = async (subscribeApiCall: (sub: any) => Promise<
         });
 
         // 2. Calls (Max Priority + Sound)
-        await PushNotifications.createChannel({
-            id: 'minian_call_headsup', // Unified Channel ID
+        await LocalNotifications.createChannel({
+            id: 'minian_call_headsup',
             name: 'Cuộc gọi đến',
             description: 'Thông báo cuộc gọi video',
-            importance: 5, // MAX importance for Heads-up
+            importance: 5,
             visibility: 1,
             vibration: true,
-            sound: 'notification.mp3' // Ensure this file is in res/raw
+            sound: 'notification.mp3'
+        });
+
+        // Register Action Types
+        await LocalNotifications.registerActionTypes({
+            types: [
+                {
+                    id: 'CALL_ACTIONS',
+                    actions: [
+                        { id: 'answer', title: 'Trả lời', foreground: true },
+                        { id: 'decline', title: 'Từ chối', destructive: true, foreground: false }
+                    ]
+                }
+            ]
         });
 
         await PushNotifications.register();

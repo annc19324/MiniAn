@@ -163,14 +163,32 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
             if (Capacitor.isNativePlatform()) {
                 LocalNotifications.requestPermissions();
 
-                // Add listener (once)
+                // Add listener for notification actions (Answer/Decline buttons)
                 LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
-                    if (notification.notification.extra && notification.notification.extra.type === 'call_incoming') {
-                        // Just bringing app to foreground is enough, the socket event 'call_incoming' triggers state.
-                        // But if state was lost/app killed, we need to handle hydration? 
-                        // For now assuming background but alive:
-                        window.focus();
-                        setIsMinimized(false);
+                    const extra = notification.notification.extra;
+                    const actionId = notification.actionId;
+
+                    console.log('Notification action:', actionId, extra);
+
+                    if (extra && extra.type === 'call_incoming') {
+                        if (actionId === 'answer') {
+                            // User tapped "Trả lời" button
+                            console.log('User wants to answer call from notification');
+                            window.focus();
+                            setIsMinimized(false);
+                            // The answerCall function will be triggered when UI renders
+                            // We need to ensure call state is set, which should already be done by socket event
+                        } else if (actionId === 'decline') {
+                            // User tapped "Từ chối" button
+                            console.log('User declined call from notification');
+                            leaveCall('rejected');
+                            // Cancel notification
+                            LocalNotifications.cancel({ notifications: [{ id: 1 }] }).catch(console.error);
+                        } else {
+                            // User tapped the notification itself (not a button)
+                            window.focus();
+                            setIsMinimized(false);
+                        }
                     }
                 });
             }
@@ -197,35 +215,65 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
 
             // === NATIVE MOBILE LOGIC ===
             if (Capacitor.isNativePlatform()) {
-                // Schedule Local Notification
                 try {
-                    // Permissions requested on mount
+                    // Register Action Types FIRST (before scheduling)
+                    await LocalNotifications.registerActionTypes({
+                        types: [
+                            {
+                                id: 'CALL_ACTIONS',
+                                actions: [
+                                    {
+                                        id: 'answer',
+                                        title: '📞 Trả lời',
+                                        foreground: true,
+                                        destructive: false
+                                    },
+                                    {
+                                        id: 'decline',
+                                        title: '❌ Từ chối',
+                                        foreground: false,
+                                        destructive: true
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+
+                    // Create channel BEFORE scheduling
+                    await LocalNotifications.createChannel({
+                        id: 'minian_call_fullscreen',
+                        name: 'Cuộc gọi đến',
+                        description: 'Hiển thị toàn màn hình khi có cuộc gọi',
+                        importance: 5, // MAX
+                        visibility: 1, // VISIBILITY_PUBLIC
+                        sound: 'annc19324_sound.mp3',
+                        vibration: true,
+                        lights: true,
+                        lightColor: '#00FF00'
+                    });
+
+                    // Schedule FULL-SCREEN notification
                     await LocalNotifications.schedule({
                         notifications: [{
-                            title: `📞 Cuộc gọi từ ${data.name || "Người dùng"}`,
-                            body: "Nhấn để mở ứng dụng và trả lời",
-                            id: 1, // Fixed ID to overwrite
-                            schedule: { at: new Date(Date.now() + 100) }, // Now
+                            title: `📞 ${data.name || "Người dùng"}`,
+                            body: "Cuộc gọi video đến...",
+                            id: 1,
+                            schedule: { at: new Date(Date.now() + 100) },
                             sound: 'annc19324_sound.mp3',
-                            actionTypeId: 'OPEN_APP_ACTION',
+                            actionTypeId: 'CALL_ACTIONS',
                             extra: {
                                 type: 'call_incoming',
                                 conversationId: data.conversationId,
-                                fromUser: data.fromUser
+                                fromUser: data.fromUser,
+                                callerName: data.name,
+                                callerAvatar: data.avatar
                             },
-                            channelId: 'minian_call_headsup',
-                            smallIcon: 'ic_launcher'
+                            channelId: 'minian_call_fullscreen',
+                            smallIcon: 'ic_launcher',
+                            largeIcon: data.avatar || undefined,
+                            ongoing: true, // Persistent
+                            autoCancel: false // Don't dismiss on tap
                         }]
-                    });
-
-                    // Create channel if needed (Android O+) - Force High Importance
-                    await LocalNotifications.createChannel({
-                        id: 'minian_call_headsup',
-                        name: 'Call Notifications V3',
-                        importance: 5, // High
-                        visibility: 1,
-                        sound: 'annc19324_sound.mp3',
-                        vibration: true
                     });
                 } catch (e) {
                     console.error("LocalNotif Error", e);
