@@ -303,17 +303,19 @@ export default function Layout() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0 lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-24 lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
                 {isChatPage ? (
-                    /* Chat Page: Simple transition back to full-ish height but with better constraints */
-                    <div className="flex-1 flex flex-col h-full w-full min-h-0 bg-white dark:bg-slate-900 lg:bg-transparent">
-                        <Outlet />
+                    /* Chat Page: Floating Card with Gaps */
+                    <div className="flex-1 flex flex-col h-full w-full min-h-0 p-3 lg:p-6 bg-slate-50 dark:bg-slate-950">
+                        <div className="flex-1 bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] dark:shadow-none flex flex-col border border-indigo-50/50 dark:border-slate-800/50">
+                            <Outlet />
+                        </div>
                     </div>
                 ) : (
                     /* Other Pages: Standard Scrollable Area with PullToRefresh */
                     <PullToRefresh
                         onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
-                        className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
+                        className="flex-1 w-full h-full overflow-y-auto"
                     >
                         <div className="px-4 py-6 min-h-full">
                             <Outlet />
