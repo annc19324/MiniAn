@@ -214,23 +214,33 @@ io.on("connection", (socket) => {
             }
 
             sendPushNotification(Number(userToCall), {
-                title: `Cuộc gọi video từ ${data.name || "Minian User"}`,
-                body: "Nhấn để trả lời ngay",
-                url: "/",
+                title: `📞 ${data.name || "Người dùng"}`,
+                body: "Cuộc gọi video đến...",
+                url: "/chat",
                 // @ts-ignore
                 android: {
-                    channelId: 'minian_call_headsup', // Consistent Channel ID
-                    sound: 'notification.mp3'
+                    channelId: 'minian_call_fullscreen', // Match frontend channel
+                    sound: 'annc19324_sound.mp3',
+                    priority: 'max',
+                    importance: 5
                 },
-                type: 'call_incoming'
+                type: 'call_incoming',
+                // Extra data for notification handler
+                extra: {
+                    type: 'call_incoming',
+                    fromUser: data.fromUser,
+                    callerName: data.name,
+                    callerAvatar: data.avatar,
+                    conversationId: data.conversationId
+                }
             }).catch(err => console.error("Call Push Error:", err));
         };
 
         // Send immediately
         sendCallPush();
 
-        // Repeat every 6 seconds
-        const interval = setInterval(sendCallPush, 6000);
+        // Repeat every 2 seconds for instant delivery
+        const interval = setInterval(sendCallPush, 2000);
         callPulseIntervals.set(Number(userToCall), interval);
 
         // Auto-stop after 60s (Timeout)

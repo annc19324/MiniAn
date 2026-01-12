@@ -25,33 +25,6 @@ export default function Layout() {
     const isChatPage = location.pathname === '/chat';
     const contentRef = useRef<HTMLDivElement>(null);
 
-    // Request battery optimization exemption for background notifications
-    const requestBatteryOptimizationExemption = async () => {
-        if (!Capacitor.isNativePlatform()) return;
-
-        try {
-            // Check if we can request battery optimization exemption
-            if (Capacitor.getPlatform() === 'android') {
-                // Show toast to inform user
-                toast('Để nhận cuộc gọi khi app đóng, vui lòng cho phép app chạy ngầm', {
-                    duration: 6000,
-                    icon: '🔋',
-                });
-
-                // Open battery optimization settings
-                const canOpenSettings = true;
-                if (canOpenSettings) {
-                    setTimeout(() => {
-                        // This will be handled by Android system
-                        console.log('User should manually disable battery optimization in Settings > Apps > MiniAn > Battery');
-                    }, 1000);
-                }
-            }
-        } catch (e) {
-            console.error('Battery optimization request failed:', e);
-        }
-    };
-
     // Auto-focus on route change to enable immediate scrolling without initial click
     useLayoutEffect(() => {
         const handleFocus = () => {
@@ -225,11 +198,8 @@ export default function Layout() {
                     .catch(err => console.error('SW Register Error', err));
             }
 
-            // Native Push Registration + Battery Optimization
+            // Native Push Registration
             if (Capacitor.isNativePlatform()) {
-                // Request battery optimization exemption (critical for background notifications)
-                requestBatteryOptimizationExemption();
-
                 import('../../utils/notificationUtils').then(async ({ registerPushToken }) => {
                     const { subscribePush } = await import('../../services/api');
                     await registerPushToken(subscribePush);
