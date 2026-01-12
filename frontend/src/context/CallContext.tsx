@@ -308,17 +308,22 @@ export const CallProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
 
-            // Play Ringtone (Common) - JS Audio ONLY on Web
-            if (!Capacitor.isNativePlatform()) {
-                try {
-                    if (ringtoneRef.current) ringtoneRef.current.pause();
-                    ringtoneRef.current = new Audio('/annc19324_sound.mp3');
-                    ringtoneRef.current.loop = true;
-                    const playPromise = ringtoneRef.current.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(e => { console.error("Ringtone error:", e); });
-                    }
-                } catch (e) { }
+            // Play Ringtone (For both Web AND Native - foreground only)
+            // Native background notification will play its own sound via channel
+            try {
+                if (ringtoneRef.current) ringtoneRef.current.pause();
+                ringtoneRef.current = new Audio('/annc19324_sound.mp3');
+                ringtoneRef.current.loop = true;
+                ringtoneRef.current.volume = 1.0; // Max volume
+                const playPromise = ringtoneRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.error("Ringtone error:", e);
+                        console.log("User may need to interact with page first for audio to play");
+                    });
+                }
+            } catch (e) {
+                console.error("Ringtone init error:", e);
             }
         });
 
