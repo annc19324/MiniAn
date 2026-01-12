@@ -12,6 +12,7 @@ import { getConversations } from '../../services/api';
 import { sendSystemNotification, playNotificationSound } from '../../utils/notificationUtils';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import PullToRefresh from 'react-simple-pull-to-refresh';
 
 export default function Layout() {
     const { logout, user } = useAuth();
@@ -274,8 +275,8 @@ export default function Layout() {
 
             {/* Mobile Header */}
             <header
-                style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
-                className="lg:hidden z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-4 pb-3 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300"
+                style={{ paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}
+                className="lg:hidden z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-indigo-50 dark:border-slate-800 px-5 pb-4 flex justify-between items-center shadow-sm dark:shadow-none transition-colors duration-300"
             >
                 <NavLink to="/">
                     <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">MiniAn</h1>
@@ -302,28 +303,29 @@ export default function Layout() {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-[70px] lg:pb-0 overscroll-none' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
+            <main className={`flex-1 lg:mr-64 xl:mr-72 lg:ml-56 xl:ml-64 ${isChatPage ? 'pb-0 lg:pb-0' : 'pb-24 lg:pb-10'} px-0 py-0 max-w-[1200px] mx-auto w-full min-w-0 transition-all duration-300 flex flex-col relative overflow-hidden`}>
                 {isChatPage ? (
-                    /* Chat Page: Floats with gaps on mobile */
-                    <div className="flex-1 flex flex-col h-full w-full min-h-0 bg-slate-50 dark:bg-slate-950 px-3 py-4 lg:p-0">
-                        <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl lg:rounded-none overflow-hidden shadow-xl lg:shadow-none flex flex-col border border-indigo-50/50 dark:border-slate-800/50 lg:border-none">
-                            <Outlet />
-                        </div>
+                    /* Chat Page: Simple transition back to full-ish height but with better constraints */
+                    <div className="flex-1 flex flex-col h-full w-full min-h-0 bg-white dark:bg-slate-900 lg:bg-transparent">
+                        <Outlet />
                     </div>
                 ) : (
-                    /* Other Pages: Standard Scrollable Area (Removed PullToRefresh for better touch response) */
-                    <div className="flex-1 w-full h-full overflow-y-auto overscroll-contain no-scrollbar">
+                    /* Other Pages: Standard Scrollable Area with PullToRefresh */
+                    <PullToRefresh
+                        onRefresh={async () => { window.location.reload(); return Promise.resolve(); }}
+                        className="flex-1 w-full h-full overflow-y-auto overscroll-contain"
+                    >
                         <div className="px-4 py-6 min-h-full">
                             <Outlet />
                         </div>
-                    </div>
+                    </PullToRefresh>
                 )}
             </main>
 
             {/* Mobile Bottom Nav */}
             <nav
-                style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
-                className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-none transition-colors duration-300"
+                style={{ paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+                className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-indigo-50/50 dark:border-indigo-500/20 flex justify-around p-4 z-50 shadow-[0_-10px_40px_-20px_rgba(0,0,0,0.1)] dark:shadow-none transition-colors duration-300"
             >
                 <MobileNavItem to="/" icon={<Home size={24} />} />
                 <MobileNavItem to="/search" icon={<Search size={24} />} />
