@@ -559,7 +559,7 @@ export default function Chat() {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto overscroll-contain pb-20 no-scrollbar outline-none" tabIndex={0}>
+                <div className="flex-1 overflow-y-auto overscroll-contain pb-20 no-scrollbar" tabIndex={0}>
                     {conversations.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
                         <div className="p-4 text-center text-slate-400 text-sm">Không tìm thấy cuộc trò chuyện.</div>
                     ) : (
@@ -733,7 +733,7 @@ export default function Chat() {
 
                         {/* Messages Area */}
                         <div
-                            className="flex-1 overflow-y-auto p-4 space-y-6 overscroll-contain no-scrollbar outline-none"
+                            className="flex-1 overflow-y-auto p-4 space-y-6 overscroll-contain no-scrollbar"
                             style={{ WebkitOverflowScrolling: 'touch' }}
                             ref={scrollContainerRef}
                             onScroll={handleScroll}
