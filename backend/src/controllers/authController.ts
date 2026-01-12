@@ -95,6 +95,8 @@ export const register = async (req: Request<{}, {}, RegisterBody>, res: Response
                 coins: true,
                 role: true,
                 isVip: true,
+                showActivityStatus: true,
+                allowMessageNotifications: true,
             },
         });
 
@@ -140,6 +142,8 @@ export const login = async (req: Request<{}, {}, LoginBody>, res: Response) => {
                 coins: true,
                 role: true,
                 isVip: true,
+                showActivityStatus: true,
+                allowMessageNotifications: true,
             },
         });
 

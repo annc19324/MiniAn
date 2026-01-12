@@ -23,7 +23,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.id },
-            select: { id: true, username: true, email: true, fullName: true, avatar: true, coins: true, role: true, isVip: true },
+            select: { id: true, username: true, email: true, fullName: true, avatar: true, coins: true, role: true, isVip: true, showActivityStatus: true, allowMessageNotifications: true },
         });
 
         if (!user) {

@@ -24,6 +24,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
                 id: true, username: true, fullName: true, avatar: true, bio: true,
                 coins: true, role: true, isVip: true, createdAt: true,
                 isOnline: true, lastSeen: true, showActivityStatus: true,
+                allowMessageNotifications: true,
                 _count: {
                     select: { followers: true, following: true, posts: true }
                 }
@@ -458,7 +459,7 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: dataToUpdate,
-            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true, showActivityStatus: true, isOnline: true, lastSeen: true }
+            select: { id: true, username: true, email: true, fullName: true, avatar: true, bio: true, coins: true, showActivityStatus: true, allowMessageNotifications: true, isOnline: true, lastSeen: true }
         });
 
         // Notify Socket Status if changed

@@ -220,7 +220,7 @@ io.on("connection", (socket) => {
                 // @ts-ignore
                 android: {
                     channelId: 'minian_call_headsup', // Consistent Channel ID
-                    sound: 'annc19324_sound.mp3'
+                    sound: 'notification.mp3'
                 },
                 type: 'call_incoming'
             }).catch(err => console.error("Call Push Error:", err));

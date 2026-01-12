@@ -75,13 +75,14 @@ export const sendSystemNotification = async (title: string, body?: string, icon?
     }
 };
 
-// Let's use a known working CDNs sound for "notification".
-const RELIABLE_SOUND_URL = "https://codeskulptor-demos.commondatastorage.googleapis.com/GalaxyInvaders/pause.wav";
+// Sound file in public/notification.mp3
+const NOTIFICATION_SOUND_URL = "/notification.mp3";
 
 export const playNotificationSound = () => {
     try {
-        const audio = new Audio(RELIABLE_SOUND_URL);
+        const audio = new Audio(NOTIFICATION_SOUND_URL);
         audio.volume = 0.6;
+        audio.play().catch(e => console.warn("Auto-play blocked or error:", e));
     } catch (e) {
         console.error("Audio init error:", e);
     }
@@ -201,7 +202,7 @@ export const registerPushToken = async (subscribeApiCall: (sub: any) => Promise<
             importance: 5, // MAX importance for Heads-up
             visibility: 1,
             vibration: true,
-            sound: 'annc19324_sound.mp3' // Ensure this file is in res/raw
+            sound: 'notification.mp3' // Ensure this file is in res/raw
         });
 
         await PushNotifications.register();
