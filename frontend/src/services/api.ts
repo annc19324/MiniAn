@@ -1,8 +1,12 @@
 // src/services/api.ts
 import axios from 'axios';
 
+const PRIMARY_URL = import.meta.env.VITE_API_URL;
+const BACKUP_URL = import.meta.env.VITE_API_URL_CLONE || "https://minian-d1wd.onrender.com/api"; // Fallback hardcode just in case
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: PRIMARY_URL,
+    timeout: 15000, // 15s timeout
 });
 
 api.interceptors.request.use((config) => {
@@ -12,6 +16,37 @@ api.interceptors.request.use((config) => {
     }
     return config;
 });
+
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // Check if error is Network Error or 503 (Service Unavailable)
+        // and we haven't retried yet
+        if (
+            !originalRequest._retry &&
+            ((error.response && error.response.status === 503) || error.code === 'ERR_NETWORK' || !error.response)
+        ) {
+            // Only switch if we have a backup URL and we are currently using the primary one
+            if (BACKUP_URL && api.defaults.baseURL === PRIMARY_URL) {
+                console.warn(`Primary API (${PRIMARY_URL}) failed. Switching to Backup API (${BACKUP_URL})...`);
+
+                originalRequest._retry = true;
+
+                // Switch global instance baseURL
+                api.defaults.baseURL = BACKUP_URL;
+
+                // Switch current request baseURL
+                originalRequest.baseURL = BACKUP_URL;
+
+                // Retry the request
+                return api(originalRequest);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 // ==== Post Services ====
 export const getFeed = () => api.get('/posts');
