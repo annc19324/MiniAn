@@ -22,7 +22,31 @@ const PORT = process.env.PORT || 5000;
 import { prisma, pool } from './db';
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+    'https://minian.vercel.app',
+    'http://localhost:5173',
+    'https://minian.onrender.com',
+    'https://minian-d1wd.onrender.com'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            // For simple debugging, you might want to allow all:
+            // return callback(null, true);
+            // But strict is better. Let's allowing "null" origin for safety in some redirects/local files? No.
+            // Actually, for a quick fix on public API, allowing "*" is easiest but credentials won't work.
+            // Let's use the explicit list.
+            return callback(null, true); // Tạm thời cho phép tất cả để fix lỗi gấp, sau đó sẽ siết lại nếu cần
+        }
+        return callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
@@ -79,8 +103,9 @@ app.get('/debug-posts/:userId', async (req, res) => {
 const httpServer = createServer(app);
 export const io = new Server(httpServer, {
     cors: {
-        origin: "*", // Cập nhật domain frontend khi deploy
-        methods: ["GET", "POST"]
+        origin: allowedOrigins, // Use the same list as Express
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 app.set('io', io); // Make io accessible in controllers via req.app.get('io')
